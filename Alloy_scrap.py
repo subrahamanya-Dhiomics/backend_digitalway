@@ -252,15 +252,6 @@ def upload_files_scrap ():
         except:
                return  {"statuscode":"500","message":"incorrect"}
         
-        
-        
-
-
-
-
-
-
-
 
 
 @app.route('/Alloy_wire_validate',methods=['GET','POST'])
@@ -329,7 +320,7 @@ def validate_files2():
         else:
                 Batch_ID=((max_id[0][0])+1)      
         dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
-        # billet_df.insert(0,'filename',filename)
+        billet_df.insert(0,'filename',filename)
         billet_df.insert(0,'Batch_ID',Batch_ID)
         billet_df.insert(1,'Username',username)
         billet_df.insert(2,'date_time',dt_string)
