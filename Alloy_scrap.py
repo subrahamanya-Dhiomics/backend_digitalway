@@ -49,7 +49,7 @@ def tupleToList(tupleVar):
 
 
 
-@app.route('/Alloy_wire_upload',methods=['GET','POST'])
+@app.route('/Alloy_wire_upload',methods=['POST'])
 def upload_files():
  
         f =request.files['filename']
@@ -119,7 +119,7 @@ def upload_files():
 
 
 
-@app.route('/Alloy_billet_upload',methods=['GET','POST'])
+@app.route('/Alloy_billet_upload',methods=['POST'])
 def upload_files_billet ():
  
         f =request.files['filename']
