@@ -49,10 +49,10 @@ def tupleToList(tupleVar):
 
 
 
-@app.route('/Alloy_wire_upload',methods=['POST'])
+@app.route('/Alloy_wire_upload',methods=['GET','POST'])
 def upload_files():
  
-        f =request.files['filename']
+        f =request.files["filename"]
         table_1=[{}]
         now = datetime.now()
         today = date.today()
@@ -119,10 +119,10 @@ def upload_files():
 
 
 
-@app.route('/Alloy_billet_upload',methods=['POST'])
+@app.route('/Alloy_billet_upload',methods=['GET','POST'])
 def upload_files_billet ():
  
-        f =request.files['filename']
+        f =request.files["filename"]
         table_2=[{}]
         now = datetime.now()
         today = date.today()
@@ -308,6 +308,8 @@ def validate_files2():
     billet_df=pd.DataFrame(billet)
     
     
+    
+    
     try:
         Path("C:/Users/Administrator/Documents/Output").mkdir(parents=True, exist_ok=True)
         billet_df.to_csv(output_directory+filename+'_processed'+'.csv')
@@ -332,14 +334,6 @@ def validate_files2():
     except:
         return  {"statuscode":"500","message":"incorrect"}
        
-    
-
-    
-    
-    
-
-    
-
 
 
 @app.route('/Alloy_scrap_validate',methods=['GET','POST'])
@@ -356,42 +350,118 @@ def validate_files3():
     scrap_df=pd.DataFrame(scrap)
     
     
+    try:
 
-    Path("C:/Users/Administrator/Documents/Output").mkdir(parents=True, exist_ok=True)
-    scrap_df.to_csv(output_directory+filename+'_processed'+'.csv')
-
-    cur.execute('rollback')
-    cur.execute('select max("Batch_ID") from alloy_surcharge.scrap_surcharge_billet;')
-    max_id=cur.fetchall()
-    if(max_id[0][0] == None):
-            Batch_ID=1
-    else:
-            Batch_ID=((max_id[0][0])+1)      
-    dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
-    # scrap_df.insert(0,'filename',filename)
-    scrap_df.insert(0,'Batch_ID',Batch_ID)
-    scrap_df.insert(1,'Username',username)
-    scrap_df.insert(2,'date_time',dt_string)
-    scrap_df.to_sql('scrap_surcharge_billet',con=engine, schema='alloy_surcharge',if_exists='append', index=False)
-    status='success'
-    return {"message":"success"}
+        Path("C:/Users/Administrator/Documents/Output").mkdir(parents=True, exist_ok=True)
+        scrap_df.to_csv(output_directory+filename+'_processed'+'.csv')
     
+        cur.execute('rollback')
+        cur.execute('select max("Batch_ID") from alloy_surcharge.scrap_surcharge_billet;')
+        max_id=cur.fetchall()
+        if(max_id[0][0] == None):
+                Batch_ID=1
+        else:
+                Batch_ID=((max_id[0][0])+1)      
+        dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
+        # scrap_df.insert(0,'filename',filename)
+        scrap_df.insert(0,'Batch_ID',Batch_ID)
+        scrap_df.insert(1,'Username',username)
+        scrap_df.insert(2,'date_time',dt_string)
+        scrap_df.to_sql('scrap_surcharge_billet',con=engine, schema='alloy_surcharge',if_exists='append', index=False)
+        status='success'
+        return {"message":"success"}
+    except:
+        return  {"statuscode":"500","message":"incorrect"}
+       
+
+
+
+
+
+
+
+
+
+
+@app.route('/alloy_wire_search',methods=['GET','POST'])
+def search1():
+    query_parameters = json.loads(request.data)
+    wire=query_parameters["wire"]
+    search_string=query_parameters['search_string']
     
+    wire_df=pd.DataFrame(wire)
+    
+    try:
+      data=wire_df[wire_df.eq(search_string).any(1)] 
+      
+      
+      if(search_string==""):
+          table_1=wire_df.to_json(orient='records')
+          return{"data":table_1}
+      
+      else:
+          if(len(data)==0):
+              table_1=[{}]
+          else:
+              table_1=data.to_json(orient='records')
+          return {"data":table_1}
+      
+    except:
+        return  {"statuscode":"500","message":"incorrect"}
+
+
+
+
+
+@app.route('/alloy_billet_search',methods=['GET','POST'])
+def search2():
+    query_parameters = json.loads(request.data)
+    billet=query_parameters["scrap"]
+    search_string=query_parameters['search_string']
+    
+    billet_df=pd.DataFrame(billet)
+    
+    try:
+      data=billet_df[billet_df.eq(search_string).any(1)] 
+      if(search_string==""):
+          table_2=billet_df.to_json(orient='records')
+          return{"data":table_2}
+      
+      else:
+          if(len(data)==0):
+              table_2=[{}]
+          else:
+              table_2=data.to_json(orient='records')
+          return {"data":table_2}
+    except:
+        return  {"statuscode":"500","message":"incorrect"}
 
     
-   
 
-
-
-
-@app.route('/get_history',methods=['GET','POST'])
-def history1():
-    cur.execute('select distinct "Batch_ID","date_time", "Username" from alloy_surcharge.alloy_surcharge_wire')
-    wire_history=cur.fetchall()
+  
+@app.route('/alloy_scrap_search',methods=['GET','POST'])
+def search3():
+    query_parameters = json.loads(request.data)
+    scrap=query_parameters["scrap"]
+    search_string=query_parameters['search_string']
     
+    scrap_df=pd.DataFrame(scrap)
     
+    try:
+      data=scrap_df[scrap_df.eq(search_string).any(1)] 
+      if(search_string==""):
+          table_3=scrap_df.to_json(orient='records')
+          return{"data":table_3}
+      
+      else:
+          if(len(data)==0):
+              table_3=[{}]
+          else:
+              table_3=data.to_json(orient='records')
+          return {"data":table_3}
+    except:
+        return  {"statuscode":"500","message":"incorrect"}
     
-    return "hi"
     
 
 
