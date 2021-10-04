@@ -350,35 +350,32 @@ def validate_files3():
     now = datetime.now()
     today = date.today()
     
-    
-    query_parameters =json.loads(request.data)
-    filename=query_parameters["filename"]
-    scrap = query_parameters["scrap"]
+    query_parameters = json.loads(request.data)
+    filename=(query_parameters["filename"])
+    scrap =( query_parameters["scrap"])
     scrap_df=pd.DataFrame(scrap)
     
     
-    try:
-        Path("C:/Users/Administrator/Documents/Output").mkdir(parents=True, exist_ok=True)
-        scrap.to_csv(output_directory+filename+'_processed'+'.csv')
+
+    Path("C:/Users/Administrator/Documents/Output").mkdir(parents=True, exist_ok=True)
+    scrap_df.to_csv(output_directory+filename+'_processed'+'.csv')
+
+    cur.execute('rollback')
+    cur.execute('select max("Batch_ID") from alloy_surcharge.scrap_surcharge_billet;')
+    max_id=cur.fetchall()
+    if(max_id[0][0] == None):
+            Batch_ID=1
+    else:
+            Batch_ID=((max_id[0][0])+1)      
+    dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
+    # scrap_df.insert(0,'filename',filename)
+    scrap_df.insert(0,'Batch_ID',Batch_ID)
+    scrap_df.insert(1,'Username',username)
+    scrap_df.insert(2,'date_time',dt_string)
+    scrap_df.to_sql('scrap_surcharge_billet',con=engine, schema='alloy_surcharge',if_exists='append', index=False)
+    status='success'
+    return {"message":"success"}
     
-        cur.execute('rollback')
-        cur.execute('select max("Batch_ID") from alloy_surcharge.scrap_surcharge_billet;')
-        max_id=cur.fetchall()
-        if(max_id[0][0] == None):
-                Batch_ID=1
-        else:
-                Batch_ID=((max_id[0][0])+1)      
-        dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
-        # scrap_df.insert(0,'filename',filename)
-        scrap_df.insert(0,'Batch_ID',Batch_ID)
-        scrap_df.insert(1,'Username',username)
-        scrap_df.insert(2,'date_time',dt_string)
-        scrap_df.to_sql('scrap_surcharge_billet',con=engine, schema='alloy_surcharge',if_exists='append', index=False)
-        status='success'
-        return {"message":"success"}
-    except:
-        return  {"statuscode":"500","message":"incorrect"}
-       
     
 
     
