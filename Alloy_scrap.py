@@ -464,17 +464,17 @@ def history():
     
     try:
         cur.execute('rollback')
-        cur.execute('''select distinct "Username","date_time","filename" from  alloy_surcharge.alloy_surcharge_billet
+        cur.execute('''select distinct "Batch_ID", "Username","date_time","filename" from  alloy_surcharge.alloy_surcharge_billet
     union 
-    select distinct "Username","date_time","filename" from  alloy_surcharge.alloy_surcharge_wire
+    select distinct "Batch_ID", "Username","date_time","filename" from  alloy_surcharge.alloy_surcharge_wire
     union
-    select distinct "Username","date_time","filename" from  alloy_surcharge.scrap_surcharge_billet
+    select distinct  "Batch_ID","Username","date_time","filename" from  alloy_surcharge.scrap_surcharge_billet
     order by date_time  desc''')
         history_data=cur.fetchall()
-        columns=['username','date_time','filename']
+        columns=['Batch_ID','username','date_time','filename']
         df=pd.DataFrame(history_data,columns=columns)
         data=df.to_json(orient='records')
-        return json.dumps({"data":data})
+        return data
     except:
         return {"statuscode":"500","message":"failed"}
 
@@ -493,6 +493,7 @@ def getfiles():
         table=table.to_json(orient='records')
         return json.dumps({"data":table})
     except:
+        
          return {"statuscode":"500","message":"failed"}
     
     
