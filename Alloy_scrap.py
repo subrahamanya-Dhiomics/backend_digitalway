@@ -131,9 +131,11 @@ def upload_files_billet ():
        'NI_MAX_KUNDE', 'V_MIN_KUNDE', 'Vvon', 'Vbis', 'V_MAX_KUNDE', 'LZ',
        'elemente', 'Monat', 'id']
         
+        
         f.save('C:/Users/Administrator/Documents/Input_files/'+f.filename)
         stock_df = pd.read_excel(folder_path +"/"+f.filename)
         stock_df_columns=list(stock_df.columns)
+        
         try:
             if(columns==stock_df_columns):
                 print("inside")
@@ -257,13 +259,14 @@ def validate_files1():
     query_parameters = json.loads(request.data)
     filename=(query_parameters["filename"])
     wire =( query_parameters["wire"])
+    
     wire_df=pd.DataFrame(wire)
     
     
-    try:
-        Path("C:/Users/Administrator/Documents/Output").mkdir(parents=True, exist_ok=True)
-        wire_df.to_csv(output_directory+filename+'_processed'+'.csv')
     
+    
+    try:
+        
         cur.execute('rollback')
         cur.execute('select max("Batch_ID") from alloy_surcharge.alloy_surcharge_wire;')
         max_id=cur.fetchall()
@@ -277,6 +280,17 @@ def validate_files1():
         wire_df.insert(1,'Username',username)
         wire_df.insert(2,'date_time',dt_string)
         wire_df.to_sql('alloy_surcharge_wire',con=engine, schema='alloy_surcharge',if_exists='append', index=False)
+        
+        
+        date_time= today.strftime("%Y%m%d")
+        counter=str(Batch_ID)
+        cond_type="Z133"
+        sales_org="0300"
+        
+        # Path("C:\ocpphase1\ftp\Q72").mkdir(parents=True, exist_ok=True)
+        wire_df.to_csv("C:/ocpphase1/ftp/Q72/"+date_time+counter+'_'+cond_type+'_'+sales_org+'.csv')
+    
+        
         return {"message":"success"}
     except:
        return  {"statuscode":"500","message":"incorrect"}
@@ -303,9 +317,7 @@ def validate_files2():
     
     
     try:
-        Path("C:/Users/Administrator/Documents/Output").mkdir(parents=True, exist_ok=True)
-        billet_df.to_csv(output_directory+filename+'_processed'+'.csv')
-    
+        
         cur.execute('rollback')
         cur.execute('select max("Batch_ID") from alloy_surcharge.alloy_surcharge_billet;')
         max_id=cur.fetchall()
@@ -319,6 +331,16 @@ def validate_files2():
         billet_df.insert(1,'Username',username)
         billet_df.insert(2,'date_time',dt_string)
         billet_df.to_sql('alloy_surcharge_billet',con=engine, schema='alloy_surcharge',if_exists='append', index=False)
+        
+        date_time= today.strftime("%Y%m%d")
+        counter=str(Batch_ID)
+        cond_type="ZLEZ"
+        sales_org="0200"
+        
+        # Path("C:\ocpphase1\ftp\Q72").mkdir(parents=True, exist_ok=True)
+        billet_df.to_csv("C:/ocpphase1/ftp/Q72/"+date_time+counter+'_'+cond_type+'_'+sales_org+'.csv')
+    
+        
         status='success'
         return {"message":"success"}
         
@@ -344,8 +366,7 @@ def validate_files3():
     
     try:
 
-        Path("C:/Users/Administrator/Documents/Output").mkdir(parents=True, exist_ok=True)
-        scrap_df.to_csv(output_directory+filename+'_processed'+'.csv')
+        
     
         cur.execute('rollback')
         cur.execute('select max("Batch_ID") from alloy_surcharge.scrap_surcharge_billet;')
@@ -360,6 +381,19 @@ def validate_files3():
         scrap_df.insert(1,'Username',username)
         scrap_df.insert(2,'date_time',dt_string)
         scrap_df.to_sql('scrap_surcharge_billet',con=engine, schema='alloy_surcharge',if_exists='append', index=False)
+        
+        
+        date_time= today.strftime("%Y%m%d")
+        counter=str(Batch_ID)
+        cond_type="ZSCZ"
+        sales_org="0200"
+        
+        # Path("C:\ocpphase1\ftp\Q72").mkdir(parents=True, exist_ok=True)
+        scrap_df.to_csv("C:/ocpphase1/ftp/Q72/"+date_time+counter+'_'+cond_type+'_'+sales_org+'.csv')
+        
+        
+        
+        
         status='success'
         return {"message":"success"}
     except:
@@ -457,50 +491,92 @@ def search3():
     except:
         return  {"statuscode":"500","message":"incorrect"}
     
+
     
 
-@app.route('/alloy_scrap_history',methods=['GET'])
+
+@app.route('/alloy_surcharge_history',methods=['GET','POST'])
 def history():
     
     try:
         cur.execute('rollback')
-        cur.execute('''select distinct "Batch_ID", "Username","date_time","filename" from  alloy_surcharge.alloy_surcharge_billet
+        cur.execute('''select distinct "Batch_ID", "Username","date_time","filename" ,"COND_TYPE" from  alloy_surcharge.alloy_surcharge_billet
     union 
-    select distinct "Batch_ID", "Username","date_time","filename" from  alloy_surcharge.alloy_surcharge_wire
+    select distinct "Batch_ID", "Username","date_time","filename","COND_TYPE" from  alloy_surcharge.alloy_surcharge_wire
     union
-    select distinct  "Batch_ID","Username","date_time","filename" from  alloy_surcharge.scrap_surcharge_billet
+    select distinct  "Batch_ID","Username","date_time","filename","COND_TYPE" from  alloy_surcharge.scrap_surcharge_billet
     order by date_time  desc''')
         history_data=cur.fetchall()
-        columns=['Batch_ID','username','date_time','filename']
+        columns=['Batch_ID','username','date_time','filename','condition_type']
         df=pd.DataFrame(history_data,columns=columns)
-        data=df.to_json(orient='records')
-        return data
+        
+        
+        data=json.loads(df.to_json(orient='records'))
+        return {"data":data}
     except:
         return {"statuscode":"500","message":"failed"}
 
     
 
 
-@app.route('/getfilename',methods=['GET','POST'])
+@app.route('/getfile_data',methods=['GET','POST'])
 def getfiles():
     
-    
+
     query_parameters = json.loads(request.data)
+    filename=query_parameters["filename"]
+    condition_type=query_parameters['condition_type']
+    
+    
     try:
-   
-        filename=query_parameters["filename"]
-        table=pd.read_csv(output_directory+filename+'_'+'processed'+'.csv')
-        table=table.to_json(orient='records')
-        return json.dumps({"data":table})
+        if(condition_type=="Z133"):
+            query='''select "VKORG","DIV","DST_CH","COND_TYPE","Month_year","Internal_Grade","Customer_ID" from alloy_surcharge.alloy_surcharge_wire where "filename"= '{}' '''.format(filename)
+            
+            cur.execute(query)
+            data=cur.fetchall()
+            columns=["VKORG","DIV","DST_CH","COND_TYPE","Month_year","Internal_Grade","Customer_ID"]
+            df=pd.DataFrame(data,columns=columns)
+            table=json.loads(df.to_json(orient='records'))
+           
+            
+        return {"data":table}
+    
+    
     except:
         
          return {"statuscode":"500","message":"failed"}
     
     
- 
+
     
+  
 
 
+@app.route('/search_files',methods=['GET','POST'])
+def search_files():
+    query_parameters = json.loads(request.data)
+    
+    table=query_parameters["table"]
+    
+    search_string=query_parameters['search_string']
+    
+    table_df=pd.DataFrame(table)
+    
+    try:
+      data=table_df[table_df.eq(search_string).any(1)] 
+      if(search_string==""):
+          data=table_df.to_json(orient='records')
+          return{"data":data}
+      
+      else:
+          if(len(data)==0):
+              data=[{}]
+          else:
+              data=data.to_json(orient='records')
+          return {"data":data}
+    except:
+        return  {"statuscode":"500","message":"incorrect"}
+    
 
 
 
