@@ -21,7 +21,6 @@ import getpass
 from datetime import datetime
 from datetime import date
 
-
 app = Flask(__name__)
 CORS(app)
 con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
@@ -102,7 +101,7 @@ def upload_files():
                 
                 table_1 = data1.to_json(orient='records')
                 status="success"
-                return  {"data":table_1,"filename":f.filename}
+                return  json.dumps({"data":table_1,"filename":f.filename})
                 
             else:
                  status='incorrect file format'
@@ -113,12 +112,7 @@ def upload_files():
               status='incorrect file format'
               return  {"statuscode":"500","message":"incorrect"}
        
-        
-        
-
-
-
-
+ 
 @app.route('/Alloy_billet_upload',methods=['GET','POST'])
 def upload_files_billet ():
  
@@ -176,7 +170,7 @@ def upload_files_billet ():
                 # data=data.fillna(0)
                 table_2 = data2.to_json(orient='records')
                 status="success"
-                return  {"data":table_2,"filename":f.filename}
+                return  json.dumps({"data":table_2,"filename":f.filename})
                 
                 
             else:
@@ -186,8 +180,6 @@ def upload_files_billet ():
                  return  {"statuscode":"500","message":"incorrect"}
         except:
               return  {"statuscode":"500","message":"incorrect"}
-        
-       
         
 
 
@@ -242,7 +234,7 @@ def upload_files_scrap ():
                 
                 table_3 = data3.to_json(orient='records')
                 status="success"
-                return  {"data":table_3,"filename":f.filename}
+                return  json.dumps({"data":table_3,"filename":f.filename})
                 
             else:
                  status='incorrect file format'
@@ -280,7 +272,7 @@ def validate_files1():
         else:
                 Batch_ID=((max_id[0][0])+1)      
         dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
-        # wire_df.insert(0,'filename',filename)
+        wire_df.insert(0,'filename',filename)
         wire_df.insert(0,'Batch_ID',Batch_ID)
         wire_df.insert(1,'Username',username)
         wire_df.insert(2,'date_time',dt_string)
@@ -363,7 +355,7 @@ def validate_files3():
         else:
                 Batch_ID=((max_id[0][0])+1)      
         dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
-        # scrap_df.insert(0,'filename',filename)
+        scrap_df.insert(0,'filename',filename)
         scrap_df.insert(0,'Batch_ID',Batch_ID)
         scrap_df.insert(1,'Username',username)
         scrap_df.insert(2,'date_time',dt_string)
@@ -436,7 +428,10 @@ def search2():
     except:
         return  {"statuscode":"500","message":"incorrect"}
 
-    
+
+
+
+
 
   
 @app.route('/alloy_scrap_search',methods=['GET','POST'])
@@ -464,26 +459,45 @@ def search3():
     
     
 
+@app.route('/gethistory',methods=['GET','POST'])
+def history():
+    
+    try:
+        cur.execute('rollback')
+        cur.execute('''select distinct "Username","date_time","filename" from  alloy_surcharge.alloy_surcharge_billet
+    union 
+    select distinct "Username","date_time","filename" from  alloy_surcharge.alloy_surcharge_wire
+    union
+    select distinct "Username","date_time","filename" from  alloy_surcharge.scrap_surcharge_billet
+    order by date_time  desc''')
+        history_data=cur.fetchall()
+        columns=['username','date_time','filename']
+        df=pd.DataFrame(history_data,columns=columns)
+        data=df.to_json(orient='records')
+        return json.dumps({"data":data})
+    except:
+        return {"statuscode":"500","message":"failed"}
+
+    
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@app.route('/getfilename',methods=['GET','POST'])
+def getfiles():
+    
+    
+    query_parameters = json.loads(request.data)
+    try:
+   
+        filename=query_parameters["filename"]
+        table=pd.read_csv(output_directory+filename+'_'+'processed'+'.csv')
+        table=table.to_json(orient='records')
+        return json.dumps({"data":table})
+    except:
+         return {"statuscode":"500","message":"failed"}
+    
+    
+ 
+    
 
 
 
