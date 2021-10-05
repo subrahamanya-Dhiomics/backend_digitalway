@@ -459,7 +459,7 @@ def search3():
     
     
 
-@app.route('/gethistory',methods=['GET','POST'])
+@app.route('/alloy_scrap_history',methods=['GET'])
 def history():
     
     try:
