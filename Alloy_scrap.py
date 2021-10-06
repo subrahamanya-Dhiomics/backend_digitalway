@@ -493,16 +493,15 @@ def search3():
     
 
     
-
+    
 
 @app.route('/alloy_surcharge_history',methods=['GET','POST'])
 def history():
     
-    query_parameters = json.loads(request.data)
     
     
-    limit=query_parameters['limit']
-    offset=query_parameters['offset']
+    limit=request.args.get("limit",type=int)
+    offset=request.args.get("offset",type=int)
     lowerLimit=offset*limit 
     upperLimit=lowerLimit+limit
     
@@ -537,10 +536,10 @@ def getfiles():
     
 
     query_parameters = json.loads(request.data)
+    
     filename=query_parameters["filename"]
     Batch_ID=query_parameters["Batch_ID"]
     condition_type=query_parameters['condition_type']
-    
     
     
     try:
@@ -581,10 +580,9 @@ def getfiles():
         
          return {"statuscode":"500","message":"failed"}
     
-    
-
-    
+ 
   
+
 
 
 @app.route('/search_files',methods=['GET','POST'])
