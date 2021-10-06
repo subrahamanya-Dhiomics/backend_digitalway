@@ -502,8 +502,18 @@ def history():
     
     limit=request.args.get("limit",type=int)
     offset=request.args.get("offset",type=int)
+    
+    search_string=request.args.get("search_string")
+    try:
+        search_string=int(search_string)
+    except:
+        search_string=str(search_string)
+        
+    
+    print(search_string)
     lowerLimit=offset*limit 
     upperLimit=lowerLimit+limit
+    
     
     
     try:
@@ -520,9 +530,15 @@ def history():
         columns=['Batch_ID','username','date_time','filename','condition_type']
         df=pd.DataFrame(history_data,columns=columns)
         
+        if(search_string !=None and search_string !="all"):
+            filtered_data=df[df.eq(search_string).any(1)] 
+            filtered_data=json.loads(filtered_data.to_json(orient='records'))
+        else:
+            filtered_data=json.loads(df.to_json(orient='records'))
+            
         
-        data=json.loads(df.to_json(orient='records'))
-        return {"data":data}
+        
+        return {"data":filtered_data}
     except:
         return {"statuscode":"500","message":"failed"}
 
