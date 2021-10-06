@@ -501,17 +501,19 @@ def history():
     
     limit=request.args.get("limit",type=int)
     offset=request.args.get("offset",type=int)
+    print(limit)
+    print(offset)
     
     search_string=request.args.get("search_string")
     
     
     try:
         search_string=int(search_string)
+   
     except:
-        search_string=str(search_string)
-        
+        print("none")
     
-    print(search_string)
+    
     lowerLimit=offset*limit 
     upperLimit=lowerLimit+limit
     
@@ -553,14 +555,15 @@ def history():
 def getfiles():
     
 
-    query_parameters = json.loads(request.data)
     
-    filename=query_parameters["filename"]
-    Batch_ID=query_parameters["Batch_ID"]
-    condition_type=query_parameters['condition_type']
+    
+    filename=request.args.get("filename")
+    Batch_ID=request.args.get("Batch_ID",type=int)
+    condition_type=request.args.get("condition_type")
     
     
     try:
+        
         if(condition_type=="Z133"):
             query='''select "VKORG","DIV","DST_CH","COND_TYPE","Month_year","Internal_Grade","Customer_ID" from alloy_surcharge.alloy_surcharge_wire where "filename"= '{}' and "Batch_ID"='{}'   '''.format(filename,Batch_ID)
             
@@ -591,7 +594,9 @@ def getfiles():
             df=pd.DataFrame(data,columns=columns)
             table_scrap=json.loads(df.to_json(orient='records'))
             return {"table_scrap":table_scrap}  
-        
+        else:
+            return {"statuscode":"500","message":"failed"}
+            
     
     
     except:
