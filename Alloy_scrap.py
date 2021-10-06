@@ -536,10 +536,30 @@ def getfiles():
             data=cur.fetchall()
             columns=["VKORG","DIV","DST_CH","COND_TYPE","Month_year","Internal_Grade","Customer_ID"]
             df=pd.DataFrame(data,columns=columns)
-            table=json.loads(df.to_json(orient='records'))
-           
+            table_wire=json.loads(df.to_json(orient='records'))
+            return {"data":table_wire}
+        
+        if(condition_type=="ZLEZ"):
+            query='''select "VKORG","DIV","DST_CH","COND_TYPE","Month_year","Amount","dRUCKSPERRE","Materialnr","WARENEMPFAENGER_NR" from alloy_surcharge.alloy_surcharge_billet where "filename"= '{}' '''.format(filename)
             
-        return {"data":table}
+            cur.execute(query)
+            data=cur.fetchall()
+            columns=["VKORG","DIV","DST_CH","COND_TYPE","Month_year","Amount","dRUCKSPERRE","Materialnr","WARENEMPFAENGER_NR"]
+            df=pd.DataFrame(data,columns=columns)
+            table_billet=json.loads(df.to_json(orient='records'))
+            return {"data":table_billet}
+        
+        
+        if(condition_type=="ZSCZ"):
+            query='''select "VKORG","DIV","DST_CH","COND_TYPE","Month_year","Amount","Model" from alloy_surcharge.scrap_surcharge_billet where "filename"= '{}' '''.format(filename)
+            
+            cur.execute(query)
+            data=cur.fetchall()
+            columns=["VKORG","DIV","DST_CH","COND_TYPE","Month_year","Amount","Model"]
+            df=pd.DataFrame(data,columns=columns)
+            table_scrap=json.loads(df.to_json(orient='records'))
+            return {"data":table_scrap}  
+        
     
     
     except:
