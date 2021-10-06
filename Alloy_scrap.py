@@ -498,14 +498,25 @@ def search3():
 @app.route('/alloy_surcharge_history',methods=['GET','POST'])
 def history():
     
+    query_parameters = json.loads(request.data)
+    
+    
+    limit=query_parameters['limit']
+    offset=query_parameters['offset']
+    lowerLimit=offset*limit 
+    upperLimit=lowerLimit+limit
+    
+    
     try:
         cur.execute('rollback')
-        cur.execute('''select distinct "Batch_ID", "Username","date_time","filename" ,"COND_TYPE" from  alloy_surcharge.alloy_surcharge_billet
+        query='''select distinct "Batch_ID", "Username","date_time","filename" ,"COND_TYPE" from  alloy_surcharge.alloy_surcharge_billet
     union 
     select distinct "Batch_ID", "Username","date_time","filename","COND_TYPE" from  alloy_surcharge.alloy_surcharge_wire
     union
     select distinct  "Batch_ID","Username","date_time","filename","COND_TYPE" from  alloy_surcharge.scrap_surcharge_billet
-    order by date_time  desc''')
+    order by date_time  desc OFFSET {} LIMIT {} '''.format(lowerLimit,upperLimit)
+    
+        cur.execute(query)
         history_data=cur.fetchall()
         columns=['Batch_ID','username','date_time','filename','condition_type']
         df=pd.DataFrame(history_data,columns=columns)
@@ -516,6 +527,8 @@ def history():
     except:
         return {"statuscode":"500","message":"failed"}
 
+
+
     
 
 
@@ -525,12 +538,14 @@ def getfiles():
 
     query_parameters = json.loads(request.data)
     filename=query_parameters["filename"]
+    Batch_ID=query_parameters["Batch_ID"]
     condition_type=query_parameters['condition_type']
+    
     
     
     try:
         if(condition_type=="Z133"):
-            query='''select "VKORG","DIV","DST_CH","COND_TYPE","Month_year","Internal_Grade","Customer_ID" from alloy_surcharge.alloy_surcharge_wire where "filename"= '{}' '''.format(filename)
+            query='''select "VKORG","DIV","DST_CH","COND_TYPE","Month_year","Internal_Grade","Customer_ID" from alloy_surcharge.alloy_surcharge_wire where "filename"= '{}' and "Batch_ID"='{}'   '''.format(filename,Batch_ID)
             
             cur.execute(query)
             data=cur.fetchall()
@@ -540,7 +555,7 @@ def getfiles():
             return {"data":table_wire}
         
         if(condition_type=="ZLEZ"):
-            query='''select "VKORG","DIV","DST_CH","COND_TYPE","Month_year","Amount","dRUCKSPERRE","Materialnr","WARENEMPFAENGER_NR" from alloy_surcharge.alloy_surcharge_billet where "filename"= '{}' '''.format(filename)
+            query='''select "VKORG","DIV","DST_CH","COND_TYPE","Month_year","Amount","dRUCKSPERRE","Materialnr","WARENEMPFAENGER_NR" from alloy_surcharge.alloy_surcharge_billet where "filename"= '{}' and "Batch_ID"='{}'   '''.format(filename,Batch_ID)
             
             cur.execute(query)
             data=cur.fetchall()
@@ -551,7 +566,7 @@ def getfiles():
         
         
         if(condition_type=="ZSCZ"):
-            query='''select "VKORG","DIV","DST_CH","COND_TYPE","Month_year","Amount","Model" from alloy_surcharge.scrap_surcharge_billet where "filename"= '{}' '''.format(filename)
+            query='''select "VKORG","DIV","DST_CH","COND_TYPE","Month_year","Amount","Model" from alloy_surcharge.scrap_surcharge_billet where "filename"= '{}' and "Batch_ID"='{}'   '''.format(filename,Batch_ID)
             
             cur.execute(query)
             data=cur.fetchall()
