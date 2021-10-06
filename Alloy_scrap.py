@@ -492,8 +492,7 @@ def search3():
         return  {"statuscode":"500","message":"incorrect"}
     
 
-    
-    
+
 
 @app.route('/alloy_surcharge_history',methods=['GET','POST'])
 def history():
@@ -504,6 +503,8 @@ def history():
     offset=request.args.get("offset",type=int)
     
     search_string=request.args.get("search_string")
+    
+    
     try:
         search_string=int(search_string)
     except:
@@ -535,10 +536,11 @@ def history():
             filtered_data=json.loads(filtered_data.to_json(orient='records'))
         else:
             filtered_data=json.loads(df.to_json(orient='records'))
-            
         
         
-        return {"data":filtered_data}
+        
+        
+        return {"data":filtered_data,"totalCount":len(filtered_data)}
     except:
         return {"statuscode":"500","message":"failed"}
 
@@ -567,7 +569,7 @@ def getfiles():
             columns=["VKORG","DIV","DST_CH","COND_TYPE","Month_year","Internal_Grade","Customer_ID"]
             df=pd.DataFrame(data,columns=columns)
             table_wire=json.loads(df.to_json(orient='records'))
-            return {"data":table_wire}
+            return {"table_wire":table_wire}
         
         if(condition_type=="ZLEZ"):
             query='''select "VKORG","DIV","DST_CH","COND_TYPE","Month_year","Amount","dRUCKSPERRE","Materialnr","WARENEMPFAENGER_NR" from alloy_surcharge.alloy_surcharge_billet where "filename"= '{}' and "Batch_ID"='{}'   '''.format(filename,Batch_ID)
@@ -577,7 +579,7 @@ def getfiles():
             columns=["VKORG","DIV","DST_CH","COND_TYPE","Month_year","Amount","dRUCKSPERRE","Materialnr","WARENEMPFAENGER_NR"]
             df=pd.DataFrame(data,columns=columns)
             table_billet=json.loads(df.to_json(orient='records'))
-            return {"data":table_billet}
+            return {"table_billet":table_billet}
         
         
         if(condition_type=="ZSCZ"):
@@ -588,7 +590,7 @@ def getfiles():
             columns=["VKORG","DIV","DST_CH","COND_TYPE","Month_year","Amount","Model"]
             df=pd.DataFrame(data,columns=columns)
             table_scrap=json.loads(df.to_json(orient='records'))
-            return {"data":table_scrap}  
+            return {"table_scrap":table_scrap}  
         
     
     
