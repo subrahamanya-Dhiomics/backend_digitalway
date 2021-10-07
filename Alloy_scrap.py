@@ -13,22 +13,27 @@ from flask import Blueprint
 import calendar
 import psycopg2
 import shutil
-import pandas as pd
+
 from pathlib import Path
 import os
 from sqlalchemy import create_engine
 import getpass
 from datetime import datetime
 from datetime import date
+import random
+
+
 
 app = Flask(__name__)
 CORS(app)
+
 con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
 cur = con.cursor()
 output_directory='C:/Users/Administrator/Documents/Output/'
 Non_processed="C:/Users/Administrator/Documents/Non_processed"
 Processed_directory='C:/Users/Administrator/Documents/Processed_files'
 folder_path="C:/Users/Administrator/Documents/Input_files"
+
 engine = create_engine('postgresql://postgres:ocpphase01@ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com:5432/offertool')
       
 
@@ -57,6 +62,7 @@ def upload_files():
         today = date.today()
         
         
+        
         columns=['Month/Year', 'Mill', 'Customer ', 'Customer ID', 'Internal Grade',
        'Sales Grade (Optional)', 'Monthly Alloy Surcharge',
        'Monthly Alloy Surcharge BARS', 'Monthly Alloy Surcharge SEMIS ',
@@ -64,9 +70,16 @@ def upload_files():
        'Exception of Gandarange delivering mill (Monthly, Average of last 3 months, or Trimester Caluclation)',
        'Key', 'Duplicate', 'FakturaVerkettung Du\n']
         
+        
         f.save('C:/Users/Administrator/Documents/Input_files/'+f.filename)
+        
+       
         stock_df = pd.read_excel(folder_path +"/"+f.filename)
         stock_df_columns=list(stock_df.columns)
+        print(list(stock_df.columns))
+        print(columns)
+        print("********************************")
+        print(stock_df_columns==columns)
         try:
             if(columns==stock_df_columns):
                 print("inside")
@@ -107,10 +120,10 @@ def upload_files():
                  status='incorrect file format'
                  os.remove('C:/Users/Administrator/Documents/Input_files/'+f.filename)
                  os.remove("C:/Users/Administrator/Documents/Non_processed/"+f.filename)
-                 return  {"statuscode":"500","message":"incorrect"}
+                 return  {"statuscode":"500","message":"incorrect"},500
         except:
               status='incorrect file format'
-              return  {"statuscode":"500","message":"incorrect"}
+              return  {"statuscode":"500","message":"incorrect"},500
        
  
 @app.route('/Alloy_billet_upload',methods=['GET','POST'])
@@ -139,6 +152,7 @@ def upload_files_billet ():
         try:
             if(columns==stock_df_columns):
                 print("inside")
+                print("*************************************************")
                 VKORG="0200"
                 DST_CH="05"
                 DIV="04"
@@ -179,9 +193,9 @@ def upload_files_billet ():
                  status='incorrect file format'
                  os.remove('C:/Users/Administrator/Documents/Input_files/'+f.filename)
                  os.remove("C:/Users/Administrator/Documents/Non_processed/"+f.filename)
-                 return  {"statuscode":"500","message":"incorrect"}
+                 return  {"statuscode":"500","message":"incorrect"},200
         except:
-              return  {"statuscode":"500","message":"incorrect"}
+              return  {"statuscode":"500","message":"incorrect"},500
         
 
 
@@ -242,9 +256,9 @@ def upload_files_scrap ():
                  status='incorrect file format'
                  os.remove('C:/Users/Administrator/Documents/Input_files/'+f.filename)
                  os.remove("C:/Users/Administrator/Documents/Non_processed/"+f.filename)
-                 return  {"statuscode":"500","message":"incorrect"}
+                 return  {"statuscode":"500","message":"incorrect"},200
         except:
-               return  {"statuscode":"500","message":"incorrect"}
+               return  {"statuscode":"500","message":"incorrect"},500
         
 
 
@@ -261,6 +275,7 @@ def validate_files1():
     wire =( query_parameters["wire"])
     
     wire_df=pd.DataFrame(wire)
+    out_df=wire_df.copy()
     
     
     
@@ -288,15 +303,14 @@ def validate_files1():
         sales_org="0300"
         
         # Path("C:\ocpphase1\ftp\Q72").mkdir(parents=True, exist_ok=True)
-        wire_df.to_csv("C:/ocpphase1/ftp/Q72/"+date_time+counter+'_'+cond_type+'_'+sales_org+'.csv')
+        out_df.to_csv("C:/ocpphase1/ftp/Q72/"+date_time+counter+'_'+cond_type+'_'+sales_org+'.csv')
     
         
-        return {"message":"success"}
+        return {"message":"success"},200
     except:
-       return  {"statuscode":"500","message":"incorrect"}
+       return  {"statuscode":"500","message":"incorrect"},500
        
     
-
 
 
 
@@ -312,6 +326,7 @@ def validate_files2():
     filename=(query_parameters["filename"])
     billet =( query_parameters["billet"])
     billet_df=pd.DataFrame(billet)
+    out_df=billet_df.copy()
     
     
     
@@ -338,15 +353,15 @@ def validate_files2():
         sales_org="0200"
         
         # Path("C:\ocpphase1\ftp\Q72").mkdir(parents=True, exist_ok=True)
-        billet_df.to_csv("C:/ocpphase1/ftp/Q72/"+date_time+counter+'_'+cond_type+'_'+sales_org+'.csv')
+        out_df.to_csv("C:/ocpphase1/ftp/Q72/"+date_time+counter+'_'+cond_type+'_'+sales_org+'.csv')
     
         
         status='success'
-        return {"message":"success"}
+        return {"message":"success"},200
         
         
     except:
-        return  {"statuscode":"500","message":"incorrect"}
+        return  {"statuscode":"500","message":"incorrect"},500
        
 
 
@@ -362,6 +377,8 @@ def validate_files3():
     filename=(query_parameters["filename"])
     scrap =( query_parameters["scrap"])
     scrap_df=pd.DataFrame(scrap)
+    out_df=scrap_df.copy()
+    
     
     
     try:
@@ -389,15 +406,15 @@ def validate_files3():
         sales_org="0200"
         
         # Path("C:\ocpphase1\ftp\Q72").mkdir(parents=True, exist_ok=True)
-        scrap_df.to_csv("C:/ocpphase1/ftp/Q72/"+date_time+counter+'_'+cond_type+'_'+sales_org+'.csv')
+        out_df.to_csv("C:/ocpphase1/ftp/Q72/"+date_time+counter+'_'+cond_type+'_'+sales_org+'.csv')
         
         
         
         
         status='success'
-        return {"message":"success"}
+        return {"message":"success"},200
     except:
-        return  {"statuscode":"500","message":"incorrect"}
+        return  {"statuscode":"500","message":"incorrect"},500
        
 
 
@@ -430,10 +447,10 @@ def search1():
               table_1=[{}]
           else:
               table_1=data.to_json(orient='records')
-          return {"data":table_1}
+          return {"data":table_1},200
       
     except:
-        return  {"statuscode":"500","message":"incorrect"}
+        return  {"statuscode":"500","message":"incorrect"},500
 
 
 
@@ -458,9 +475,9 @@ def search2():
               table_2=[{}]
           else:
               table_2=data.to_json(orient='records')
-          return {"data":table_2}
+          return {"data":table_2},200
     except:
-        return  {"statuscode":"500","message":"incorrect"}
+        return  {"statuscode":"500","message":"incorrect"},500
 
 
 
@@ -487,11 +504,10 @@ def search3():
               table_3=[{}]
           else:
               table_3=data.to_json(orient='records')
-          return {"data":table_3}
+          return {"data":table_3},200
     except:
-        return  {"statuscode":"500","message":"incorrect"}
+        return  {"statuscode":"500","message":"incorrect"},500
     
-
 
 
 @app.route('/alloy_surcharge_history',methods=['GET','POST'])
@@ -521,6 +537,20 @@ def history():
     
     try:
         cur.execute('rollback')
+        
+        query1='''select distinct "Batch_ID", "Username","date_time","filename" ,"COND_TYPE" from  alloy_surcharge.alloy_surcharge_billet
+    union 
+    select distinct "Batch_ID", "Username","date_time","filename","COND_TYPE" from  alloy_surcharge.alloy_surcharge_wire
+    union
+    select distinct  "Batch_ID","Username","date_time","filename","COND_TYPE" from  alloy_surcharge.scrap_surcharge_billet
+    order by date_time  desc'''
+    
+        cur.execute(query1)
+        total=cur.fetchall()
+        df1=pd.DataFrame(total)
+        
+        
+        
         query='''select distinct "Batch_ID", "Username","date_time","filename" ,"COND_TYPE" from  alloy_surcharge.alloy_surcharge_billet
     union 
     select distinct "Batch_ID", "Username","date_time","filename","COND_TYPE" from  alloy_surcharge.alloy_surcharge_wire
@@ -542,9 +572,9 @@ def history():
         
         
         
-        return {"data":filtered_data,"totalCount":len(filtered_data)}
+        return {"data":filtered_data,"totalCount":len(df1)},200
     except:
-        return {"statuscode":"500","message":"failed"}
+        return {"statuscode":"500","message":"failed"},500
 
 
 
@@ -572,7 +602,7 @@ def getfiles():
             columns=["VKORG","DIV","DST_CH","COND_TYPE","Month_year","Internal_Grade","Customer_ID"]
             df=pd.DataFrame(data,columns=columns)
             table_wire=json.loads(df.to_json(orient='records'))
-            return {"table_wire":table_wire}
+            return {"table_wire":table_wire},200
         
         if(condition_type=="ZLEZ"):
             query='''select "VKORG","DIV","DST_CH","COND_TYPE","Month_year","Amount","dRUCKSPERRE","Materialnr","WARENEMPFAENGER_NR" from alloy_surcharge.alloy_surcharge_billet where "filename"= '{}' and "Batch_ID"='{}'   '''.format(filename,Batch_ID)
@@ -582,7 +612,7 @@ def getfiles():
             columns=["VKORG","DIV","DST_CH","COND_TYPE","Month_year","Amount","dRUCKSPERRE","Materialnr","WARENEMPFAENGER_NR"]
             df=pd.DataFrame(data,columns=columns)
             table_billet=json.loads(df.to_json(orient='records'))
-            return {"table_billet":table_billet}
+            return {"table_billet":table_billet},200
         
         
         if(condition_type=="ZSCZ"):
@@ -593,71 +623,44 @@ def getfiles():
             columns=["VKORG","DIV","DST_CH","COND_TYPE","Month_year","Amount","Model"]
             df=pd.DataFrame(data,columns=columns)
             table_scrap=json.loads(df.to_json(orient='records'))
-            return {"table_scrap":table_scrap}  
+            return {"table_scrap":table_scrap} ,200 
         else:
-            return {"statuscode":"500","message":"failed"}
+            return {"statuscode":"500","message":"failed"},500
             
     
     
     except:
         
-         return {"statuscode":"500","message":"failed"}
+         return {"statuscode":"500","message":"failed"},500
     
  
-  
 
 
-
-@app.route('/search_files',methods=['GET','POST'])
-def search_files():
-    query_parameters = json.loads(request.data)
+# @app.route('/search_files',methods=['GET','POST'])
+# def search_files():
+#     query_parameters = json.loads(request.data)
     
-    table=query_parameters["table"]
+#     table=query_parameters["table"]
     
-    search_string=query_parameters['search_string']
+#     search_string=query_parameters['search_string']
     
-    table_df=pd.DataFrame(table)
+#     table_df=pd.DataFrame(table)
     
-    try:
-      data=table_df[table_df.eq(search_string).any(1)] 
-      if(search_string==""):
-          data=table_df.to_json(orient='records')
-          return{"data":data}
+#     try:
+#       data=table_df[table_df.eq(search_string).any(1)] 
+#       if(search_string==""):
+#           data=table_df.to_json(orient='records')
+#           return{"data":data}
       
-      else:
-          if(len(data)==0):
-              data=[{}]
-          else:
-              data=data.to_json(orient='records')
-          return {"data":data}
-    except:
-        return  {"statuscode":"500","message":"incorrect"}
+#       else:
+#           if(len(data)==0):
+#               data=[{}]
+#           else:
+#               data=data.to_json(orient='records')
+#           return {"data":data}
+#     except:
+#         return  {"statuscode":"500","message":"incorrect"}
     
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
