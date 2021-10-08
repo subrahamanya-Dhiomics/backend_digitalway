@@ -76,55 +76,46 @@ def upload_files():
        
         stock_df = pd.read_excel(folder_path +"/"+f.filename)
         stock_df_columns=list(stock_df.columns)
-        print(list(stock_df.columns))
-        print(columns)
-        print("********************************")
-        print(stock_df_columns==columns)
-        try:
-            if(columns==stock_df_columns):
-                print("inside")
-                VKORG="0300"
-                DST_CH="02"
-                DIV="02"
-                COND_TYPE="Z133"
-                
-                data1=stock_df[['Month/Year', 'Monthly Alloy Surcharge','Customer ID','Internal Grade']]
-                
-                data1.rename(columns={'Month/Year': 'Month_year', 'Monthly Alloy Surcharge': 'Amount','Customer ID':'Customer_ID','Internal Grade':'Internal_Grade'}, inplace=True)
-                
-                # data1= data1["Month_year"].dt.strftime("%y%m")
 
-                data1.insert(0,'VKORG',str(VKORG))
-                data1.insert(1,'COND_TYPE',str(COND_TYPE))
-                data1.insert(2,'DST_CH',str(DST_CH))
-                data1.insert(3,'DIV',str(DIV))
-                
-                pending_wire=data1[data1.isna().any(axis=1)]
-                
-                Path("C:/Users/Administrator/Documents/Non_processed").mkdir(parents=True, exist_ok=True)
-                pending_wire.to_csv(Non_processed+'/'+f.filename+'.csv')
-                  
-                
-                data1=data1.dropna()
-                data1['Month_year']=data1['Month_year'].astype(str)
-                data1["Month_year"] =data1["Month_year"].str.replace("_", "")
-    
-                data1=data1[(pd.to_datetime(data1['Month_year'], format='%Y%m')) >=today.strftime('%Y-%m') ]
-                
-                
-                table_1 = data1.to_json(orient='records')
-                status="success"
-                return  json.dumps({"data":table_1,"filename":f.filename})
-                
-            else:
-                 status='incorrect file format'
-                 os.remove('C:/Users/Administrator/Documents/Input_files/'+f.filename)
-                 os.remove("C:/Users/Administrator/Documents/Non_processed/"+f.filename)
-                 return  {"statuscode":"500","message":"incorrect"},500
-        except:
-              status='incorrect file format'
-              return  {"statuscode":"500","message":"incorrect"},500
-       
+
+        
+        print("inside")
+        VKORG="0300"
+        DST_CH="02"
+        DIV="02"
+        COND_TYPE="Z133"
+        
+        data1=stock_df[['Month/Year', 'Monthly Alloy Surcharge','Customer ID','Internal Grade']]
+        
+        data1.rename(columns={'Month/Year': 'Month_year', 'Monthly Alloy Surcharge': 'Amount','Customer ID':'Customer_ID','Internal Grade':'Internal_Grade'}, inplace=True)
+        
+        # data1= data1["Month_year"].dt.strftime("%y%m")
+
+        data1.insert(0,'VKORG',str(VKORG))
+        data1.insert(1,'COND_TYPE',str(COND_TYPE))
+        data1.insert(2,'DST_CH',str(DST_CH))
+        data1.insert(3,'DIV',str(DIV))
+        # data1['Internal_Grade']=data1["Internal_Grade"].astype(int,errors='ignore')
+        # data1['Internal_Grade']=data1['Internal_Grade'].apply(lambda x: x.zfill(4))
+        
+        pending_wire=data1[data1.isna().any(axis=1)]
+        
+        Path("C:/Users/Administrator/Documents/Non_processed").mkdir(parents=True, exist_ok=True)
+        pending_wire.to_csv(Non_processed+'/'+f.filename+'.csv')
+          
+        
+        data1=data1.dropna()
+        data1['Month_year']=data1['Month_year'].astype(str)
+        data1["Month_year"] =data1["Month_year"].str.replace("_", "")
+
+        data1=data1[(pd.to_datetime(data1['Month_year'], format='%Y%m')) >=today.strftime('%Y-%m') ]
+        
+        
+        table_1 = data1.to_json(orient='records')
+        status="success"
+        return  json.dumps({"data":table_1,"filename":f.filename}),200
+        
+   
  
 @app.route('/Alloy_billet_upload',methods=['GET','POST'])
 def upload_files_billet ():
@@ -150,7 +141,7 @@ def upload_files_billet ():
         stock_df_columns=list(stock_df.columns)
         
         try:
-            if(columns==stock_df_columns):
+            if(True):
                 print("inside")
                 print("*************************************************")
                 VKORG="0200"
@@ -158,7 +149,7 @@ def upload_files_billet ():
                 DIV="04"
                 COND_TYPE="ZLEZ"
                 
-                data2=stock_df[['Monat', 'LZ','WARENEMPFAENGER_NR','Materialnr','dRUCKSPERRE']]
+                data2=stock_df[['Monat', 'LZ','WARENEMPFAENGER_NR','SEL_NR_MELDUNG','dRUCKSPERRE']]
                 
                 data2.rename(columns={'Monat': 'Month_year', 'LZ': 'Amount'}, inplace=True)
                 # data= data["Month_year"].dt.strftime("%y%m")
@@ -296,14 +287,14 @@ def validate_files1():
         wire_df.insert(2,'date_time',dt_string)
         wire_df.to_sql('alloy_surcharge_wire',con=engine, schema='alloy_surcharge',if_exists='append', index=False)
         
-        
         date_time= today.strftime("%Y%m%d")
         counter=str(Batch_ID)
         cond_type="Z133"
         sales_org="0300"
         
         # Path("C:\ocpphase1\ftp\Q72").mkdir(parents=True, exist_ok=True)
-        out_df.to_csv("C:/ocpphase1/ftp/Q72/"+date_time+counter+'_'+cond_type+'_'+sales_org+'.csv')
+        # out_df.reset_index(drop=True, inplace=True)
+        out_df.to_csv("C:/ocpphase1/ftp/Q72/"+date_time+counter+'_'+cond_type+'_'+sales_org+'.csv', index = False)
     
         
         return {"message":"success"},200
@@ -353,7 +344,8 @@ def validate_files2():
         sales_org="0200"
         
         # Path("C:\ocpphase1\ftp\Q72").mkdir(parents=True, exist_ok=True)
-        out_df.to_csv("C:/ocpphase1/ftp/Q72/"+date_time+counter+'_'+cond_type+'_'+sales_org+'.csv')
+        # out_df.reset_index(drop=True, inplace=True)
+        out_df.to_csv("C:/ocpphase1/ftp/Q72/"+date_time+counter+'_'+cond_type+'_'+sales_org+'.csv', index = False)
     
         
         status='success'
@@ -383,8 +375,6 @@ def validate_files3():
     
     try:
 
-        
-    
         cur.execute('rollback')
         cur.execute('select max("Batch_ID") from alloy_surcharge.scrap_surcharge_billet;')
         max_id=cur.fetchall()
@@ -406,7 +396,8 @@ def validate_files3():
         sales_org="0200"
         
         # Path("C:\ocpphase1\ftp\Q72").mkdir(parents=True, exist_ok=True)
-        out_df.to_csv("C:/ocpphase1/ftp/Q72/"+date_time+counter+'_'+cond_type+'_'+sales_org+'.csv')
+        # out_df.reset_index(drop=True, inplace=True)
+        out_df.to_csv("C:/ocpphase1/ftp/Q72/"+date_time+counter+'_'+cond_type+'_'+sales_org+'.csv', index = False)
         
         
         
@@ -564,7 +555,12 @@ def history():
         df=pd.DataFrame(history_data,columns=columns)
         
         if(search_string !=None and search_string !="all"):
+            
             filtered_data=df[df.eq(search_string).any(1)] 
+            print(df)
+            print(search_string)
+            print(filtered_data)
+            print("********************************")
             filtered_data=json.loads(filtered_data.to_json(orient='records'))
         else:
             filtered_data=json.loads(df.to_json(orient='records'))
