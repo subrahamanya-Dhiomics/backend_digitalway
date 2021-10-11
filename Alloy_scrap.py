@@ -1,4 +1,3 @@
-
 import numpy as np
 import pandas as pd
 import traceback
@@ -13,7 +12,6 @@ from flask import Blueprint
 import calendar
 import psycopg2
 import shutil
-
 from pathlib import Path
 import os
 from sqlalchemy import create_engine
@@ -60,9 +58,7 @@ def upload_files():
         table_1=[{}]
         now = datetime.now()
         today = date.today()
-        
-        
-        
+       
         columns=['Month/Year', 'Mill', 'Customer ', 'Customer ID', 'Internal Grade',
        'Sales Grade (Optional)', 'Monthly Alloy Surcharge',
        'Monthly Alloy Surcharge BARS', 'Monthly Alloy Surcharge SEMIS ',
@@ -77,44 +73,50 @@ def upload_files():
         stock_df = pd.read_excel(folder_path +"/"+f.filename)
         stock_df_columns=list(stock_df.columns)
 
-
+        try:
         
-        print("inside")
-        VKORG="0300"
-        DST_CH="02"
-        DIV="02"
-        COND_TYPE="Z133"
-        
-        data1=stock_df[['Month/Year', 'Monthly Alloy Surcharge','Customer ID','Internal Grade']]
-        
-        data1.rename(columns={'Month/Year': 'Month_year', 'Monthly Alloy Surcharge': 'Amount','Customer ID':'Customer_ID','Internal Grade':'Internal_Grade'}, inplace=True)
-        
-        # data1= data1["Month_year"].dt.strftime("%y%m")
-
-        data1.insert(0,'VKORG',str(VKORG))
-        data1.insert(1,'COND_TYPE',str(COND_TYPE))
-        data1.insert(2,'DST_CH',str(DST_CH))
-        data1.insert(3,'DIV',str(DIV))
-        # data1['Internal_Grade']=data1["Internal_Grade"].astype(int,errors='ignore')
-        # data1['Internal_Grade']=data1['Internal_Grade'].apply(lambda x: x.zfill(4))
-        
-        pending_wire=data1[data1.isna().any(axis=1)]
-        
-        Path("C:/Users/Administrator/Documents/Non_processed").mkdir(parents=True, exist_ok=True)
-        pending_wire.to_csv(Non_processed+'/'+f.filename+'.csv')
-          
-        
-        data1=data1.dropna()
-        data1['Month_year']=data1['Month_year'].astype(str)
-        data1["Month_year"] =data1["Month_year"].str.replace("_", "")
-
-        data1=data1[(pd.to_datetime(data1['Month_year'], format='%Y%m')) >=today.strftime('%Y-%m') ]
-        
-        
-        table_1 = data1.to_json(orient='records')
-        status="success"
-        return  json.dumps({"data":table_1,"filename":f.filename}),200
-        
+            print("inside")
+            VKORG="0300"
+            DST_CH="02"
+            DIV="02"
+            COND_TYPE="Z133"
+            
+            data1=stock_df[['Month/Year', 'Monthly Alloy Surcharge','Customer ID','Internal Grade']]
+            
+            data1.rename(columns={'Month/Year': 'Month_year', 'Monthly Alloy Surcharge': 'Amount','Customer ID':'Customer_ID','Internal Grade':'Internal_Grade'}, inplace=True)
+            
+            # data1= data1["Month_year"].dt.strftime("%y%m")
+    
+            data1.insert(0,'VKORG',str(VKORG))
+            data1.insert(1,'COND_TYPE',str(COND_TYPE))
+            data1.insert(2,'DST_CH',str(DST_CH))
+            data1.insert(3,'DIV',str(DIV))
+            data1=data1.dropna()
+            
+            data1['Internal_Grade']=data1["Internal_Grade"].astype(str)
+            
+            data1['Internal_Grade']=data1['Internal_Grade'].apply(lambda x: x.zfill(4))
+            
+            pending_wire=data1[data1.isna().any(axis=1)]
+            
+            Path("C:/Users/Administrator/Documents/Non_processed").mkdir(parents=True, exist_ok=True)
+            pending_wire.to_csv(Non_processed+'/'+f.filename+'.csv')
+              
+            
+            data1=data1.dropna()
+            data1['Month_year']=data1['Month_year'].astype(str)
+            data1["Month_year"] =data1["Month_year"].str.replace("_", "")
+            
+            data1['Month_year'] = data1['Month_year'].str.split('.').str[0]
+    
+            data1=data1[(pd.to_datetime(data1['Month_year'], format='%Y%m')) >=today.strftime('%Y-%m') ]
+            
+            
+            table_1 = data1.to_json(orient='records')
+            status="success"
+            return  json.dumps({"data":table_1,"filename":f.filename}),200
+        except:
+              return  {"statuscode":"500","message":"incorrect"},500
    
  
 @app.route('/Alloy_billet_upload',methods=['GET','POST'])
@@ -601,7 +603,7 @@ def getfiles():
             return {"table_wire":table_wire},200
         
         if(condition_type=="ZLEZ"):
-            query='''select "VKORG","DIV","DST_CH","COND_TYPE","Month_year","Amount","dRUCKSPERRE","Materialnr","WARENEMPFAENGER_NR" from alloy_surcharge.alloy_surcharge_billet where "filename"= '{}' and "Batch_ID"='{}'   '''.format(filename,Batch_ID)
+            query='''select "VKORG","DIV","DST_CH","COND_TYPE","Month_year","Amount","dRUCKSPERRE","SEL_NR_MELDUNG","WARENEMPFAENGER_NR" from alloy_surcharge.alloy_surcharge_billet where "filename"= '{}' and "Batch_ID"='{}'   '''.format(filename,Batch_ID)
             
             cur.execute(query)
             data=cur.fetchall()
