@@ -106,7 +106,7 @@ def get_record():
         df.columns = df.columns.str.replace(' ', '_')
         df.rename(columns={"Market_-_Country":"Market_Country"},inplace=True)
         record=json.loads(df.to_json(orient='records'))
-        return {"record":record},200
+        return {"record":record[0]},200
     except:
         return {"status":"failure"},500
 
