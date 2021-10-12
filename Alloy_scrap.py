@@ -201,59 +201,50 @@ def upload_files_scrap ():
         now = datetime.now()
         today = date.today()
         VKORG="0200"
+         
         
-        
-        columns=['Month_Year', 'Model', 'Amount']
-        
-        f.save('C:/Users/Administrator/Documents/Input_files/'+f.filename)
-        stock_df = pd.read_excel(folder_path +"/"+f.filename)
-        stock_df_columns=list(stock_df.columns)
         try:
-            if(columns==stock_df_columns):
-                print("inside")
-                VKORG="0200"
-                DST_CH="05"
-                DIV="04"
-                COND_TYPE="ZSCZ"
-                
-                data3=stock_df[['Month_Year', 'Model','Amount']]
-                
-                data3.rename(columns={'Month_Year': 'Month_year'}, inplace=True)
-                
-                # data1= data1["Month_year"].dt.strftime("%y%m")
-
-                data3.insert(0,'VKORG',str(VKORG))
-                data3.insert(1,'COND_TYPE',str(COND_TYPE))
-                data3.insert(2,'DST_CH',str(DST_CH))
-                data3.insert(3,'DIV',str(DIV))
-                
-                pending_scrap=data3[data3.isna().any(axis=1)]
-                
-                Path("C:/Users/Administrator/Documents/Non_processed").mkdir(parents=True, exist_ok=True)
-                pending_scrap.to_csv(Non_processed+'/'+f.filename+'.csv')
-                    
-                
-                
-                data3=data3.dropna()
-                data3['Month_year']=data3['Month_year'].astype(str)
-                data3["Month_year"] =data3["Month_year"].str.replace("_", "")
-                
-                data3=data3[(pd.to_datetime(data3['Month_year'], format='%Y%m')) >=today.strftime('%Y-%m') ]
-                
-                
-                table_3 = data3.to_json(orient='records')
-                status="success"
-                return  json.dumps({"data":table_3,"filename":f.filename})
-                
-            else:
-                 status='incorrect file format'
-                 os.remove('C:/Users/Administrator/Documents/Input_files/'+f.filename)
-                 os.remove("C:/Users/Administrator/Documents/Non_processed/"+f.filename)
-                 return  {"statuscode":"500","message":"incorrect"},200
-        except:
-               return  {"statuscode":"500","message":"incorrect"},500
         
-
+        
+            f.save('C:/Users/Administrator/Documents/Input_files/'+f.filename)
+            data = pd.read_excel(folder_path +"/"+f.filename,sheet_name="Shuffled SS")
+            
+            df=data[((data['Model']=='Former') & (data['Product']=='All') & (data['Division'].isnull())) | ((data['Model']=='Market') & (data['Product']=='Rolled Billets') & (data['Division']=='RCS')) | ((data['Model']=='New ') & (data['Product']=='Wire Rod') & (data['Division']=='WR')) ]
+    
+           
+                
+            print("inside")
+            VKORG="0200"
+            DST_CH="05"
+            DIV="04"
+            COND_TYPE="ZSCZ"
+            
+            data3=df[['Month','Model','Product','Value','Monthly Deviation']]
+            
+            data3.rename(columns={'Month': 'Month_year','Value':'Amount'}, inplace=True)
+            
+            
+            # data1= data1["Month_year"].dt.strftime("%y%m")
+    
+            data3.insert(0,'VKORG',str(VKORG))
+            data3.insert(1,'COND_TYPE',str(COND_TYPE))
+            data3.insert(2,'DST_CH',str(DST_CH))
+            data3.insert(3,'DIV',str(DIV))
+            
+            
+            data3['Month_year']=data3['Month_year'].astype(str)
+            data3["Month_year"] =data3["Month_year"].str.replace("_", "")
+            
+            data3=data3[(pd.to_datetime(data3['Month_year'], format='%Y%m')) >=today.strftime('%Y-%m') ]
+            
+            
+            table_3 = json.loads(data3.to_json(orient='records'))
+            status="success"
+            return  {"data":table_3,"filename":f.filename}
+            
+        except:
+            return  {"statuscode":"500","message":"incorrect"},500
+       
 
 @app.route('/Alloy_wire_validate',methods=['GET','POST'])
 def validate_files1():
@@ -372,18 +363,15 @@ def validate_files3():
     scrap =( query_parameters["scrap"])
     scrap_df=pd.DataFrame(scrap)
     out_df=scrap_df.copy()
+    out_df=out_df.drop(['Product', 'Division','Monthly Deviation'], axis = 1)
+  
     
     
     
     try:
 
-        cur.execute('rollback')
-        cur.execute('select max("Batch_ID") from alloy_surcharge.scrap_surcharge_billet;')
-        max_id=cur.fetchall()
-        if(max_id[0][0] == None):
-                Batch_ID=1
-        else:
-                Batch_ID=((max_id[0][0])+1)      
+        Batch_ID=1
+            
         dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
         scrap_df.insert(0,'filename',filename)
         scrap_df.insert(0,'Batch_ID',Batch_ID)
