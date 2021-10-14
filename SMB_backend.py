@@ -138,13 +138,13 @@ def get_record():
 def update_record():
     
     
-    query_parameters = json.loads(request.data)
+    query_parameters =json.loads(request.data)
     BusinessCode=(query_parameters['BusinessCode'])
     Market_Country =( query_parameters["Market_Country"])
     Product_Division =( query_parameters["Product_Division"])
     Product_Level_02 =( query_parameters["Product_Level_02"])
     Document_Item_Currency =( query_parameters["Document_Item_Currency"])
-    Amount =( query_parameters[" Amount"])
+    Amount =( query_parameters["Amount"])
     Currency =( query_parameters["Currency"])
     id_value =( query_parameters["id_value"])
     
@@ -163,7 +163,7 @@ def update_record():
      "Currency"={6}
     	  where "id"={7} '''.format(BusinessCode,Market_Country,Product_Division,Product_Level_02,Document_Item_Currency,Amount,Currency,id_value)
         db.insert(query)
-       
+        print(query)
         return {"status":"sucess"},200 
     except:
         return {"status":"failure"},500
@@ -177,15 +177,15 @@ def add_record():
     now = datetime.now()
     date_time= today.strftime("%Y%m%d")
     
-    query_parameters = json.loads(request.data)
+    query_parameters =json.loads(request.data)
     BusinessCode=(query_parameters['BusinessCode'])
     Market_Country =( query_parameters["Market_Country"])
     Product_Division =( query_parameters["Product_Division"])
     Product_Level_02 =( query_parameters["Product_Level_02"])
     Document_Item_Currency =( query_parameters["Document_Item_Currency"])
-    Amount =( query_parameters[" Amount"])
+    Amount =( query_parameters["Amount"])
     Currency =( query_parameters["Currency"])
-   
+    
     # BusinessCode=request.args.get('BusinessCode')
     # Market_Country=request.args.get('Market_Country')
     # Product_Division=request.args.get('Product_Division')
