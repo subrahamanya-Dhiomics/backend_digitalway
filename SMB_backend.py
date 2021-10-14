@@ -137,14 +137,19 @@ def get_record():
 @app.route('/update_record_baseprice',methods=['PUT','POST'])
 def update_record():
     
-    BusinessCode=request.args.get('BusinessCode',type=str)
-    Market_Country=request.args.get('Market_Country',type=str)
-    Product_Division=request.args.get('Product_Division',type=str)
-    Product_Level_02=request.args.get('Product_Level_02',type=str)
-    Document_Item_Currency=request.args.get('Document_Item_Currency',type=str)
-    Amount=request.args.get('Amount',type=str)
-    Currency=request.args.get('Currency',type=str)
-    id_value=request.args.get('id',type=int)
+    
+    query_parameters = json.loads(request.data)
+    BusinessCode=(query_parameters['BusinessCode'])
+    Market_Country =( query_parameters["Market_Country"])
+    Product_Division =( query_parameters["Product_Division"])
+    Product_Level_02 =( query_parameters["Product_Level_02"])
+    Document_Item_Currency =( query_parameters["Document_Item_Currency"])
+    Amount =( query_parameters[" Amount"])
+    Currency =( query_parameters["Currency"])
+    id_value =( query_parameters["id_value"])
+    
+    
+    
     
    
     try:
@@ -172,13 +177,22 @@ def add_record():
     now = datetime.now()
     date_time= today.strftime("%Y%m%d")
     
-    BusinessCode=request.args.get('BusinessCode')
-    Market_Country=request.args.get('Market_Country')
-    Product_Division=request.args.get('Product_Division')
-    Product_Level_02=request.args.get('Product_Level_02')
-    Document_Item_Currency=request.args.get('Document_Item_Currency')
-    Amount=request.args.get('Amount')
-    Currency=request.args.get('Currency')
+    query_parameters = json.loads(request.data)
+    BusinessCode=(query_parameters['BusinessCode'])
+    Market_Country =( query_parameters["Market_Country"])
+    Product_Division =( query_parameters["Product_Division"])
+    Product_Level_02 =( query_parameters["Product_Level_02"])
+    Document_Item_Currency =( query_parameters["Document_Item_Currency"])
+    Amount =( query_parameters[" Amount"])
+    Currency =( query_parameters["Currency"])
+   
+    # BusinessCode=request.args.get('BusinessCode')
+    # Market_Country=request.args.get('Market_Country')
+    # Product_Division=request.args.get('Product_Division')
+    # Product_Level_02=request.args.get('Product_Level_02')
+    # Document_Item_Currency=request.args.get('Document_Item_Currency')
+    # Amount=request.args.get('Amount')
+    # Currency=request.args.get('Currency')
   
     try:
         
