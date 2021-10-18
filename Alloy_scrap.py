@@ -1,3 +1,12 @@
+
+"""
+Created on Thu Oct  12 07:33:38 2021
+
+@author: subbu
+
+"""
+
+
 import numpy as np
 import pandas as pd
 import traceback
@@ -213,7 +222,7 @@ def upload_files_scrap ():
     
            
                 
-            print("inside")
+            
             VKORG="0200"
             DST_CH="05"
             DIV="04"
@@ -221,7 +230,7 @@ def upload_files_scrap ():
             
             data3=df[['Month','Model','Product','Value','Monthly Deviation']]
             
-            data3.rename(columns={'Month': 'Month_year','Value':'Amount'}, inplace=True)
+            data3.rename(columns={'Month': 'Month_year','Value':'Amount','Monthly Deviation':'Monthly_Deviation'}, inplace=True)
             
             
             # data1= data1["Month_year"].dt.strftime("%y%m")
@@ -238,14 +247,13 @@ def upload_files_scrap ():
             data3=data3[(pd.to_datetime(data3['Month_year'], format='%Y%m')) >=today.strftime('%Y-%m') ]
             
             
-            table_3 = json.loads(data3.to_json(orient='records'))
+            table_3 =data3.to_json(orient='records')
             status="success"
-            return  {"data":table_3,"filename":f.filename}
+            return  {"data":table_3,"filename":f.filename},200
             
         except:
-            return  {"statuscode":"500","message":"incorrect"},500
-       
-
+            return  json.dumps({"data":table_3,"filename":f.filename})
+                
 @app.route('/Alloy_wire_validate',methods=['GET','POST'])
 def validate_files1():
     
@@ -259,6 +267,7 @@ def validate_files1():
     wire =( query_parameters["wire"])
     
     wire_df=pd.DataFrame(wire)
+    wire_df.rename(columns={'Monthly_Deviation':'Monthly Deviation'})
     out_df=wire_df.copy()
     
     
@@ -363,7 +372,7 @@ def validate_files3():
     scrap =( query_parameters["scrap"])
     scrap_df=pd.DataFrame(scrap)
     out_df=scrap_df.copy()
-    out_df=out_df.drop(['Product', 'Division','Monthly Deviation'], axis = 1)
+    out_df=out_df.drop(['Product','Monthly_Deviation'], axis = 1)
   
     
     
@@ -388,9 +397,6 @@ def validate_files3():
         # Path("C:\ocpphase1\ftp\Q72").mkdir(parents=True, exist_ok=True)
         # out_df.reset_index(drop=True, inplace=True)
         out_df.to_csv("C:/ocpphase1/ftp/Q72/"+date_time+counter+'_'+cond_type+'_'+sales_org+'.csv', index = False)
-        
-        
-        
         
         status='success'
         return {"message":"success"},200
