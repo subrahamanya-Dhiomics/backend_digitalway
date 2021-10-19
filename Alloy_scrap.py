@@ -253,7 +253,8 @@ def upload_files_scrap ():
             
         except:
             return  json.dumps({"data":table_3,"filename":f.filename})
-                
+ 
+               
 @app.route('/Alloy_wire_validate',methods=['GET','POST'])
 def validate_files1():
     
