@@ -6,6 +6,7 @@ Created on Thu Oct  12 07:33:38 2021
 
 """
 
+from flask import Blueprint
 
 import numpy as np
 import pandas as pd
@@ -29,10 +30,10 @@ from datetime import datetime
 from datetime import date
 import random
 
+ 
+scrap_app = Blueprint('scrap_app', __name__)
 
-
-app = Flask(__name__)
-CORS(app)
+CORS(scrap_app)
 
 con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
 cur = con.cursor()
@@ -60,7 +61,7 @@ def tupleToList(tupleVar):
 
 
 
-@app.route('/Alloy_wire_upload',methods=['GET','POST'])
+@scrap_app.route('/Alloy_wire_upload',methods=['GET','POST'])
 def upload_files():
  
         f =request.files["filename"]
@@ -128,7 +129,7 @@ def upload_files():
               return  {"statuscode":"500","message":"incorrect"},500
    
  
-@app.route('/Alloy_billet_upload',methods=['GET','POST'])
+@scrap_app.route('/Alloy_billet_upload',methods=['GET','POST'])
 def upload_files_billet ():
  
         f =request.files["filename"]
@@ -202,7 +203,7 @@ def upload_files_billet ():
 
 
 
-@app.route('/scrap_upload',methods=['GET','POST'])
+@scrap_app.route('/scrap_upload',methods=['GET','POST'])
 def upload_files_scrap ():
  
         f =request.files['filename']
@@ -258,7 +259,7 @@ def upload_files_scrap ():
             return  json.dumps({"data":table_3,"filename":f.filename})
  
                
-@app.route('/Alloy_wire_validate',methods=['GET','POST'])
+@scrap_app.route('/Alloy_wire_validate',methods=['GET','POST'])
 def validate_files1():
     
     username = getpass.getuser()
@@ -311,7 +312,7 @@ def validate_files1():
 
 
 
-@app.route('/Alloy_billet_validate',methods=['GET','POST'])
+@scrap_app.route('/Alloy_billet_validate',methods=['GET','POST'])
 def validate_files2():
     
     username = getpass.getuser()
@@ -363,7 +364,7 @@ def validate_files2():
        
 
 
-@app.route('/Alloy_scrap_validate',methods=['GET','POST'])
+@scrap_app.route('/Alloy_scrap_validate',methods=['GET','POST'])
 def validate_files3():
     
     
@@ -416,7 +417,7 @@ def validate_files3():
 
 
 
-@app.route('/alloy_surcharge_history',methods=['GET','POST'])
+@scrap_app.route('/alloy_surcharge_history',methods=['GET','POST'])
 def history():
     
     
@@ -492,7 +493,7 @@ def history():
     
 
 
-@app.route('/getfile_data',methods=['GET','POST'])
+@scrap_app.route('/getfile_data',methods=['GET','POST'])
 def getfiles():
     
 
@@ -578,6 +579,3 @@ def getfiles():
 
      
      
-
-if __name__ == '__main__':
-    app.run()

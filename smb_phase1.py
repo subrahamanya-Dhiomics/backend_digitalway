@@ -6,6 +6,9 @@ Created on Thu Oct  12 07:33:38 2021
 
 """
 
+from flask import Blueprint
+
+
 import pandas as pd
 import time
 import json
@@ -70,9 +73,10 @@ class Database:
             print('Cursor closed')
                
  
+smb_app1 = Blueprint('smb_app1', __name__)
 
-app = Flask(__name__)
-CORS(app)
+CORS(smb_app1)
+
 db=Database()
 
 input_directory="C:/Users/Administrator/Documents/SMB_INPUT/"
@@ -80,7 +84,7 @@ con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',
 
 
 
-@app.route('/Base_Price_Data',methods=['GET','POST'])
+@smb_app1.route('/Base_Price_Data',methods=['GET','POST'])
 def SMB_data():
     # query_paramters 
     search_string=request.args.get("search_string")
@@ -123,7 +127,7 @@ def SMB_data():
         
 
   
-@app.route('/delete_record_baseprice',methods=['POST','GET','DELETE'])
+@smb_app1.route('/delete_record_baseprice',methods=['POST','GET','DELETE'])
 def delete_record():  
     id_value=request.args.get('id')
     try:
@@ -135,7 +139,7 @@ def delete_record():
         return {"status":"failure"},500
 
 
-@app.route('/get_record_baseprice',methods=['GET','POST'])       
+@smb_app1.route('/get_record_baseprice',methods=['GET','POST'])       
 def get_record():
     id_value=request.args.get('id')  
     
@@ -153,7 +157,7 @@ def get_record():
         
 
 
-@app.route('/add_record_baseprice',methods=['POST'])
+@smb_app1.route('/add_record_baseprice',methods=['POST'])
 def add_record1():
     
     today = date.today()
@@ -196,7 +200,7 @@ def add_record1():
     return {"status":"success"},200
 
    
-@app.route('/Base_Price_Upload', methods=['GET','POST'])
+@smb_app1.route('/Base_Price_Upload', methods=['GET','POST'])
 def  SMB_upload():
     
     f=request.files['filename']
@@ -215,7 +219,7 @@ def  SMB_upload():
         return {"statuscode":500,"message":"incorrect"},500
 
 
-@app.route('/Base_Price_validate', methods=['GET','POST'])
+@smb_app1.route('/Base_Price_validate', methods=['GET','POST'])
 def  SMB_validate():
     
         
@@ -250,7 +254,7 @@ def  SMB_validate():
             return {"status":"failure"},500
         
          
-@app.route('/Base_price_download',methods=['GET'])
+@smb_app1.route('/Base_price_download',methods=['GET'])
 def SMB_baseprice_download1():
    
         now = datetime.now()
@@ -264,7 +268,7 @@ def SMB_baseprice_download1():
 # baseprice_minibar
 
 
-@app.route('/base_price_data_minibar',methods=['GET','POST'])
+@smb_app1.route('/data_baseprice_category_minibar',methods=['GET','POST'])
 def SMB_data_baseprice_mini():
     # query_paramters 
     search_string=request.args.get("search_string")
@@ -307,7 +311,7 @@ def SMB_data_baseprice_mini():
         
 
   
-@app.route('/delete_record_baseprice_minibar',methods=['POST','GET','DELETE'])
+@smb_app1.route('/delete_record_baseprice_category_minibar',methods=['POST','GET','DELETE'])
 def delete_record_baseprice_mini():  
     id_value=request.args.get('id')
     try:
@@ -319,7 +323,7 @@ def delete_record_baseprice_mini():
         return {"status":"failure"},500
 
 
-@app.route('/get_record_baseprice_minibar',methods=['GET','POST'])       
+@smb_app1.route('/get_record_baseprice_category_minibar',methods=['GET','POST'])       
 def get_record_minibar():
     id_value=request.args.get('id')  
     
@@ -337,7 +341,7 @@ def get_record_minibar():
         
 
 
-@app.route('/add_record_baseprice_minibar',methods=['POST'])
+@smb_app1.route('/add_record_baseprice_category_minibar',methods=['POST'])
 def add_record_mini():
     
     today = date.today()
@@ -386,7 +390,7 @@ def add_record_mini():
     return {"status":"success"},200
 
    
-@app.route('/base_price_upload_minibar', methods=['GET','POST'])
+@smb_app1.route('/upload_baseprice_category_minibar', methods=['GET','POST'])
 def  SMB_upload_baseprice_mini():
     
     f=request.files['filename']
@@ -406,7 +410,7 @@ def  SMB_upload_baseprice_mini():
         return {"statuscode":500,"message":"incorrect"},500
 
 
-@app.route('/base_price_validate_baseprice_minibar', methods=['GET','POST'])
+@smb_app1.route('/validate_baseprice_category_minibar', methods=['GET','POST'])
 def  SMB_validate_baseprice_mini():
     
         
@@ -441,7 +445,7 @@ def  SMB_validate_baseprice_mini():
             return {"status":"failure"},500
         
          
-@app.route('/base_price_download_minibar',methods=['GET'])
+@smb_app1.route('/download_baseprice_category_minibar',methods=['GET'])
 def SMB_baseprice_download_minibar():
    
         now = datetime.now()
@@ -455,7 +459,7 @@ def SMB_baseprice_download_minibar():
 # *******************************************************************************************************************************************************************
 # incoterm exceptions
 
-@app.route('/base_price_data_incoterm',methods=['GET','POST'])
+@smb_app1.route('/data_baseprice_incoterm',methods=['GET','POST'])
 def SMB_data_baseprice_incoterm():
     # query_paramters 
     search_string=request.args.get("search_string")
@@ -498,7 +502,7 @@ def SMB_data_baseprice_incoterm():
         
 
   
-@app.route('/delete_record_baseprice_incoterm',methods=['POST','GET','DELETE'])
+@smb_app1.route('/delete_record_baseprice_incoterm',methods=['POST','GET','DELETE'])
 def delete_record_baseprice_incoterm():  
     id_value=request.args.get('id')
     try:
@@ -510,7 +514,7 @@ def delete_record_baseprice_incoterm():
         return {"status":"failure"},500
 
 
-@app.route('/get_record_baseprice_incoterm',methods=['GET','POST'])       
+@smb_app1.route('/get_record_baseprice_incoterm',methods=['GET','POST'])       
 def get_record_incoterm():
     id_value=request.args.get('id')  
     
@@ -528,7 +532,7 @@ def get_record_incoterm():
         
 
 
-@app.route('/add_record_baseprice_incoterm',methods=['POST'])
+@smb_app1.route('/add_record_baseprice_incoterm',methods=['POST'])
 def add_record_incoterm():
     
     today = date.today()
@@ -581,7 +585,7 @@ def add_record_incoterm():
     return {"status":"success"},200
 
    
-@app.route('/base_price_Upload_baseprice_incoterm', methods=['GET','POST'])
+@smb_app1.route('/upload_baseprice_incoterm', methods=['GET','POST'])
 def  SMB_upload_baseprice_incoterm():
     
     f=request.files['filename']
@@ -602,7 +606,7 @@ def  SMB_upload_baseprice_incoterm():
         return {"statuscode":500,"message":"incorrect"},500
 
 
-@app.route('/base_price_validate_baseprice_incoterm', methods=['GET','POST'])
+@smb_app1.route('/validate_baseprice_incoterm', methods=['GET','POST'])
 def  SMB_validate_baseprice_incoterm():
     
         
@@ -637,7 +641,7 @@ def  SMB_validate_baseprice_incoterm():
             return {"status":"failure"},500
         
          
-@app.route('/Base_price_download_incoterm',methods=['GET'])
+@smb_app1.route('/download_baseprice_incoterm',methods=['GET'])
 def SMB_baseprice_download_incoterm():
    
         now = datetime.now()
@@ -652,7 +656,7 @@ def SMB_baseprice_download_incoterm():
 # smb extra certificate
 
 
-@app.route('/data_extra_certificate',methods=['GET','POST'])
+@smb_app1.route('/data_extra_certificate',methods=['GET','POST'])
 def extra_certificate_data():
     # query_paramters 
     search_string=request.args.get("search_string")
@@ -695,7 +699,7 @@ def extra_certificate_data():
         
 
   
-@app.route('/delete_extra_certificate',methods=['POST','GET','DELETE'])
+@smb_app1.route('/delete__record_extra_certificate',methods=['POST','GET','DELETE'])
 def delete_extra_certificate():  
     id_value=request.args.get('id')
     try:
@@ -707,7 +711,7 @@ def delete_extra_certificate():
         return {"status":"failure"},500
 
 
-@app.route('/get_record_extra_certificate',methods=['GET','POST'])       
+@smb_app1.route('/get_record_extra_certificate',methods=['GET','POST'])       
 def get_record_extra_certificate():
     id_value=request.args.get('id')  
     
@@ -725,7 +729,7 @@ def get_record_extra_certificate():
         
 
 
-@app.route('/add_record_extra_certificate',methods=['POST'])
+@smb_app1.route('/add_record_extra_certificate',methods=['POST'])
 def add_record_extra_certificate():
     
     today = date.today()
@@ -775,7 +779,7 @@ def add_record_extra_certificate():
     return {"status":"success"},200
 
    
-@app.route('/Upload_extra_certificate', methods=['GET','POST'])
+@smb_app1.route('/upload_extra_certificate', methods=['GET','POST'])
 def  Upload_extra_certificate():
     
     f=request.files['filename']
@@ -796,7 +800,7 @@ def  Upload_extra_certificate():
         return {"statuscode":500,"message":"incorrect"},500
 
 
-@app.route('/validate_extra_certificate', methods=['GET','POST'])
+@smb_app1.route('/validate_extra_certificate', methods=['GET','POST'])
 def  validate_extra_certificate():
     
         
@@ -831,7 +835,7 @@ def  validate_extra_certificate():
             return {"status":"failure"},500
         
          
-@app.route('/download_extra_certificate',methods=['GET'])
+@smb_app1.route('/download_extra_certificate',methods=['GET'])
 def download_extra_certificate():
    
         now = datetime.now()
@@ -846,7 +850,7 @@ def download_extra_certificate():
 
 
 
-@app.route('/data_extra_certificate_minibar',methods=['GET','POST'])
+@smb_app1.route('/data_extra_certificate_minibar',methods=['GET','POST'])
 def extra_certificate_data_minibar():
     # query_paramters 
     search_string=request.args.get("search_string")
@@ -889,7 +893,7 @@ def extra_certificate_data_minibar():
         
 
   
-@app.route('/delete_extra_certificate_minibar',methods=['POST','GET','DELETE'])
+@smb_app1.route('/delete_extra_certificate_minibar',methods=['POST','GET','DELETE'])
 def delete_extra_certificate_minibar():  
     id_value=request.args.get('id')
     try:
@@ -901,7 +905,7 @@ def delete_extra_certificate_minibar():
         return {"status":"failure"},500
 
 
-@app.route('/get_record_extra_certificate_minibar',methods=['GET','POST'])       
+@smb_app1.route('/get_record_extra_certificate_minibar',methods=['GET','POST'])       
 def get_record_extra_certificate_minibar():
     id_value=request.args.get('id')  
     
@@ -919,7 +923,7 @@ def get_record_extra_certificate_minibar():
         
 
 
-@app.route('/add_record_extra_certificate_minibar',methods=['POST'])
+@smb_app1.route('/add_record_extra_certificate_minibar',methods=['POST'])
 def add_record_extra_certificate_minibar():
     
     today = date.today()
@@ -969,7 +973,7 @@ def add_record_extra_certificate_minibar():
     return {"status":"success"},200
 
    
-@app.route('/upload_extra_certificate_minibar', methods=['GET','POST'])
+@smb_app1.route('/upload_extra_certificate_minibar', methods=['GET','POST'])
 def  Upload_extra_certificate_minibar():
     
     f=request.files['filename']
@@ -990,7 +994,7 @@ def  Upload_extra_certificate_minibar():
         return {"statuscode":500,"message":"incorrect"},500
 
 
-@app.route('/validate_extra_certificate_minibar', methods=['GET','POST'])
+@smb_app1.route('/validate_extra_certificate_minibar', methods=['GET','POST'])
 def  validate_extra_certificate_minibar():
     
         
@@ -1025,7 +1029,7 @@ def  validate_extra_certificate_minibar():
             return {"status":"failure"},500
         
          
-@app.route('/download_extra_certificate_minibar',methods=['GET'])
+@smb_app1.route('/download_extra_certificate_minibar',methods=['GET'])
 def  download_extra_certificate_minibar():
    
         now = datetime.now()
@@ -1040,7 +1044,7 @@ def  download_extra_certificate_minibar():
 # smb delivary mill
 
 
-@app.route('/data_delivery_mill',methods=['GET','POST'])
+@smb_app1.route('/data_delivery_mill',methods=['GET','POST'])
 def data_delivery_mill():
     # query_paramters 
     search_string=request.args.get("search_string")
@@ -1083,7 +1087,7 @@ def data_delivery_mill():
         
 
   
-@app.route('/delete_record_delivery_mill',methods=['POST','GET','DELETE'])
+@smb_app1.route('/delete_record_delivery_mill',methods=['POST','GET','DELETE'])
 def delete_record_delivery_mill():  
     id_value=request.args.get('id')
     try:
@@ -1095,7 +1099,7 @@ def delete_record_delivery_mill():
         return {"status":"failure"},500
 
 
-@app.route('/get_record_delivery_mill',methods=['GET','POST'])       
+@smb_app1.route('/get_record_delivery_mill',methods=['GET','POST'])       
 def get_record_delivery_mill():
     id_value=request.args.get('id')  
     
@@ -1113,7 +1117,7 @@ def get_record_delivery_mill():
         
 
 
-@app.route('/add_record_delivery_mill',methods=['POST'])
+@smb_app1.route('/add_record_delivery_mill',methods=['POST'])
 def add_record_delivery_mill():
     
     today = date.today()
@@ -1162,7 +1166,7 @@ def add_record_delivery_mill():
     return {"status":"success"},200
 
    
-@app.route('/upload_delivery_mill', methods=['GET','POST'])
+@smb_app1.route('/upload_delivery_mill', methods=['GET','POST'])
 def upload_delivery_mill():
     
     f=request.files['filename']
@@ -1183,7 +1187,7 @@ def upload_delivery_mill():
         return {"statuscode":500,"message":"incorrect"},500
 
 
-@app.route('/validate_delivery_mill', methods=['GET','POST'])
+@smb_app1.route('/validate_delivery_mill', methods=['GET','POST'])
 def  validate_delivery_mill():
     
         
@@ -1218,7 +1222,7 @@ def  validate_delivery_mill():
             return {"status":"failure"},500
         
          
-@app.route('/download_delivery_mill',methods=['GET'])
+@smb_app1.route('/download_delivery_mill',methods=['GET'])
 def download_delivery_mill():
    
         now = datetime.now()
@@ -1236,7 +1240,7 @@ def download_delivery_mill():
 
 
 
-@app.route('/data_delivery_mill_minibar',methods=['GET','POST'])
+@smb_app1.route('/data_delivery_mill_minibar',methods=['GET','POST'])
 def data_delivery_mill_minibar():
     # query_paramters 
     search_string=request.args.get("search_string")
@@ -1280,7 +1284,7 @@ def data_delivery_mill_minibar():
         
 
   
-@app.route('/delete_record_delivery_mill_minibar',methods=['POST','GET','DELETE'])
+@smb_app1.route('/delete_record_delivery_mill_minibar',methods=['POST','GET','DELETE'])
 def delete_record_delivery_mill_minibar():  
     id_value=request.args.get('id')
     try:
@@ -1292,7 +1296,7 @@ def delete_record_delivery_mill_minibar():
         return {"status":"failure"},500
 
 
-@app.route('/get_record_delivery_mill_minibar',methods=['GET','POST'])       
+@smb_app1.route('/get_record_delivery_mill_minibar',methods=['GET','POST'])       
 def get_record_delivery_mill_minibar():
     id_value=request.args.get('id')  
     
@@ -1310,7 +1314,7 @@ def get_record_delivery_mill_minibar():
         
 
 
-@app.route('/add_record_delivery_mill_minibar',methods=['POST'])
+@smb_app1.route('/add_record_delivery_mill_minibar',methods=['POST'])
 def add_record_delivery_mill_minibar():
     
     today = date.today()
@@ -1360,7 +1364,7 @@ def add_record_delivery_mill_minibar():
     return {"status":"success"},200
 
    
-@app.route('/upload_delivery_mill_minibar', methods=['GET','POST'])
+@smb_app1.route('/upload_delivery_mill_minibar', methods=['GET','POST'])
 def upload_delivery_mill_minibar():
     
     f=request.files['filename']
@@ -1381,7 +1385,7 @@ def upload_delivery_mill_minibar():
         return {"statuscode":500,"message":"incorrect"},500
 
 
-@app.route('/validate_delivery_mill_minibar', methods=['GET','POST'])
+@smb_app1.route('/validate_delivery_mill_minibar', methods=['GET','POST'])
 def  validate_delivery_mill_minibar():
     
         
@@ -1416,7 +1420,7 @@ def  validate_delivery_mill_minibar():
             return {"status":"failure"},500
         
          
-@app.route('/download_delivery_mill_minibar',methods=['GET'])
+@smb_app1.route('/download_delivery_mill_minibar',methods=['GET'])
 def download_delivery_mill_minibar():
    
         now = datetime.now()
@@ -1428,7 +1432,4 @@ def download_delivery_mill_minibar():
 
 
 
-
-if __name__ == '__main__':
-    app.run()
 
