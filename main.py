@@ -11,6 +11,7 @@ from flask_cors import CORS
 from Alloy_scrap import scrap_app
 from smb_phase1 import smb_app1
 from smb_phase2 import smb_app2
+from smb_phase3 import smb_app3
 
 app = Flask(__name__)
 CORS(app)
@@ -25,6 +26,7 @@ app.register_blueprint(scrap_app)
 app.register_blueprint(smb_app1)
 
 app.register_blueprint(smb_app2)
+app.register_blueprint(smb_app3)
 
 
 

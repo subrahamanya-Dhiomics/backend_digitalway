@@ -115,7 +115,7 @@ def  freight_parity():
         count=db.query('select count(*) from "SMB"."SMB - Extra - Freight Parity"')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
-        df.rename(columns={"Market_-_Country":"Market_Country"},inplace=True)
+        df.rename(columns={"Market_-_Country":"Market_Country","Zip_Code_(Dest)":"Zip_Code_Dest"},inplace=True)
         
         if(search_string!="all" and search_string!=None):
                       df=df[df.eq(search_string).any(1)]
@@ -151,7 +151,8 @@ def get_record_freight_parity():
     try:
         df = pd.read_sql(query, con=con)
         df.columns = df.columns.str.replace(' ', '_')
-        df.rename(columns={"Market_-_Country":"Market_Country"},inplace=True)
+        df.rename(columns={"Market_-_Country":"Market_Country","Zip_Code_(Dest)":"Zip_Code_Dest"},inplace=True)
+        
         record=json.loads(df.to_json(orient='records'))
         return {"record":record},200
     except:
@@ -171,7 +172,7 @@ def add_record_frieght_parity():
     
     Delivering_Mill=(query_parameters["Delivering_Mill"])
     Market_Country=(query_parameters['Market_Country'])
-    Zip_Code=(query_parameters['Zip_Code_(Dest)'])
+    Zip_Code_Dest=(query_parameters['Zip_Code_Dest'])
     
     Product_Division =( query_parameters["Product_Division"])
     
@@ -185,7 +186,7 @@ def add_record_frieght_parity():
     id_value=db.query('select max("id") from "SMB"."SMB - Extra - Freight Parity"')
     id_value=(id_value[0][0]+1)
    
-    input_tuple=(id_value, username, date_time,Delivering_Mill,Market_Country,Zip_Code, Product_Division,Document_Item_Currency, Amount, Currency.strip("'"))
+    input_tuple=(id_value, username, date_time,Delivering_Mill,Market_Country,Zip_Code_Dest, Product_Division,Document_Item_Currency, Amount, Currency.strip("'"))
     
     query='''INSERT INTO "SMB"."SMB - Extra - Freight Parity"(
          "id",
@@ -221,7 +222,7 @@ def upload_freight_parity():
        'Zip Code (Dest)', 'Product Division', 'Document Item Currency',
        'Amount', 'Currency']]  
         df.columns = df.columns.str.replace(' ', '_')
-        df.rename(columns={"Market_-_Country":"Market_Country"},inplace=True)  
+        df.rename(columns={"Market_-_Country":"Market_Country","Zip_Code_(Dest)":"Zip_Code_Dest"},inplace=True)
         table=json.loads(df.to_json(orient='records'))
         
         return {"data":table},200
@@ -246,7 +247,7 @@ def  validate_freight_parity():
             id_value=(id_value[0][0]+1)
             
             df.columns = df.columns.str.replace('_', ' ')
-            df.rename(columns={"Market Country":"Market - Country"},inplace=True)
+            df.rename(columns={"Market Country":"Market - Country","Zip Code Dest":"Zip_Code_(Dest)"},inplace=True)
             
             
             
@@ -307,7 +308,7 @@ def  freight_parity_minibar():
         count=db.query('select count(*) from "SMB"."SMB - Extra - Freight Parity - MiniBar"')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
-        df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer_Group":"Market_Customer_Group","Market_-_Customer":"Market_Customer"},inplace=True)  
+        df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer_Group":"Market_Customer_Group","Market_-_Customer":"Market_Customer","Zip_Code_(Dest)":"Zip_Code_Dest"},inplace=True)  
                 
             
         if(search_string!="all" and search_string!=None):
@@ -344,8 +345,8 @@ def get_record_freight_parity_minibar():
     try:
         df = pd.read_sql(query, con=con)
         df.columns = df.columns.str.replace(' ', '_')
-        df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer_Group":"Market_Customer_Group","Market_-_Customer":"Market_Customer"},inplace=True)  
-    
+        df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer_Group":"Market_Customer_Group","Market_-_Customer":"Market_Customer","Zip_Code_(Dest)":"Zip_Code_Dest"},inplace=True)  
+           
         record=json.loads(df.to_json(orient='records'))
         return {"record":record},200
     except:
@@ -368,7 +369,7 @@ def add_record_frieght_parity_minibar():
     Market_Customer_Group=(query_parameters['Market_Customer_Group'])
     Market_Customer=(query_parameters['Market_Customer'])
    
-    Zip_Code=(query_parameters['Zip_Code_(Dest)'])
+    Zip_Code_Dest=(query_parameters['Zip_Code_Dest'])
     
     Product_Division =( query_parameters["Product_Division"])
     
@@ -382,7 +383,7 @@ def add_record_frieght_parity_minibar():
     id_value=db.query('select max("id") from "SMB"."SMB - Extra - Freight Parity - MiniBar"')
     id_value=(id_value[0][0]+1)
    
-    input_tuple=(id_value, username, date_time,Delivering_Mill,Market_Country,Market_Customer_Group,Market_Customer,Zip_Code, Product_Division,Document_Item_Currency, Amount, Currency.strip("'"))
+    input_tuple=(id_value, username, date_time,Delivering_Mill,Market_Country,Market_Customer_Group,Market_Customer,Zip_Code_Dest, Product_Division,Document_Item_Currency, Amount, Currency.strip("'"))
     
     query='''INSERT INTO "SMB"."SMB - Extra - Freight Parity - MiniBar"(
          "id",
@@ -419,8 +420,8 @@ def upload_freight_parity_minibar():
        'Market - Customer Group', 'Market - Customer', 'Zip Code (Dest)',
        'Product Division', 'Document Item Currency', 'Amount', 'Currency']]  
         df.columns = df.columns.str.replace(' ', '_')
-        df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer_Group":"Market_Customer_Group","Market_-_Customer":"Market_Customer"},inplace=True)  
-    
+        df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer_Group":"Market_Customer_Group","Market_-_Customer":"Market_Customer","Zip_Code_(Dest)":"Zip_Code_Dest"},inplace=True)  
+           
         table=json.loads(df.to_json(orient='records'))
         
         return {"data":table},200
@@ -445,7 +446,7 @@ def  validate_freight_parity_minibar():
             id_value=(id_value[0][0]+1)
             
             df.columns = df.columns.str.replace('_', ' ')
-            df.rename(columns={"Market Country":"Market - Country","Market Customer Group":"Market - Customer Group","Market Customer":"Market - Customer"},inplace=True)
+            df.rename(columns={"Market Country":"Market - Country","Market Customer Group":"Market - Customer Group","Market Customer":"Market - Customer","Zip Code Dest":"Zip_Code_(Dest)"},inplace=True)
             
             
             
@@ -664,7 +665,7 @@ def  validate_extra_grade():
             return {"status":"failure"},500
         
          
-@smb_app2.route('/download_freight_extra_grade',methods=['GET'])
+@smb_app2.route('/download_extra_grade',methods=['GET'])
 def download_extra_grade():
    
         now = datetime.now()
@@ -1289,6 +1290,432 @@ def download_extra_profile_minibar():
         df.drop(['Username','date_time','id'],axis=1,inplace=True)
         df.to_excel('C:/Users/Administrator/Downloads/'+now.strftime("%d-%m-%Y-%H-%M-%S") +'bse_price.xlsx',index=False)
         return {"status":"success"},200
+
+
+
+
+# ***********************************************************************************************************************************************************************
+#  "SMB"."SMB - Extra - Profile Iberia and Italy"
+
+
+
+@smb_app2.route('/data_extra_profile_Iberia',methods=['GET','POST'])
+def  extra_profile_minibar_iberia():
+    # query_paramters 
+    search_string=request.args.get("search_string")
+    
+    limit=request.args.get("limit",type=int)
+    offset=request.args.get("offset",type=int)
+    
+    # pagination logic
+    lowerLimit=offset*limit 
+    upperLimit=lowerLimit+limit
+    
+    query='''select max("date_time") from "SMB"."SMB - Extra - Profile Iberia and Italy"'''
+    
+    date_time_raw=db.query(query)
+    date_time= date_time_raw[0][0].strftime("%m/%d/%Y, %H:%M:%S")
+    
+    try:
+        search_string=int(search_string)
+    except:
+        search_string=search_string   
+    
+    
+    # fetching the data from database and filtering    
+    try:
+        df = pd.read_sql('''select *  from "SMB"."SMB - Extra - Profile Iberia and Italy" where extract(month from "date_time")=extract(month from now()) order by "id" desc OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        count=db.query('select count(*) from "SMB"."SMB - Extra - Profile Iberia and Italy"')[0][0]
+        df.columns = df.columns.str.replace(' ', '_')
+        
+        df.rename(columns={"Market_-_Country":"Market_Country"},inplace=True)  
+           
+            
+        if(search_string!="all" and search_string!=None):
+                      df=df[df.eq(search_string).any(1)]
+        
+        table=json.loads(df.to_json(orient='records'))
+        
+        return {"data":table,"totalCount":count,"date_time":date_time},200         
+    except:
+        return {"statuscode":500,"msg":"failure"},500
+        
+
+        
+
+  
+@smb_app2.route('/delete_record_extra_profile_Iberia',methods=['POST','GET','DELETE'])
+def delete_record_extra_profile_Iberia():  
+    id_value=request.args.get('id')
+    try:
+        query='''delete  from "SMB"."SMB - Extra - Profile Iberia and Italy" where "id"={}'''.format(id_value)
+        db.insert(query)
+        
+        return {"status":"success"},200
+    except:
+        return {"status":"failure"},500
+
+
+@smb_app2.route('/get_record_extra_profile_Iberia',methods=['GET','POST'])       
+def get_record_extra_profile_Iberia():
+    id_value=request.args.get('id')  
+    
+    query='''SELECT * FROM "SMB"."SMB - Extra - Profile Iberia and Italy" where id={}'''.format(id_value)
+    
+    try:
+        df = pd.read_sql(query, con=con)
+        df.columns = df.columns.str.replace(' ', '_')
+        df.rename(columns={"Market_-_Country":"Market_Country"},inplace=True)  
+         
+        record=json.loads(df.to_json(orient='records'))
+        return {"record":record},200
+    except:
+        return {"status":"failure"},500
+    
+        
+
+
+@smb_app2.route('/add_record_extra_profile_Iberia',methods=['POST'])
+def add_record_extra_profile_Iberia():
+    
+    today = date.today()
+    username = getpass.getuser()
+    now = datetime.now()
+    date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
+    query_parameters =json.loads(request.data)
+    
+    
+    
+    BusinessCode=(query_parameters["BusinessCode"])
+   
+    Market_Country=(query_parameters['Market_Country'])
+    Delivering_Mill=(query_parameters['Delivering_Mill'])
+    Product_Level_02=(query_parameters['Product_Level_02'])
+    Product_Level_05=(query_parameters['Product_Level_05'])
+    
+   
+    
+    
+    Document_Item_Currency =( query_parameters["Document_Item_Currency"])
+    Amount =( query_parameters["Amount"])
+    Currency =( query_parameters["Currency"])
+    
+    try:
+        
+  
+   
+        id_value=db.query('select max("id") from "SMB"."SMB - Extra - Profile Iberia and Italy"')
+        id_value=(id_value[0][0]+1)
+       
+        input_tuple=(id_value, username, date_time,BusinessCode,Market_Country,Delivering_Mill,Product_Level_02,Product_Level_05,Document_Item_Currency, Amount, Currency.strip("'"))
+        
+        query='''INSERT INTO "SMB"."SMB - Extra - Profile Iberia and Italy"(
+             "id",
+             "Username",
+             "date_time",
+             "BusinessCode",
+             
+       "Market - Country", 
+        "Delivering Mill",
+       "Product Level 02", 
+       
+       "Product Level 05",
+       
+      
+             "Document Item Currency",
+             "Amount",
+             "Currency")
+             VALUES{};'''.format(input_tuple)
+         
+       
+        db.insert(query)
+        return {"status":"success"},200
+    except:
+        return {"status":"failure"},500
+   
+@smb_app2.route('/upload_extra_profile_Iberia', methods=['GET','POST'])
+def upload_extra_profile_Iberia():
+    
+    f=request.files['filename']
+    try:
+            
+        f.save(input_directory+f.filename)
+        smb_df=pd.read_excel(input_directory+f.filename)
+        
+        df=smb_df[['id', 'Username', 'date_time', 'BusinessCode', 'Market - Country',
+       'Delivering Mill', 'Product Level 02', 'Product Level 05',
+       'Document Item Currency', 'Amount', 'Currency']]  
+        df.columns = df.columns.str.replace(' ', '_')
+        df.rename(columns={"Market_-_Country":"Market_Country"},inplace=True)  
+         
+        table=json.loads(df.to_json(orient='records'))
+        
+        return {"data":table},200
+    except:
+        return {"statuscode":500,"message":"incorrect"},500
+
+
+@smb_app2.route('/validate_extra_profile_Iberia', methods=['GET','POST'])
+def  validate_extra_profile_Iberia():
+    
+        
+        json_data=json.loads(request.data)
+        
+        try:
+            df=pd.DataFrame(json_data["billet"])  
+            
+            username = getpass.getuser()
+            now = datetime.now()
+            date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
+            
+            id_value=db.query('select max("id") from "SMB"."SMB - Extra - Profile Iberia and Italy"')
+            id_value=(id_value[0][0]+1)
+            
+            df.columns = df.columns.str.replace('_', ' ')
+            df.rename(columns={"Market Country":"Market - Country"},inplace=True)
+            
+            
+            
+            df.insert(0, 'id', range(id_value, id_value + len(df)))
+            df.insert(1,'Username',username)
+            df.insert(2,'date_time',date_time)
+            
+            df['id']=df['id'].astype(int)
+            df['date_time']=pd.to_datetime(df['date_time'])
+            
+            df.to_sql("SMB - Extra - Profile Iberia and Italy",con=engine, schema='SMB',if_exists='append', index=False)
+            
+            return {"status":"success"},200
+        except:
+            return {"status":"failure"},500
+        
+         
+@smb_app2.route('/download_extra_profile_Iberia',methods=['GET'])
+def download_extra_profile_Iberia():
+   
+        now = datetime.now()
+        df = pd.read_sql('''select *  from "SMB"."SMB - Extra - Profile Iberia and Italy" where extract(month from "date_time")=extract(month from now()) order by "id" desc''', con=con)
+        df.drop(['Username','date_time','id'],axis=1,inplace=True)
+        df.to_excel('C:/Users/Administrator/Downloads/'+now.strftime("%d-%m-%Y-%H-%M-%S") +'bse_price.xlsx',index=False)
+        return {"status":"success"},200
+
+
+
+# ***********************************************************************************************************************************************************************
+#  "SMB"."SMB - Extra - Profile Iberia and Italy minibar"
+
+
+
+@smb_app2.route('/data_extra_profile_Iberia_minibar',methods=['GET','POST'])
+def  extra_profile_minibar_iberia_minibar():
+    # query_paramters 
+    search_string=request.args.get("search_string")
+    
+    limit=request.args.get("limit",type=int)
+    offset=request.args.get("offset",type=int)
+    
+    # pagination logic
+    lowerLimit=offset*limit 
+    upperLimit=lowerLimit+limit
+    
+    query='''select max("date_time") from "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar"'''
+    
+    date_time_raw=db.query(query)
+    date_time= date_time_raw[0][0].strftime("%m/%d/%Y, %H:%M:%S")
+    
+    try:
+        search_string=int(search_string)
+    except:
+        search_string=search_string   
+    
+    
+    # fetching the data from database and filtering    
+    try:
+        df = pd.read_sql('''select *  from "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar" where extract(month from "date_time")=extract(month from now()) order by "id" desc OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        count=db.query('select count(*) from "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar"')[0][0]
+        df.columns = df.columns.str.replace(' ', '_')
+        
+        df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer_Group":"Market_Customer_Group","Market_-_Customer":"Market_Customer"},inplace=True)  
+             
+            
+        if(search_string!="all" and search_string!=None):
+                      df=df[df.eq(search_string).any(1)]
+        
+        table=json.loads(df.to_json(orient='records'))
+        
+        return {"data":table,"totalCount":count,"date_time":date_time},200         
+    except:
+        return {"statuscode":500,"msg":"failure"},500
+        
+
+        
+
+  
+@smb_app2.route('/delete_record_extra_profile_Iberia_minibar',methods=['POST','GET','DELETE'])
+def delete_record_extra_profile_Iberia_minibar():  
+    id_value=request.args.get('id')
+    try:
+        query='''delete  from "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar" where "id"={}'''.format(id_value)
+        db.insert(query)
+        
+        return {"status":"success"},200
+    except:
+        return {"status":"failure"},500
+
+
+@smb_app2.route('/get_record_extra_profile_Iberia_minibar',methods=['GET','POST'])       
+def get_record_extra_profile_Iberia_minibar():
+    id_value=request.args.get('id')  
+    
+    query='''SELECT * FROM "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar" where id={}'''.format(id_value)
+    
+    try:
+        df = pd.read_sql(query, con=con)
+        df.columns = df.columns.str.replace(' ', '_')
+        df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer_Group":"Market_Customer_Group","Market_-_Customer":"Market_Customer"},inplace=True)  
+          
+        record=json.loads(df.to_json(orient='records'))
+        return {"record":record},200
+    except:
+        return {"status":"failure"},500
+    
+        
+
+
+@smb_app2.route('/add_record_extra_profile_Iberia_minibar',methods=['POST'])
+def add_record_extra_profile_Iberia_minibar():
+    
+    today = date.today()
+    username = getpass.getuser()
+    now = datetime.now()
+    date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
+    query_parameters =json.loads(request.data)
+    
+    
+    
+    BusinessCode=(query_parameters["BusinessCode"])
+   
+    Market_Country=(query_parameters['Market_Country'])
+    Market_Customer_Group=(query_parameters['Market_Customer_Group'])
+    Market_Customer=(query_parameters['Market_Customer'])
+    
+    Delivering_Mill=(query_parameters['Delivering_Mill'])
+    Product_Level_02=(query_parameters['Product_Level_02'])
+    Product_Level_05=(query_parameters['Product_Level_05'])
+    
+   
+    
+    
+    Document_Item_Currency =( query_parameters["Document_Item_Currency"])
+    Amount =( query_parameters["Amount"])
+    Currency =( query_parameters["Currency"])
+    
+    try:
+        
+  
+   
+        id_value=db.query('select max("id") from "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar"')
+        id_value=(id_value[0][0]+1)
+       
+        input_tuple=(id_value, username, date_time,BusinessCode,Market_Country,Market_Customer_Group,Market_Customer,Delivering_Mill,Product_Level_02,Product_Level_05,Document_Item_Currency, Amount, Currency.strip("'"))
+        
+        query='''INSERT INTO "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar"(
+             "id",
+             "Username",
+             "date_time",
+             "BusinessCode",
+             
+       "Market - Country",
+       "Market - Customer Group",
+       "Market - Customer", 
+        "Delivering Mill",
+       "Product Level 02", 
+       
+       "Product Level 05",
+       
+      
+             "Document Item Currency",
+             "Amount",
+             "Currency")
+             VALUES{};'''.format(input_tuple)
+         
+       
+        db.insert(query)
+        return {"status":"success"},200
+    except:
+        return {"status":"failure"},500
+   
+@smb_app2.route('/upload_extra_profile_Iberia_minibar', methods=['GET','POST'])
+def upload_extra_profile_Iberia_minibar():
+    
+    f=request.files['filename']
+    try:
+            
+        f.save(input_directory+f.filename)
+        smb_df=pd.read_excel(input_directory+f.filename)
+        
+        df=smb_df[['id', 'Username', 'date_time', 'BusinessCode', 'Market - Country',
+       'Market - Customer Group', 'Market - Customer', 'Delivering Mill',
+       'Product Level 02', 'Product Level 05', 'Document Item Currency',
+       'Amount', 'Currency']]  
+        df.columns = df.columns.str.replace(' ', '_')
+        df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer_Group":"Market_Customer_Group","Market_-_Customer":"Market_Customer"},inplace=True)  
+          
+        table=json.loads(df.to_json(orient='records'))
+        
+        return {"data":table},200
+    except:
+        return {"statuscode":500,"message":"incorrect"},500
+
+
+@smb_app2.route('/validate_extra_profile_Iberia_minibar', methods=['GET','POST'])
+def  validate_extra_profile_Iberia_minibar():
+    
+        
+        json_data=json.loads(request.data)
+        
+        try:
+            df=pd.DataFrame(json_data["billet"])  
+            
+            username = getpass.getuser()
+            now = datetime.now()
+            date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
+            
+            id_value=db.query('select max("id") from "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar"')
+            id_value=(id_value[0][0]+1)
+            
+            df.columns = df.columns.str.replace('_', ' ')
+            df.rename(columns={"Market Country":"Market - Country","Market Customer Group":"Market - Customer Group","Market Customer":"Market - Customer"},inplace=True)
+            
+            
+            
+            df.insert(0, 'id', range(id_value, id_value + len(df)))
+            df.insert(1,'Username',username)
+            df.insert(2,'date_time',date_time)
+            
+            df['id']=df['id'].astype(int)
+            df['date_time']=pd.to_datetime(df['date_time'])
+            
+            df.to_sql("SMB - Extra - Profile Iberia and Italy - MiniBar",con=engine, schema='SMB',if_exists='append', index=False)
+            
+            return {"status":"success"},200
+        except:
+            return {"status":"failure"},500
+        
+         
+@smb_app2.route('/download_extra_profile_Iberia_minibar',methods=['GET'])
+def download_extra_profile_Iberia_minibar():
+   
+        now = datetime.now()
+        df = pd.read_sql('''select *  from "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar" where extract(month from "date_time")=extract(month from now()) order by "id" desc''', con=con)
+        df.drop(['Username','date_time','id'],axis=1,inplace=True)
+        df.to_excel('C:/Users/Administrator/Downloads/'+now.strftime("%d-%m-%Y-%H-%M-%S") +'bse_price.xlsx',index=False)
+        return {"status":"success"},200
+
+
+
+
+
 
 
 
