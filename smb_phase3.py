@@ -216,7 +216,7 @@ def upload_transport():
         f.save(input_directory+f.filename)
         smb_df=pd.read_excel(input_directory+f.filename)
         
-        df=smb_df[['id', 'Username', 'date_time', 'Product Division', 'Market - Country',
+        df=smb_df[[ 'Product Division', 'Market - Country',
        'Transport Mode', 'Document Item Currency', 'Amount', 'Currency']]  
         df.columns = df.columns.str.replace(' ', '_')
         df.rename(columns={"Market_-_Country":"Market_Country"},inplace=True)  
@@ -411,7 +411,7 @@ def upload_transport_minibar():
         f.save(input_directory+f.filename)
         smb_df=pd.read_excel(input_directory+f.filename)
         
-        df=smb_df[['id', 'Username', 'date_time', 'Product Division', 'Market - Country',
+        df=smb_df[[ 'Product Division', 'Market - Country',
        'Market - Customer Group', 'Market - Customer', 'Transport Mode',
        'Document Item Currency', 'Amount', 'Currency']]  
         df.columns = df.columns.str.replace(' ', '_')
@@ -610,7 +610,7 @@ def upload_length_production():
         f.save(input_directory+f.filename)
         smb_df=pd.read_excel(input_directory+f.filename)
         
-        df=smb_df[['id', 'Username', 'date_time', 'BusinessCode', 'Country Group',
+        df=smb_df[[ 'BusinessCode', 'Country Group',
        'Market - Country', 'Delivering Mill', 'Length', 'Length From',
        'Length To', 'Document Item Currency', 'Amount', 'Currency']]  
         df.columns = df.columns.str.replace(' ', '_')
@@ -815,7 +815,7 @@ def upload_length_production_minibar():
         f.save(input_directory+f.filename)
         smb_df=pd.read_excel(input_directory+f.filename)
         
-        df=smb_df[['id', 'Username', 'date_time', 'BusinessCode', 'Customer Group',
+        df=smb_df[[ 'BusinessCode', 'Customer Group',
        'Market - Customer', 'Market - Country', 'Delivering Mill', 'Length ',
        'Length From', 'Length To', 'Document Item Currency', 'Amount',
        'Currency']]  
@@ -1018,7 +1018,7 @@ def upload_length_logistic():
         f.save(input_directory+f.filename)
         smb_df=pd.read_excel(input_directory+f.filename)
         
-        df=smb_df[['id', 'Username', 'date_time', 'Country Group', 'Market - Country',
+        df=smb_df[[ 'Country Group', 'Market - Country',
        'Delivering Mill', 'Length', 'Length From', 'Length To',
        'Transport Mode', 'Document Item Currency', 'Amount', 'Currency']]  
         df.columns = df.columns.str.replace(' ', '_')
@@ -1165,7 +1165,7 @@ def add_record_length_logistic_minibar():
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     query_parameters =json.loads(request.data)
     
-    Customer_Group=(query_parameters['Customer_Group'])
+    
     Market_Customer=(query_parameters['Market_Customer'])
     
     
@@ -1189,13 +1189,13 @@ def add_record_length_logistic_minibar():
     id_value=db.query('select max("id") from "SMB"."SMB - Extra - Length Logistic - MiniBar"')
     id_value=(id_value[0][0]+1)
    
-    input_tuple=(id_value, username, date_time,Customer_Group,Market_Customer,Market_Country,Delivering_Mill,Length,Length_From,Length_To,Transport_Mode,Document_Item_Currency, Amount, Currency.strip("'"))
+    input_tuple=(id_value, username, date_time,Market_Customer,Market_Country,Delivering_Mill,Length,Length_From,Length_To,Transport_Mode,Document_Item_Currency, Amount, Currency.strip("'"))
     
     query='''INSERT INTO "SMB"."SMB - Extra - Length Logistic - MiniBar"(
          "id",
          "Username",
          "date_time",
-         "Customer Group",
+         
          "Market - Customer",
        "Market - Country", 
        "Delivering Mill",
@@ -1223,7 +1223,7 @@ def upload_length_logistic_minibar():
         f.save(input_directory+f.filename)
         smb_df=pd.read_excel(input_directory+f.filename)
         
-        df=smb_df[['id', 'Username', 'date_time', 'Customer Group', 'Market - Customer',
+        df=smb_df[[ 'Customer Group', 'Market - Customer',
        'Market - Country', 'Delivering Mill', 'Length', 'Length From',
        'Length To', 'Transport Mode', 'Document Item Currency', 'Amount',
        'Currency']]  

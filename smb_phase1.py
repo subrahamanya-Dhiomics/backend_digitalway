@@ -275,6 +275,7 @@ def SMB_data_baseprice_mini():
     
     limit=request.args.get("limit",type=int)
     offset=request.args.get("offset",type=int)
+
     
     # pagination logic
     lowerLimit=offset*limit 
@@ -399,8 +400,8 @@ def  SMB_upload_baseprice_mini():
         f.save(input_directory+f.filename)
         smb_df=pd.read_excel(input_directory+f.filename)
         
-        df=smb_df[['id', 'Username', 'date_time', 'BusinessCode', 'Customer_Group',
-       'Market - Customer', 'Market - Country', 'Beam Category','Document Item_Currency', 'Amount', 'Currency']]  
+        df=smb_df[[ 'BusinessCode', 'Customer Group',
+       'Market - Customer', 'Market - Country', 'Beam Category','Document Item Currency', 'Amount', 'Currency']]  
         df.columns = df.columns.str.replace(' ', '_')
         df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer":"Market_Customer"},inplace=True)  
         table=json.loads(df.to_json(orient='records'))
@@ -588,23 +589,22 @@ def add_record_incoterm():
 @smb_app1.route('/upload_baseprice_incoterm', methods=['GET','POST'])
 def  SMB_upload_baseprice_incoterm():
     
-    f=request.files['filename']
-    try:
-            
-        f.save(input_directory+f.filename)
-        smb_df=pd.read_excel(input_directory+f.filename)
-        
-        df=smb_df[['id', 'Username', 'date_time', 'Market - Country', 'Customer Group',
-       'Incoterm1', 'Product Division', 'Beam Category', 'Delivering Mill',
-       'Document Item Currency', 'Amount', 'Currency']]  
-        df.columns = df.columns.str.replace(' ', '_')
-        df.rename(columns={"Market_-_Country":"Market_Country"},inplace=True)  
-        table=json.loads(df.to_json(orient='records'))
-        
-        return {"data":table},200
-    except:
-        return {"statuscode":500,"message":"incorrect"},500
-
+     f=request.files['filename']
+     
+     f.save(input_directory+f.filename)
+     smb_df=pd.read_excel(input_directory+f.filename)
+     
+     df=smb_df[['Market - Country', 'Customer Group',
+    'Incoterm1', 'Product Division', 'Beam Category', 'Delivering Mill',
+    'Document Item Currency', 'Amount', 'Currency']]  
+     df.columns = df.columns.str.replace(' ', '_')
+     df.rename(columns={"Market_-_Country":"Market_Country"},inplace=True)  
+     table=json.loads(df.to_json(orient='records'))
+     print(table)
+     print(df)
+     
+     return {"data":table},200
+   
 
 @smb_app1.route('/validate_baseprice_incoterm', methods=['GET','POST'])
 def  SMB_validate_baseprice_incoterm():
@@ -788,7 +788,7 @@ def  Upload_extra_certificate():
         f.save(input_directory+f.filename)
         smb_df=pd.read_excel(input_directory+f.filename)
         
-        df=smb_df[['id', 'Username', 'date_time', 'BusinessCode', 'Certificate',
+        df=smb_df[[ 'BusinessCode', 'Certificate',
        'Grade Category', 'Market - Country', 'Delivering Mill',
        'Document Item Currency', 'Amount', 'Currency']]  
         df.columns = df.columns.str.replace(' ', '_')
@@ -893,7 +893,7 @@ def extra_certificate_data_minibar():
         
 
   
-@smb_app1.route('/delete_extra_certificate_minibar',methods=['POST','GET','DELETE'])
+@smb_app1.route('/delete_record_extra_certificate_minibar',methods=['POST','GET','DELETE'])
 def delete_extra_certificate_minibar():  
     id_value=request.args.get('id')
     try:
@@ -982,7 +982,7 @@ def  Upload_extra_certificate_minibar():
         f.save(input_directory+f.filename)
         smb_df=pd.read_excel(input_directory+f.filename)
         
-        df=smb_df[['id', 'Username', 'date_time', 'BusinessCode', 'Customer Group',
+        df=smb_df[[ 'BusinessCode', 'Customer Group',
        'Market - Customer', 'Market - Country', 'Certificate',
        'Grade Category', 'Document Item Currency', 'Amount', 'Currency']]  
         df.columns = df.columns.str.replace(' ', '_')
@@ -1149,10 +1149,10 @@ def add_record_delivery_mill():
          "Username",
          "date_time",
          "BusinessCode", 
-         "Market_Country",
-       "Delivering_Mill",
-       "Product_Division",
-       "Beam_Category",
+         "Market - Country",
+       "Delivering Mill",
+       "Product Division",
+       "Beam Category",
        
       
          "Document Item Currency",
@@ -1175,7 +1175,7 @@ def upload_delivery_mill():
         f.save(input_directory+f.filename)
         smb_df=pd.read_excel(input_directory+f.filename)
         
-        df=smb_df[['id', 'Username', 'date_time', 'BusinessCode', 'Market - Country',
+        df=smb_df[[ 'BusinessCode', 'Market - Country',
        'Delivering Mill', 'Product Division', 'Beam Category',
        'Document Item Currency', 'Amount', 'Currency']]  
         df.columns = df.columns.str.replace(' ', '_')
@@ -1373,7 +1373,7 @@ def upload_delivery_mill_minibar():
         f.save(input_directory+f.filename)
         smb_df=pd.read_excel(input_directory+f.filename)
         
-        df=smb_df[['id', 'Username', 'date_time', 'Market - Country',
+        df=smb_df[['Market - Country',
        'Market - Customer Group', 'Market - Customer', 'Delivering Mill',
        'Product Division', 'Document Item Currency', 'Amount', 'Currency']]  
         df.columns = df.columns.str.replace(' ', '_')
@@ -1424,6 +1424,7 @@ def  validate_delivery_mill_minibar():
 def download_delivery_mill_minibar():
    
         now = datetime.now()
+        print("hi")
         df = pd.read_sql('''select *  from "SMB"."SMB - Extra - Delivery Mill - MiniBar" where extract(month from "date_time")=extract(month from now()) order by "id" desc''', con=con)
         df.drop(['Username','date_time','id'],axis=1,inplace=True)
         df.to_excel('C:/Users/Administrator/Downloads/'+now.strftime("%d-%m-%Y-%H-%M-%S") +'bse_price.xlsx',index=False)

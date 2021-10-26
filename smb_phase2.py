@@ -192,9 +192,9 @@ def add_record_frieght_parity():
          "id",
          "Username",
          "date_time",
-         "Delivering_Mill",
-         "Market_Country",
-       "Zip_Code_(Dest)", 
+         "Delivering Mill",
+         "Market - Country",
+       "Zip Code (Dest)", 
        "Product Division",
        
       
@@ -218,7 +218,7 @@ def upload_freight_parity():
         f.save(input_directory+f.filename)
         smb_df=pd.read_excel(input_directory+f.filename)
         
-        df=smb_df[['id', 'Username', 'date_time', 'Delivering Mill', 'Market - Country',
+        df=smb_df[[ 'Delivering Mill', 'Market - Country',
        'Zip Code (Dest)', 'Product Division', 'Document Item Currency',
        'Amount', 'Currency']]  
         df.columns = df.columns.str.replace(' ', '_')
@@ -247,7 +247,7 @@ def  validate_freight_parity():
             id_value=(id_value[0][0]+1)
             
             df.columns = df.columns.str.replace('_', ' ')
-            df.rename(columns={"Market Country":"Market - Country","Zip Code Dest":"Zip_Code_(Dest)"},inplace=True)
+            df.rename(columns={"Market Country":"Market - Country","Zip Code Dest":"Zip Code (Dest)"},inplace=True)
             
             
             
@@ -328,7 +328,7 @@ def  freight_parity_minibar():
 def delete_record_freight_parity_minibar():  
     id_value=request.args.get('id')
     try:
-        query='''delete  from "SMB"."SMB - Extra - Freight Parity - MiniBar"" where "id"={}'''.format(id_value)
+        query='''delete  from "SMB"."SMB - Extra - Freight Parity - MiniBar" where "id"={}'''.format(id_value)
         db.insert(query)
         
         return {"status":"success"},200
@@ -389,11 +389,11 @@ def add_record_frieght_parity_minibar():
          "id",
          "Username",
          "date_time",
-         "Delivering_Mill",
-         "Market_Country",
+         "Delivering Mill",
+         "Market - Country",
          "Market - Customer Group",
          "Market - Customer",
-       "Zip_Code_(Dest)", 
+       "Zip Code (Dest)", 
        "Product Division",
        
          "Document Item Currency",
@@ -416,7 +416,7 @@ def upload_freight_parity_minibar():
         f.save(input_directory+f.filename)
         smb_df=pd.read_excel(input_directory+f.filename)
         
-        df=smb_df[['id', 'Username', 'date_time', 'Delivering Mill', 'Market - Country',
+        df=smb_df[[ 'Delivering Mill', 'Market - Country',
        'Market - Customer Group', 'Market - Customer', 'Zip Code (Dest)',
        'Product Division', 'Document Item Currency', 'Amount', 'Currency']]  
         df.columns = df.columns.str.replace(' ', '_')
@@ -446,7 +446,7 @@ def  validate_freight_parity_minibar():
             id_value=(id_value[0][0]+1)
             
             df.columns = df.columns.str.replace('_', ' ')
-            df.rename(columns={"Market Country":"Market - Country","Market Customer Group":"Market - Customer Group","Market Customer":"Market - Customer","Zip Code Dest":"Zip_Code_(Dest)"},inplace=True)
+            df.rename(columns={"Market Country":"Market - Country","Market Customer Group":"Market - Customer Group","Market Customer":"Market - Customer","Zip Code Dest":"Zip Code (Dest)"},inplace=True)
             
             
             
@@ -529,7 +529,8 @@ def  extra_grade_data():
 def delete_record_extra_grade():  
     id_value=request.args.get('id')
     try:
-        query='''delete  from "SMB"."SMB - Extra - Grade"" where "id"={}'''.format(id_value)
+        query='''delete  from "SMB"."SMB - Extra - Grade" where "id"={}'''.format(id_value)
+        print(query)
         db.insert(query)
         
         return {"status":"success"},200
@@ -617,7 +618,7 @@ def upload_extra_grade():
         f.save(input_directory+f.filename)
         smb_df=pd.read_excel(input_directory+f.filename)
         
-        df=smb_df[['id', 'Username', 'date_time', 'BusinessCode', 'Grade Category',
+        df=smb_df[[ 'BusinessCode', 'Grade Category',
        'Country Group', 'Market - Country', 'Product Division',
        'Document Item Currency', 'Amount', 'Currency']]  
         df.columns = df.columns.str.replace(' ', '_')
@@ -820,7 +821,7 @@ def upload_extra_grade_minibar():
         f.save(input_directory+f.filename)
         smb_df=pd.read_excel(input_directory+f.filename)
         
-        df=smb_df[['id', 'Username', 'date_time', 'BusinessCode', 'Customer Group',
+        df=smb_df[[ 'BusinessCode', 'Customer Group',
        'Market - Customer', 'Market - Country', 'Grade Category',
        'Document Item Currency', 'Amount', 'Currency']]  
         df.columns = df.columns.str.replace(' ', '_')
@@ -1024,7 +1025,7 @@ def upload_extra_profile():
         f.save(input_directory+f.filename)
         smb_df=pd.read_excel(input_directory+f.filename)
         
-        df=smb_df[['id', 'Username', 'date_time', 'BusinessCode', 'Market - Country',
+        df=smb_df[[ 'BusinessCode', 'Market - Country',
        'Product Division', 'Product Level 04', 'Product Level 05',
        'Product Level 02', 'Delivering Mill', 'Document Item Currency',
        'Amount', 'Currency']]  
@@ -1233,7 +1234,7 @@ def upload_extra_profile_minibar():
         f.save(input_directory+f.filename)
         smb_df=pd.read_excel(input_directory+f.filename)
         
-        df=smb_df[['id', 'Username', 'date_time', 'BusinessCode', 'Customer Group',
+        df=smb_df[[ 'BusinessCode', 'Customer Group',
        'Market - Customer', 'Market - Country', 'Product Level 04',
        'Product Level 05', 'Product Level 02', 'Delivering Mill',
        'Document Item Currency', 'Amount', 'Currency']]  
@@ -1442,7 +1443,7 @@ def upload_extra_profile_Iberia():
         f.save(input_directory+f.filename)
         smb_df=pd.read_excel(input_directory+f.filename)
         
-        df=smb_df[['id', 'Username', 'date_time', 'BusinessCode', 'Market - Country',
+        df=smb_df[[ 'BusinessCode', 'Market - Country',
        'Delivering Mill', 'Product Level 02', 'Product Level 05',
        'Document Item Currency', 'Amount', 'Currency']]  
         df.columns = df.columns.str.replace(' ', '_')
@@ -1654,7 +1655,7 @@ def upload_extra_profile_Iberia_minibar():
         f.save(input_directory+f.filename)
         smb_df=pd.read_excel(input_directory+f.filename)
         
-        df=smb_df[['id', 'Username', 'date_time', 'BusinessCode', 'Market - Country',
+        df=smb_df[[ 'BusinessCode', 'Market - Country',
        'Market - Customer Group', 'Market - Customer', 'Delivering Mill',
        'Product Level 02', 'Product Level 05', 'Document Item Currency',
        'Amount', 'Currency']]  
