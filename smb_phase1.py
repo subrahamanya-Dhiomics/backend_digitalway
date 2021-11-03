@@ -12,7 +12,7 @@ from flask import Blueprint
 import pandas as pd
 import time
 import json
-from flask import Flask, request, render_template
+from flask import Flask, request, send_file, render_template, make_response
 from flask import jsonify
 from flask_cors import CORS
 from json import JSONEncoder
@@ -77,6 +77,9 @@ CORS(smb_app1)
 db=Database()
 
 input_directory="C:/Users/Administrator/Documents/SMB_INPUT/"
+
+
+download_path='C:/SMB/smb_download/'
 
 con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
 
@@ -332,8 +335,13 @@ def SMB_baseprice_download1():
         try:
             df = pd.read_sql('''select * from "SMB"."SMB - Base Price - Category Addition" where "active"='1' order by "id" ''', con=con)
             df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
-            df.to_excel('C:/Users/Administrator/Downloads/'+now.strftime("%d-%m-%Y-%H-%M-%S") +'bse_price.xlsx',index=False)
-            return {"status":"success"},200
+            t=now.strftime("%d-%m-%Y-%H-%M-%S")
+            file=download_path+t+'baseprice_category_addition.xlsx'
+            print(file)
+            df.to_excel(file,index=False)
+            
+            return send_file(file, as_attachment=True)
+           
         except:
             return {"status":"failure"},500
     
@@ -516,12 +524,12 @@ def add_record_mini():
 @smb_app1.route('/upload_baseprice_category_minibar', methods=['GET','POST'])
 def  SMB_upload_baseprice_minibar():
     
-        f=request.files['filename']
-  
-            
-        f.save(input_directory+f.filename)
+            f=request.files['filename']
+      
+                
+            f.save(input_directory+f.filename)
         
-        try:
+        
             smb_df=pd.read_excel(input_directory+f.filename,dtype=str)
             
             df=smb_df[['id','BusinessCode', 'Customer Group','Market - Customer', 'Market - Country', 'Beam Category','Document Item Currency', 'Amount', 'Currency']]  
@@ -541,9 +549,7 @@ def  SMB_upload_baseprice_minibar():
             table=json.loads(df3.to_json(orient='records'))
             
             return {"data":table},200
-        except:
-            return {"status":"failure"},500
-        
+       
 
 
 @smb_app1.route('/validate_baseprice_category_minibar', methods=['GET','POST'])
@@ -574,6 +580,7 @@ def  SMB_validate_baseprice_minibar():
         id_tuple=tuple(df["id"])
         if len(id_tuple)==1:id=id_tuple[0] ;id_tuple=(id,id)
         result=db.insert(query1.format(id_tuple))
+        print(query1.format(id_tuple))
         if result=='failed' :raise ValueError
         
         
@@ -600,10 +607,18 @@ def SMB_baseprice_catecory_minibar_download():
    
         now = datetime.now()
         try:
+            print("hi")
             df = pd.read_sql('''select * from "SMB"."SMB - Base Price - Category Addition - MiniBar" where "active"='1' order by "id" ''', con=con)
+            
             df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
-            df.to_excel('C:/Users/Administrator/Downloads/'+now.strftime("%d-%m-%Y-%H-%M-%S") +'bse_price.xlsx',index=False)
-            return {"status":"success"},200
+            t=now.strftime("%d-%m-%Y-%H-%M-%S")
+            file=download_path+t+'baseprice_addition_minibar.xlsx'
+            print(file)
+            df.to_excel(file,index=False)
+            
+            return send_file(file, as_attachment=True)
+           
+            
         except:
             return {"status":"failure"},500
     
@@ -693,7 +708,7 @@ def update_record_incoterm():
     Document_Item_Currency =( query_parameters["Document_Item_Currency"])
     Amount =( query_parameters["Amount"])
     Currency =( query_parameters["Currency"])
-    id_value=(query_parameters['id'])
+    id_value=request.args.get('id')
     
     
   
@@ -757,10 +772,12 @@ def add_record_incoterm():
     Amount =( query_parameters["Amount"])
     Currency =( query_parameters["Currency"])
     
+    print(Currency)
+    
     
     try:
-        input_tuple=(username,  Market_Country,Customer_Group,Incoterm1,Product_Division,Beam_Category,Delivering_Mill,Document_Item_Currency,Amount,Currency)
-        query='''INSERT INTO "SMB"."SMB - Base Price - Category Addition"(
+        input_tuple=(username,  Market_Country,Customer_Group,Incoterm1,Product_Division,Beam_Category,Delivering_Mill,Document_Item_Currency,Amount,Currency.strip("'"))
+        query='''INSERT INTO "SMB"."SMB - Base Price - Incoterm Exceptions"(
              
              "Username",
              "Market - Country",
@@ -768,7 +785,8 @@ def add_record_incoterm():
          "Incoterm1", "Product Division", "Beam Category", "Delivering Mill",
          "Document Item Currency", "Amount", "Currency")
              VALUES{};'''.format(input_tuple)
-        result=db.insert(query)  
+        result=db.insert(query) 
+        print(query)
         if result=='failed' :raise ValueError
         
         return {"status":"success"},200
@@ -818,21 +836,21 @@ def  SMB_upload_baseprice_incoterm():
 
 @smb_app1.route('/validate_baseprice_incoterm', methods=['GET','POST'])
 def  SMB_validate_baseprice_incoterm():
-    json_data=json.loads(request.data)
-    username = getpass.getuser() 
-    now = datetime.now()
-    date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
+        json_data=json.loads(request.data)
+        username = getpass.getuser() 
+        now = datetime.now()
+        date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
+        
+        df=pd.DataFrame(json_data["billet"]) 
+        
+        df.insert(0,'Username',username)
+        df.insert(1,'date_time',date_time)
     
-    df=pd.DataFrame(json_data["billet"]) 
-    
-    df.insert(0,'Username',username)
-    df.insert(1,'date_time',date_time)
-    
-    try:
+   
     
         df=df[ ["Username","Market_Country", "Customer_Group",
        "Incoterm1", "Product_Division", "Beam_Category", "Delivering_Mill",
-       "Document_Item Currency", "Amount", "Currency","date_time","id"]]
+       "Document_Item_Currency", "Amount", "Currency","date_time","id"]]
         
         query1='''INSERT INTO "SMB"."SMB - Base Price - Incoterm Exceptions_History" 
         SELECT 
@@ -846,6 +864,7 @@ def  SMB_validate_baseprice_incoterm():
         id_tuple=tuple(df["id"])
         if len(id_tuple)==1:id=id_tuple[0] ;id_tuple=(id,id)
         result=db.insert(query1.format(id_tuple))
+        print(query1.format(id_tuple))
         if result=='failed' :raise ValueError
         
         
@@ -857,7 +876,7 @@ def  SMB_validate_baseprice_incoterm():
        "Username"='%s',
        "Market - Country"='%s', "Customer Group"='%s',
        "Incoterm1"='%s', "Product Division"='%s', "Beam Category"='%s', "Delivering Mill"='%s',
-       "Document Item Currency"='%s', "Amount"='%s', "Currency"='%s',
+       "Document Item Currency"='%s', "Amount"='%s', "Currency"=''%s'',
        "updated_on"='%s'
         WHERE "id"= '%s' ''' % tuple(df.loc[i])
             result=db.insert(query2)
@@ -865,8 +884,7 @@ def  SMB_validate_baseprice_incoterm():
             if result=='failed' :raise ValueError
             
         return {"status":"success"},200
-    except: return {"status":"failure"},500
-
+   
   
         
 @smb_app1.route('/download_baseprice_incoterm',methods=['GET'])
@@ -876,7 +894,7 @@ def SMB_baseprice_download_incoterm():
         try:
             df = pd.read_sql('''select * from "SMB"."SMB - Base Price - Incoterm Exceptions" where "active"='1' order by "id" ''', con=con)
             df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
-            df.to_excel('C:/Users/Administrator/Downloads/'+now.strftime("%d-%m-%Y-%H-%M-%S") +'bse_price.xlsx',index=False)
+            df.to_excel('C:/Users/Administrator/Downloads/'+now.strftime("%d-%m-%Y-%H-%M-%S") +'baseprice_incoterm_exceptions.xlsx',index=False)
             return {"status":"success"},200
         except:
             return {"status":"failure"},500
@@ -1150,8 +1168,13 @@ def download_extra_certificate():
         try:
             df = pd.read_sql('''select * from "SMB"."SMB - Extra - Certificate" where "active"='1' order by "id" ''', con=con)
             df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
-            df.to_excel('C:/Users/Administrator/Downloads/'+now.strftime("%d-%m-%Y-%H-%M-%S") +'bse_price.xlsx',index=False)
-            return {"status":"success"},200
+            t=now.strftime("%d-%m-%Y-%H-%M-%S")
+            file=download_path+t+'extra_certificate.xlsx'
+            print(file)
+            df.to_excel(file,index=False)
+            
+            return send_file(file, as_attachment=True)
+           
         except:
             return {"status":"failure"},500
 
@@ -1423,8 +1446,13 @@ def  download_extra_certificate_minibar():
         try:
             df = pd.read_sql('''select * from "SMB"."SMB - Extra - Certificate - MiniBar" where "active"='1' order by "id" ''', con=con)
             df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
-            df.to_excel('C:/Users/Administrator/Downloads/'+now.strftime("%d-%m-%Y-%H-%M-%S") +'bse_price.xlsx',index=False)
-            return {"status":"success"},200
+            t=now.strftime("%d-%m-%Y-%H-%M-%S")
+            file=download_path+t+'extra_certificate_minibar.xlsx'
+            print(file)
+            df.to_excel(file,index=False)
+            
+            return send_file(file, as_attachment=True)
+           
         except:
             return {"status":"failure"},500
 
@@ -1698,8 +1726,13 @@ def  download_delivery_mill():
         try:
             df = pd.read_sql('''select * from "SMB"."SMB - Extra - Delivery Mill" where "active"='1' order by "id" ''', con=con)
             df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
-            df.to_excel('C:/Users/Administrator/Downloads/'+now.strftime("%d-%m-%Y-%H-%M-%S") +'bse_price.xlsx',index=False)
-            return {"status":"success"},200
+            t=now.strftime("%d-%m-%Y-%H-%M-%S")
+            file=download_path+t+'delivery_mill.xlsx'
+            print(file)
+            df.to_excel(file,index=False)
+            
+            return send_file(file, as_attachment=True)
+           
         except:
             return {"status":"failure"},500
     
@@ -1966,8 +1999,13 @@ def  download_delivery_mill_minibar():
         try:
             df = pd.read_sql('''select * from "SMB"."SMB - Extra - Delivery Mill - MiniBar" where "active"='1' order by "id" ''', con=con)
             df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
-            df.to_excel('C:/Users/Administrator/Downloads/'+now.strftime("%d-%m-%Y-%H-%M-%S") +'bse_price.xlsx',index=False)
-            return {"status":"success"},200
+            t=now.strftime("%d-%m-%Y-%H-%M-%S")
+            file=download_path+t+'delivery_mill_minibar.xlsx'
+            print(file)
+            df.to_excel(file,index=False)
+            
+            return send_file(file, as_attachment=True)
+           
         except:
             return {"status":"failure"},500
     

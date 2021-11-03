@@ -12,7 +12,7 @@ from flask import Blueprint
 import pandas as pd
 import time
 import json
-from flask import Flask, request, render_template
+from flask import Flask, request, send_file, render_template
 from flask import jsonify
 from flask_cors import CORS
 from json import JSONEncoder
@@ -76,6 +76,9 @@ smb_app3 = Blueprint('smb_app3', __name__)
 CORS(smb_app3)
 
 db=Database()
+
+
+download_path='C:/SMB/smb_download/'
 
 input_directory="C:/Users/Administrator/Documents/SMB_INPUT/"
 con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
@@ -341,8 +344,12 @@ def download_transport():
         try:
             df = pd.read_sql('''select * from "SMB"."SMB - Extra - Transport Mode" where "active"='1' order by "id" ''', con=con)
             df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
-            df.to_excel('C:/Users/Administrator/Downloads/'+now.strftime("%d-%m-%Y-%H-%M-%S") +'bse_price.xlsx',index=False)
-            return {"status":"success"},200
+            t=now.strftime("%d-%m-%Y-%H-%M-%S")
+            file=download_path+t+'extra_transport_mode.xlsx'
+            print(file)
+            df.to_excel(file,index=False)
+            
+            return send_file(file, as_attachment=True)
         except:
             return {"status":"failure"},500
    
@@ -621,8 +628,12 @@ def download_transport_minibar():
         try:
             df = pd.read_sql('''select * from "SMB"."SMB - Extra - Transport Mode - MiniBar" where "active"='1' order by "id" ''', con=con)
             df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
-            df.to_excel('C:/Users/Administrator/Downloads/'+now.strftime("%d-%m-%Y-%H-%M-%S") +'bse_price.xlsx',index=False)
-            return {"status":"success"},200
+            t=now.strftime("%d-%m-%Y-%H-%M-%S")
+            file=download_path+t+'transport_mode_minibar.xlsx'
+            print(file)
+            df.to_excel(file,index=False)
+            
+            return send_file(file, as_attachment=True)
         except:
             return {"status":"failure"},500
    
@@ -907,8 +918,12 @@ def download_length_production():
         try:
             df = pd.read_sql('''select * from "SMB"."SMB - Extra - Length Production" where "active"='1' order by "id" ''', con=con)
             df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
-            df.to_excel('C:/Users/Administrator/Downloads/'+now.strftime("%d-%m-%Y-%H-%M-%S") +'bse_price.xlsx',index=False)
-            return {"status":"success"},200
+            t=now.strftime("%d-%m-%Y-%H-%M-%S")
+            file=download_path+t+'length_production_minibar.xlsx'
+            print(file)
+            df.to_excel(file,index=False)
+            
+            return send_file(file, as_attachment=True)
         except:
             return {"status":"failure"},500
 
@@ -1212,8 +1227,12 @@ def download_length_production_minibar():
         try:
             df = pd.read_sql('''select * from "SMB"."SMB - Extra - Length Production - MiniBar" where "active"='1' order by "id" ''', con=con)
             df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
-            df.to_excel('C:/Users/Administrator/Downloads/'+now.strftime("%d-%m-%Y-%H-%M-%S") +'bse_price.xlsx',index=False)
-            return {"status":"success"},200
+            t=now.strftime("%d-%m-%Y-%H-%M-%S")
+            file=download_path+t+'length_production_minibar.xlsx'
+            print(file)
+            df.to_excel(file,index=False)
+            
+            return send_file(file, as_attachment=True)
         except:
             return {"status":"failure"},500
 
@@ -1504,8 +1523,12 @@ def download_length_logistic():
         try:
             df = pd.read_sql('''select * from "SMB"."SMB - Extra - Length Logistic" where "active"='1' order by "id" ''', con=con)
             df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
-            df.to_excel('C:/Users/Administrator/Downloads/'+now.strftime("%d-%m-%Y-%H-%M-%S") +'bse_price.xlsx',index=False)
-            return {"status":"success"},200
+            t=now.strftime("%d-%m-%Y-%H-%M-%S")
+            file=download_path+t+'length_logistic_minibar.xlsx'
+            print(file)
+            df.to_excel(file,index=False)
+            
+            return send_file(file, as_attachment=True)
         except:
             return {"status":"failure"},500
 
@@ -1810,7 +1833,7 @@ def download_length_logistic_minibar():
         try:
             df = pd.read_sql('''select * from "SMB"."SMB - Extra - Length Logistic - MiniBar" where "active"='1' order by "id" ''', con=con)
             df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
-            df.to_excel('C:/Users/Administrator/Downloads/'+now.strftime("%d-%m-%Y-%H-%M-%S") +'bse_price.xlsx',index=False)
+            df.to_excel('C:/Users/Administrator/Downloads/'+now.strftime("%d-%m-%Y-%H-%M-%S") +'bse_price_extra_length_logistic_minibar.xlsx',index=False)
             return {"status":"success"},200
         except:
             return {"status":"failure"},500
