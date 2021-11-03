@@ -83,14 +83,14 @@ db=Database()
 input_directory="C:/Users/Administrator/Documents/SMB_INPUT/"
 
 
-download_path='C:/SMB/smb_download/'
+#download_path='C:/SMB/smb_download/'
 
 con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
 
 
 
 
-@smb_history.route('/history_delivering_mill',methods=['GET'])
+@smb_history.route('/history_delivering_mill_MiniBar',methods=['GET'])
 def  download_delivery_mill_minibar_history():
     search_string=request.args.get("search_string")
     
@@ -119,6 +119,36 @@ def  download_delivery_mill_minibar_history():
         return {"statuscode":500,"msg":"failure"},500
     
     
+
+
+@smb_history.route('/history_delivering_mill',methods=['GET'])
+def  download_delivery_mill_history():
+    search_string=request.args.get("search_string")
+    
+    limit=request.args.get("limit",type=int)
+    offset=request.args.get("offset",type=int)
+    
+    # pagination logic
+    lowerLimit=offset*limit 
+    upperLimit=lowerLimit+limit
+    
+    # fetching the data from database and filtering    
+    try:
+        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Delivery Mill_History"   OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        count=db.query('select count(*) from "SMB"."SMB - Extra - Delivery Mill_History"')[0][0]
+        df.columns = df.columns.str.replace(' ', '_')
+        
+        df.rename(columns={"Market_-_Country":"Market_Country"},inplace=True)
+        
+        if(search_string!="all" and search_string!=None):
+                      df=df[df.eq(search_string).any(1)]
+        
+        table=json.loads(df.to_json(orient='records'))
+        
+        return {"data":table,"totalCount":count},200         
+    except:
+        return {"statuscode":500,"msg":"failure"},500
+
 
 
 @smb_history.route('/history_Base_Price',methods=['GET'])
