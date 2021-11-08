@@ -85,6 +85,11 @@ con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',
 
 
 
+@smb_app1.route('/hello_world',methods=['GET'])
+def Hello():
+    return {"status":"success"}
+
+
 @smb_app1.route('/Base_Price_Data',methods=['GET','POST'])
 def SMB_data():
     # query_paramters 
