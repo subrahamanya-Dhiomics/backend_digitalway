@@ -2009,6 +2009,38 @@ def  download_delivery_mill_minibar():
         except:
             return {"status":"failure"},500
     
+        
+    
+@smb_app1.route('/history_delivering_mill',methods=['GET'])
+def  download_delivery_mill_minibar_history():
+    search_string=request.args.get("search_string")
+    
+    limit=request.args.get("limit",type=int)
+    offset=request.args.get("offset",type=int)
+    
+    # pagination logic
+    lowerLimit=offset*limit 
+    upperLimit=lowerLimit+limit
+    
+    # fetching the data from database and filtering    
+    try:
+        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Delivery Mill - MiniBar_History"   OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        count=db.query('select count(*) from "SMB"."SMB - Extra - Delivery Mill - MiniBar"')[0][0]
+        df.columns = df.columns.str.replace(' ', '_')
+        
+        df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer_Group":"Market_Customer_Group","Market_-_Customer":"Market_Customer"},inplace=True)
+        
+        if(search_string!="all" and search_string!=None):
+                      df=df[df.eq(search_string).any(1)]
+        
+        table=json.loads(df.to_json(orient='records'))
+        
+        return {"data":table,"totalCount":count},200         
+    except:
+        return {"statuscode":500,"msg":"failure"},500
+        
 
+    
+   
 
 

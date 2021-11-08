@@ -60,6 +60,8 @@ def tupleToList(tupleVar):
             return(listVar)
 
 
+csv_out_path="C:/ocpphase1/ftp/Q72/"
+input_path='C:/Users/Administrator/Documents/Input_files/'
 
 @scrap_app.route('/Alloy_wire_upload',methods=['GET','POST'])
 def upload_files():
@@ -77,7 +79,7 @@ def upload_files():
        'Key', 'Duplicate', 'FakturaVerkettung Du\n']
         
         
-        f.save('C:/Users/Administrator/Documents/Input_files/'+f.filename)
+        f.save(input_path+f.filename)
         
        
         stock_df = pd.read_excel(folder_path +"/"+f.filename)
@@ -107,10 +109,10 @@ def upload_files():
             
             data1['Internal_Grade']=data1['Internal_Grade'].apply(lambda x: x.zfill(4))
             
-            pending_wire=data1[data1.isna().any(axis=1)]
+            # pending_wire=data1[data1.isna().any(axis=1)]
             
-            Path("C:/Users/Administrator/Documents/Non_processed").mkdir(parents=True, exist_ok=True)
-            pending_wire.to_csv(Non_processed+'/'+f.filename+'.csv')
+            # Path("C:/Users/Administrator/Documents/Non_processed").mkdir(parents=True, exist_ok=True)
+            # pending_wire.to_csv(Non_processed+'/'+f.filename+'.csv')
               
             
             data1=data1.dropna()
@@ -148,12 +150,12 @@ def upload_files_billet ():
        'elemente', 'Monat', 'id']
         
         
-        f.save('C:/Users/Administrator/Documents/Input_files/'+f.filename)
+        f.save(input_path+f.filename)
         stock_df = pd.read_excel(folder_path +"/"+f.filename)
         stock_df_columns=list(stock_df.columns)
         
         try:
-            if(True):
+            
                 print("inside")
                 print("*************************************************")
                 VKORG="0200"
@@ -178,9 +180,9 @@ def upload_files_billet ():
                 data2=data2[(pd.to_datetime(data2['Month_year'], format='%Y%m')) >=today.strftime('%Y-%m')]
                
                 
-                pending_billet=data2[data2.isna().any(axis=1)]
-                Path("C:/Users/Administrator/Documents/Non_processed").mkdir(parents=True, exist_ok=True)
-                pending_billet.to_csv(Non_processed+'/'+f.filename+'.csv')
+                # pending_billet=data2[data2.isna().any(axis=1)]
+                # Path("C:/Users/Administrator/Documents/Non_processed").mkdir(parents=True, exist_ok=True)
+                # pending_billet.to_csv(Non_processed+'/'+f.filename+'.csv')
                   
                 
                 data2=data2.dropna()
@@ -192,11 +194,11 @@ def upload_files_billet ():
                 return  json.dumps({"data":table_2,"filename":f.filename})
                 
                 
-            else:
-                 status='incorrect file format'
-                 os.remove('C:/Users/Administrator/Documents/Input_files/'+f.filename)
-                 os.remove("C:/Users/Administrator/Documents/Non_processed/"+f.filename)
-                 return  {"statuscode":"500","message":"incorrect"},200
+            # else:
+            #      status='incorrect file format'
+            #      os.remove('C:/Users/Administrator/Documents/Input_files/'+f.filename)
+            #      os.remove("C:/Users/Administrator/Documents/Non_processed/"+f.filename)
+            #      return  {"statuscode":"500","message":"incorrect"},200
         except:
               return  {"statuscode":"500","message":"incorrect"},500
         
@@ -216,7 +218,7 @@ def upload_files_scrap ():
         try:
         
         
-            f.save('C:/Users/Administrator/Documents/Input_files/'+f.filename)
+            f.save(input_path+f.filename)
             data = pd.read_excel(folder_path +"/"+f.filename,sheet_name="Shuffled SS")
             
             df=data[((data['Model']=='Former') & (data['Product']=='All') & (data['Division'].isnull())) | ((data['Model']=='Market') & (data['Product']=='Rolled Billets') & (data['Division']=='RCS')) | ((data['Model']=='New ') & (data['Product']=='Wire Rod') & (data['Division']=='WR')) ]
@@ -301,7 +303,7 @@ def validate_files1():
         
         # Path("C:\ocpphase1\ftp\Q72").mkdir(parents=True, exist_ok=True)
         # out_df.reset_index(drop=True, inplace=True)
-        out_df.to_csv("C:/ocpphase1/ftp/Q72/"+date_time+counter+'_'+cond_type+'_'+sales_org+'.csv', index = False)
+        out_df.to_csv(csv_out_path+date_time+counter+'_'+cond_type+'_'+sales_org+'.csv', index = False)
     
         
         return {"message":"success"},200
@@ -352,7 +354,7 @@ def validate_files2():
         
         # Path("C:\ocpphase1\ftp\Q72").mkdir(parents=True, exist_ok=True)
         # out_df.reset_index(drop=True, inplace=True)
-        out_df.to_csv("C:/ocpphase1/ftp/Q72/"+date_time+counter+'_'+cond_type+'_'+sales_org+'.csv', index = False)
+        out_df.to_csv(csv_out_path+date_time+counter+'_'+cond_type+'_'+sales_org+'.csv', index = False)
     
         
         status='success'
@@ -383,8 +385,15 @@ def validate_files3():
     
     
     try:
+        cur.execute('rollback')
+        cur.execute('select max("Batch_ID") from alloy_surcharge.scrap_surcharge_billet;')
+        max_id=cur.fetchall()
+        if(max_id[0][0] == None):
+                Batch_ID=1
+        else:
+                Batch_ID=((max_id[0][0])+1)  
 
-        Batch_ID=1
+        
             
         dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
         scrap_df.insert(0,'filename',filename)
@@ -401,7 +410,7 @@ def validate_files3():
         
         # Path("C:\ocpphase1\ftp\Q72").mkdir(parents=True, exist_ok=True)
         # out_df.reset_index(drop=True, inplace=True)
-        out_df.to_csv("C:/ocpphase1/ftp/Q72/"+date_time+counter+'_'+cond_type+'_'+sales_org+'.csv', index = False)
+        out_df.to_csv(csv_out_path+date_time+counter+'_'+cond_type+'_'+sales_org+'.csv', index = False)
         
         status='success'
         return {"message":"success"},200
@@ -430,11 +439,6 @@ def history():
     search_string=request.args.get("search_string")
     
     
-    try:
-        search_string=int(search_string)
-   
-    except:
-        print("none")
     
     
     lowerLimit=offset*limit 
@@ -463,7 +467,7 @@ def history():
     select distinct "Batch_ID", "Username","date_time","filename","COND_TYPE" from  alloy_surcharge.alloy_surcharge_wire
     union
     select distinct  "Batch_ID","Username","date_time","filename","COND_TYPE" from  alloy_surcharge.scrap_surcharge_billet
-    order by date_time  desc OFFSET {} LIMIT {} '''.format(lowerLimit,upperLimit)
+    order by date_time desc OFFSET {} LIMIT {} '''.format(lowerLimit,upperLimit)
     
         cur.execute(query)
         history_data=cur.fetchall()
