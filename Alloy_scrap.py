@@ -37,6 +37,8 @@ CORS(scrap_app)
 
 con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
 cur = con.cursor()
+
+
 output_directory='C:/Users/Administrator/Documents/Output/'
 Non_processed="C:/Users/Administrator/Documents/Non_processed"
 Processed_directory='C:/Users/Administrator/Documents/Processed_files'
@@ -82,7 +84,7 @@ def upload_files():
         f.save(input_path+f.filename)
         
        
-        stock_df = pd.read_excel(folder_path +"/"+f.filename)
+        stock_df = pd.read_excel(input_path +"/"+f.filename)
         stock_df_columns=list(stock_df.columns)
 
         try:
@@ -92,7 +94,6 @@ def upload_files():
             DST_CH="02"
             DIV="02"
             COND_TYPE="Z133"
-            
             data1=stock_df[['Month/Year', 'Monthly Alloy Surcharge','Customer ID','Internal Grade']]
             
             data1.rename(columns={'Month/Year': 'Month_year', 'Monthly Alloy Surcharge': 'Amount','Customer ID':'Customer_ID','Internal Grade':'Internal_Grade'}, inplace=True)
@@ -151,7 +152,7 @@ def upload_files_billet ():
         
         
         f.save(input_path+f.filename)
-        stock_df = pd.read_excel(folder_path +"/"+f.filename)
+        stock_df = pd.read_excel(input_path +"/"+f.filename)
         stock_df_columns=list(stock_df.columns)
         
         try:
@@ -219,7 +220,7 @@ def upload_files_scrap ():
         
         
             f.save(input_path+f.filename)
-            data = pd.read_excel(folder_path +"/"+f.filename,sheet_name="Shuffled SS")
+            data = pd.read_excel(input_path +"/"+f.filename,sheet_name="Shuffled SS")
             
             df=data[((data['Model']=='Former') & (data['Product']=='All') & (data['Division'].isnull())) | ((data['Model']=='Market') & (data['Product']=='Rolled Billets') & (data['Division']=='RCS')) | ((data['Model']=='New ') & (data['Product']=='Wire Rod') & (data['Division']=='WR')) ]
     

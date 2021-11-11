@@ -97,6 +97,12 @@ def  freight_parity():
     limit=request.args.get("limit",type=int)
     offset=request.args.get("offset",type=int)
     
+    
+    if(limit==None):
+        limit=500
+    if(offset==None):
+        offset=0
+    
     # pagination logic
     lowerLimit=offset*limit 
     upperLimit=lowerLimit+limit
@@ -363,6 +369,12 @@ def  freight_parity_minibar():
     
     limit=request.args.get("limit",type=int)
     offset=request.args.get("offset",type=int)
+    
+    
+    if(limit==None):
+        limit=500
+    if(offset==None):
+        offset=0
     
     # pagination logic
     lowerLimit=offset*limit 
@@ -950,6 +962,12 @@ def  extra_grade_data_minibar():
     limit=request.args.get("limit",type=int)
     offset=request.args.get("offset",type=int)
     
+    
+    if(limit==None):
+        limit=500
+    if(offset==None):
+        offset=0
+    
     # pagination logic
     lowerLimit=offset*limit 
     upperLimit=lowerLimit+limit
@@ -1248,6 +1266,11 @@ def  extra_profile():
     limit=request.args.get("limit",type=int)
     offset=request.args.get("offset",type=int)
     
+    if(limit==None):
+        limit=500
+    if(offset==None):
+        offset=0
+    
     # pagination logic
     lowerLimit=offset*limit 
     upperLimit=lowerLimit+limit
@@ -1540,6 +1563,11 @@ def  extra_profile_minibar():
     
     limit=request.args.get("limit",type=int)
     offset=request.args.get("offset",type=int)
+    
+    if(limit==None):
+        limit=500
+    if(offset==None):
+        offset=0
     
     # pagination logic
     lowerLimit=offset*limit 
@@ -1857,6 +1885,11 @@ def  extra_profile_minibar_iberia():
     limit=request.args.get("limit",type=int)
     offset=request.args.get("offset",type=int)
     
+    if(limit==None):
+        limit=500
+    if(offset==None):
+        offset=0
+    
     # pagination logic
     lowerLimit=offset*limit 
     upperLimit=lowerLimit+limit
@@ -2150,6 +2183,12 @@ def  extra_profile_minibar_iberia_minibar():
     
     limit=request.args.get("limit",type=int)
     offset=request.args.get("offset",type=int)
+    
+    
+    if(limit==None):
+        limit=500
+    if(offset==None):
+        offset=0
     
     # pagination logic
     lowerLimit=offset*limit 

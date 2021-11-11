@@ -94,8 +94,17 @@ def Hello():
 def SMB_data():
     # query_paramters 
     search_string=request.args.get("search_string")
+    
     limit=request.args.get("limit",type=int)
     offset=request.args.get("offset",type=int)
+    
+    if(limit==None):
+        limit=500
+    if(offset==None):
+        offset=0
+    
+    print(limit)
+    print(offset)
     
     # pagination logic
     lowerLimit=offset*limit 
@@ -359,6 +368,12 @@ def SMB_data_baseprice_mini():
     search_string=request.args.get("search_string")  
     limit=request.args.get("limit",type=int)
     offset=request.args.get("offset",type=int)
+    
+    
+    if(limit==None):
+        limit=500
+    if(offset==None):
+        offset=0
 
     # pagination logic
     lowerLimit=offset*limit 
@@ -639,6 +654,12 @@ def SMB_data_baseprice_incoterm():
     limit=request.args.get("limit",type=int)
     offset=request.args.get("offset",type=int)
     
+    
+    if(limit==None):
+        limit=500
+    if(offset==None):
+        offset=0
+    
     # pagination logic
     lowerLimit=offset*limit 
     upperLimit=lowerLimit+limit
@@ -917,6 +938,12 @@ def extra_certificate_data():
     
     limit=request.args.get("limit",type=int)
     offset=request.args.get("offset",type=int)
+    
+    
+    if(limit==None):
+        limit=500
+    if(offset==None):
+        offset=0
     
     lowerLimit=offset*limit 
     upperLimit=lowerLimit+limit
@@ -1197,6 +1224,11 @@ def extra_certificate_data_minibar():
     limit=request.args.get("limit",type=int)
     offset=request.args.get("offset",type=int)
     
+    if(limit==None):
+        limit=500
+    if(offset==None):
+        offset=0
+    
     # pagination logic
     lowerLimit=offset*limit 
     upperLimit=lowerLimit+limit
@@ -1474,14 +1506,18 @@ def data_delivery_mill():
     limit=request.args.get("limit",type=int)
     offset=request.args.get("offset",type=int)
     
+    
+    
+    if(limit==None):
+        limit=500
+    if(offset==None):
+        offset=0
+    
     # pagination logic
     lowerLimit=offset*limit 
     upperLimit=lowerLimit+limit
     
-    try:
-        search_string=int(search_string)
-    except:
-        search_string=search_string   
+   
     
     
     # fetching the data from database and filtering    
@@ -1756,6 +1792,13 @@ def data_delivery_mill_minibar():
     
     limit=request.args.get("limit",type=int)
     offset=request.args.get("offset",type=int)
+    
+    
+    
+    if(limit==None):
+        limit=500
+    if(offset==None):
+        offset=0
     
     # pagination logic
     lowerLimit=offset*limit 

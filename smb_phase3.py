@@ -96,6 +96,13 @@ def  data_transport():
     limit=request.args.get("limit",type=int)
     offset=request.args.get("offset",type=int)
     
+    
+    
+    if(limit==None):
+        limit=500
+    if(offset==None):
+        offset=0
+    
     # pagination logic
     lowerLimit=offset*limit 
     upperLimit=lowerLimit+limit
@@ -365,6 +372,12 @@ def  data_transport_minibar():
     
     limit=request.args.get("limit",type=int)
     offset=request.args.get("offset",type=int)
+    
+    
+    if(limit==None):
+        limit=500
+    if(offset==None):
+        offset=0
     
     # pagination logic
     lowerLimit=offset*limit 
@@ -650,6 +663,12 @@ def  data_length_production():
     
     limit=request.args.get("limit",type=int)
     offset=request.args.get("offset",type=int)
+    
+    
+    if(limit==None):
+        limit=500
+    if(offset==None):
+        offset=0
     
     # pagination logic
     lowerLimit=offset*limit 
@@ -941,6 +960,11 @@ def  data_length_production_minibar():
     
     limit=request.args.get("limit",type=int)
     offset=request.args.get("offset",type=int)
+    
+    if(limit==None):
+        limit=500
+    if(offset==None):
+        offset=0
     
     # pagination logic
     lowerLimit=offset*limit 
@@ -1252,6 +1276,11 @@ def  data_length_logistic():
     limit=request.args.get("limit",type=int)
     offset=request.args.get("offset",type=int)
     
+    if(limit==None):
+        limit=500
+    if(offset==None):
+        offset=0
+    
     # pagination logic
     lowerLimit=offset*limit 
     upperLimit=lowerLimit+limit
@@ -1547,6 +1576,10 @@ def  data_length_logistic_minibar():
     
     limit=request.args.get("limit",type=int)
     offset=request.args.get("offset",type=int)
+    if(limit==None):
+        limit=500
+    if(offset==None):
+        offset=0
     
     # pagination logic
     lowerLimit=offset*limit 
