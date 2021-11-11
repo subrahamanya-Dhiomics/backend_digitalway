@@ -143,6 +143,7 @@ def  download_delivery_mill_history():
         df.rename(columns={"Market_-_Country":"Market_Country"},inplace=True)
         df['updated_on']=pd.to_datetime(df['updated_on'])
         df['updated_on']=df['updated_on'].astype(str)
+        
         if(search_string!="all" and search_string!=None):
                       df=df[df.eq(search_string).any(1)]
         
