@@ -120,8 +120,6 @@ def  download_delivery_mill_minibar_history():
     except:
         return {"statuscode":500,"msg":"failure"},500
     
-    
-
 
 @smb_history.route('/history_delivering_mill',methods=['GET'])
 def  download_delivery_mill_history():

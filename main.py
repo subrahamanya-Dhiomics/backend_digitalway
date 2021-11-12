@@ -14,6 +14,7 @@ from smb_phase2 import smb_app2
 from smb_phase3 import smb_app3
 from smb_history import smb_history
 
+
 app = Flask(__name__)
 CORS(app)
 
