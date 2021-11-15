@@ -4,14 +4,9 @@ Created on Tue Nov  9 11:42:38 2021
 
 @author: Administrator
 """
-
-
 from flask import Flask, jsonify, request
-
 from flask_cors import CORS
 import json
-
-
 import numpy as np
 import pandas as pd
 import traceback
@@ -38,10 +33,8 @@ import random
 
 app = Flask(__name__)
 CORS(app)
-
 con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
 cur = con.cursor()
-
 engine = create_engine('postgresql://postgres:ocpphase01@ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com:5432/offertool')
      
 
@@ -133,8 +126,7 @@ def add_income():
         else:wherestr+=' and  P.OFFERID = {}'.format(offerid)
         flag=1
     
-        
-  
+   
     
     query='''SELECT DISTINCT P.OFFERID,
 	LPAD(P.OFFERID::text,
@@ -176,7 +168,7 @@ LEFT JOIN OFFERTOOL.EMPLOYEE EC ON EC.EMPLOYEENUMBER = P.CREATIONEMPLOYEENUMBER
 LEFT JOIN OFFERTOOL.PLANT PL ON PL.PLANTCODE = P.PLANTCODE
 LEFT JOIN OFFERTOOL.COUNTRY CO ON CO.COUNTRYCODE = P.COUNTRYCODE {} '''.format(wherestr)
 
-    print(query)
+    
         
     df = pd.read_sql(query, con=con)
     
