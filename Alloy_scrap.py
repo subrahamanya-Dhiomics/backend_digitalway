@@ -553,34 +553,6 @@ def getfiles():
  
 
 
-# @app.route('/search_files',methods=['GET','POST'])
-# def search_files():
-#     query_parameters = json.loads(request.data)
-    
-#     table=query_parameters["table"]
-    
-#     search_string=query_parameters['search_string']
-    
-#     table_df=pd.DataFrame(table)
-    
-#     try:
-#       data=table_df[table_df.eq(search_string).any(1)] 
-#       if(search_string==""):
-#           data=table_df.to_json(orient='records')
-#           return{"data":data}
-      
-#       else:
-#           if(len(data)==0):
-#               data=[{}]
-#           else:
-#               data=data.to_json(orient='records')
-#           return {"data":data}
-#     except:
-#         return  {"statuscode":"500","message":"incorrect"}
-    
-
-
-
 
      
      

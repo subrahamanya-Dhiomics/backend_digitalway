@@ -85,19 +85,120 @@ class Database:
             print('Cursor closed')
             
 db=Database()
-@app.route('/data', methods=['POST','GET'])
+@app.route('/taskbar1_data', methods=['POST','GET'])
 def add_income():
-    db.insert('rollback')
     
-    query='''SELECT offertool.get_data_tasklist1('cities_cur'); FETCH ALL IN "cities_cur";'''
     
+    
+    search_string=request.args.get('search_string')
+    
+    customer=request.args.get('customer')
+    pending_with=request.args.get('pending_with')
+    status=request.args.get('status')
+    created=request.args.get('created')
+    offerid=request.args.get('offerid')
+    cust_ref=request.args.get('cust_ref')
+    
+   
+    
+    wherestr=''
+    flag=0
+    
+    if(customer!='all' and customer!=None):
+       
+        if(flag==0):wherestr+='where C.ACCOUNTNAME = {} '.format(customer)
+        else:wherestr+=' and  C.ACCOUNTNAME ={}'.format(customer)
+        flag=1
+    if(pending_with!='all' and pending_with!=None ):
+       
+        if(flag==0):wherestr+='where C.pgl_validator = {}'.format(pending_with)
+        else:wherestr+=' and  C.pgl_validator ={}'.format(pending_with)
+        flag=1
+        
+    if(status!='all' and status!=None):
+        
+        if(flag==0):wherestr+='where p.pgl_validation_levels = {}'.format(status)
+        else:wherestr+=' and  p.pgl_validation_levels = {}'.format(status)
+        flag=1
+    
+    if(created!='all' and created!=None ):
+        
+        if(flag==0):wherestr+='where P.CREATIONDATETIME = {}'.format(pending_with)
+        else:wherestr+=' and  P.CREATIONDATETIME = {}'.format(pending_with)
+        flag=1
+    
+    if(offerid !='all' and offerid != None ):
+        
+        if(flag==0):wherestr+='where  P.OFFERID = {}'.format(offerid)
+        else:wherestr+=' and  P.OFFERID = {}'.format(offerid)
+        flag=1
+    
+        
+  
+    
+    query='''SELECT DISTINCT P.OFFERID,
+	LPAD(P.OFFERID::text,
+		6,
+		'0') OFFERIDFULL, --P.name,
+    PL.DESCRIPTION PLANTTEXT,
+	CO.DESCRIPTION COUNTRYTEXT,
+	C.ACCOUNTNAME,
+	P.INCOTERMCODE,
+    p.pgl_validation_levels,
+    pgl_validator,
+	P.STARTDATE,
+	P.CREATIONDATETIME,
+	P.CLOSEDATE,
+	P.PRICEPERIODFROM,
+	P.PRICEPERIODTO,
+	P.OFFERSTATUSCODE,
+	P.RFQREFERENCE,
+	S.DESCRIPTION OFFERSTATUSTEXT,
+	COALESCE(E.NAME,
+
+		EC.NAME) LASTMODIFICATIONUSER,
+	EC.NAME CREATIONUSER,
+	D.DESCRIPTION DIVISION,
+	COALESCE(P.TOTALQUANTITY,
+		0) TONS,
+	COALESCE(P.TOTALITEMS,
+		0) ITEMS,
+	COALESCE(P.TOTALSUBITEMS,
+		0) SUBLITEMS
+FROM OFFERTOOL.OFFER P
+--INNER JOIN OFFERTOOL.MYACCOUNT M ON P.ACCOUNTCODE = M.ACCOUNTCODE
+INNER JOIN OFFERTOOL.MYEMPLOYEE ME ON P.SALESRESPONSIBLECODE = ME.EMPLOYEENUMBER
+INNER JOIN OFFERTOOL.ACCOUNT C ON C.ACCOUNTCODE = P.ACCOUNTCODE
+LEFT JOIN OFFERTOOL.OFFERSTATUS S ON S.OFFERSTATUSCODE = P.OFFERSTATUSCODE
+LEFT JOIN OFFERTOOL.EMPLOYEE E ON E.EMPLOYEENUMBER = P.MODIFICATIONEMPLOYEENUMBER
+LEFT JOIN OFFERTOOL.DIVISION D ON D.DIVISIONCODE = P.DIVISIONCODE
+LEFT JOIN OFFERTOOL.EMPLOYEE EC ON EC.EMPLOYEENUMBER = P.CREATIONEMPLOYEENUMBER
+LEFT JOIN OFFERTOOL.PLANT PL ON PL.PLANTCODE = P.PLANTCODE
+LEFT JOIN OFFERTOOL.COUNTRY CO ON CO.COUNTRYCODE = P.COUNTRYCODE {} '''.format(wherestr)
+
+    print(query)
+        
     df = pd.read_sql(query, con=con)
     
     data=json.loads(df.to_json(orient='records'))
     
+    customer_name=list(set(df.accountname))
+    status=list(set(df.pgl_validation_levels))
+    df['creationdatetime']=pd.to_datetime(df['creationdatetime'])
     
-    return {"data":data}
     
+    df['creationdatetime']=df['creationdatetime'].astype(str)
+    created=list(set(df.creationdatetime))
+    pending_with=['testing','testing1','testing_2','testing_3']
+    
+    
+    
+    
+    
+    
+    return {"data":data ,"customer_name":customer_name,"status":status,"pending_with":pending_with,"created":created},200
+
+        
 
 
 
