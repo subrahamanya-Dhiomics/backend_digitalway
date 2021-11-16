@@ -281,37 +281,34 @@ def validate_files1():
     
     
     
-    try:
-        
-        cur.execute('rollback')
-        cur.execute('select max("Batch_ID") from alloy_surcharge.alloy_surcharge_wire;')
-        max_id=cur.fetchall()
-        if(max_id[0][0] == None):
-                Batch_ID=1
-        else:
-                Batch_ID=((max_id[0][0])+1)      
-        dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
-        wire_df.insert(0,'filename',filename)
-        wire_df.insert(0,'Batch_ID',Batch_ID)
-        wire_df.insert(1,'Username',username)
-        wire_df.insert(2,'date_time',dt_string)
-        wire_df.to_sql('alloy_surcharge_wire',con=engine, schema='alloy_surcharge',if_exists='append', index=False)
-        
-        date_time= today.strftime("%Y%m%d")
-        counter=str(Batch_ID)
-        cond_type="Z133"
-        sales_org="0300"
-        
-        # Path("C:\ocpphase1\ftp\Q72").mkdir(parents=True, exist_ok=True)
-        # out_df.reset_index(drop=True, inplace=True)
-        out_df.to_csv(csv_out_path+date_time+counter+'_'+cond_type+'_'+sales_org+'.csv', index = False)
     
         
-        return {"message":"success"},200
-    except:
-       return  {"statuscode":"500","message":"incorrect"},500
-       
+    cur.execute('rollback')
+    cur.execute('select max("Batch_ID") from alloy_surcharge.alloy_surcharge_wire;')
+    max_id=cur.fetchall()
+    if(max_id[0][0] == None):
+            Batch_ID=1
+    else:
+            Batch_ID=((max_id[0][0])+1)      
+    dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
+    wire_df.insert(0,'filename',filename)
+    wire_df.insert(0,'Batch_ID',Batch_ID)
+    wire_df.insert(1,'Username',username)
+    wire_df.insert(2,'date_time',dt_string)
+    wire_df.to_sql('alloy_surcharge_wire',con=engine, schema='alloy_surcharge',if_exists='append', index=False)
     
+    date_time= today.strftime("%Y%m%d")
+    counter=str(Batch_ID)
+    cond_type="Z133"
+    sales_org="0300"
+    
+    # Path("C:\ocpphase1\ftp\Q72").mkdir(parents=True, exist_ok=True)
+    # out_df.reset_index(drop=True, inplace=True)
+    out_df.to_csv(csv_out_path+date_time+counter+'_'+cond_type+'_'+sales_org+'.csv', index = False)
+
+    
+    return {"message":"success"},200
+   
 
 
 

@@ -29,10 +29,10 @@ from datetime import datetime
 from datetime import date
 import random
 
- 
 
-app = Flask(__name__)
-CORS(app)
+taskbar1 = Blueprint('taskbar1', __name__)
+
+CORS(taskbar1)
 con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
 cur = con.cursor()
 engine = create_engine('postgresql://postgres:ocpphase01@ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com:5432/offertool')
@@ -78,7 +78,7 @@ class Database:
             print('Cursor closed')
             
 db=Database()
-@app.route('/taskbar1_data', methods=['POST','GET'])
+@taskbar1.route('/taskbar1_data', methods=['POST','GET'])
 def add_income():
     
     
@@ -176,7 +176,7 @@ LEFT JOIN OFFERTOOL.COUNTRY CO ON CO.COUNTRYCODE = P.COUNTRYCODE {} '''.format(w
     data=json.loads(df.to_json(orient='records'))
     
     customer_name=list(set(df.accountname))
-    status=list(set(df.pgl_validation_levels))
+    # status=list(set(df.pgl_validation_levels))
     df['creationdatetime']=pd.to_datetime(df['creationdatetime'])
     
     
@@ -184,16 +184,7 @@ LEFT JOIN OFFERTOOL.COUNTRY CO ON CO.COUNTRYCODE = P.COUNTRYCODE {} '''.format(w
     created=list(set(df.creationdatetime))
     pending_with=['testing','testing1','testing_2','testing_3']
     
-    
-    
-    
-    
-    
-    return {"data":data ,"customer_name":customer_name,"status":status,"pending_with":pending_with,"created":created},200
+    return {"data":data ,"customer_name":customer_name,"pending_with":pending_with,"created":created},200
 
         
 
-
-
-if __name__ == '__main__':
-    app.run()
