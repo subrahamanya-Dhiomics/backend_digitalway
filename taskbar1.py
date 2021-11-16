@@ -2,7 +2,7 @@
 """
 Created on Tue Nov  9 11:42:38 2021
 
-@author: Administrator
+@author: subbu
 """
 from flask import Flask, jsonify, request
 from flask_cors import CORS
@@ -125,6 +125,7 @@ def add_income():
         if(flag==0):wherestr+='where  P.OFFERID = {}'.format(offerid)
         else:wherestr+=' and  P.OFFERID = {}'.format(offerid)
         flag=1
+    
     
    
     
