@@ -101,24 +101,24 @@ def add_income():
     wherestr=''
     flag=0
     
-    if(customer!='all' and customer!=None):
+    if(customer!='All' and customer!='all'  and customer!=None):
        
         if(flag==0):wherestr+="where C.ACCOUNTNAME = '{}' ".format(customer)
         else:wherestr+=" and  C.ACCOUNTNAME = '{}' ".format(customer)
         flag=1
-    if(pending_with!='all' and pending_with!=None ):
+    if(pending_with!='All' and pending_with!='all' and pending_with!=None ):
        
         if(flag==0):wherestr+=" where C.pgl_validator = '{}' ".format(pending_with)
         else:wherestr+=" and  C.pgl_validator ='{}' ".format(pending_with)
         flag=1
         
-    if(status!='all' and status!=None):
+    if(status!='All' and status!='all' and status!=None):
         
         if(flag==0):wherestr+="where S.DESCRIPTION = '{}' ".format(status)
         else:wherestr+=" and  S.DESCRIPTION = '{}' ".format(status)
         flag=1
     
-    if(created!='all' and created!=None ):
+    if(created!='All' and created!='all' and created!=None ):
         
         created=created.replace(created.split(' ')[-1],'').strip()+'+00'
         if(flag==0):wherestr+="where P.CREATIONDATETIME = '{}' ".format(created)
@@ -127,13 +127,13 @@ def add_income():
         print(created)
         print("************************************")
     
-    if(offerid !='all' and offerid != None ):
+    if(offerid !='All' and offerid !='all' and offerid != None ):
         
         if(flag==0):wherestr+='where  P.OFFERID = {}'.format(offerid)
         else:wherestr+=' and  P.OFFERID = {}'.format(offerid)
         flag=1
     
-    if(cust_ref !='all' and cust_ref != None ):
+    if(cust_ref !='All'  and cust_ref !='all'  and cust_ref != None ):
         
         if(flag==0):wherestr+="where P.RFQREFERENCE = '{}' ".format(cust_ref)
         else:wherestr+=" and  P.RFQREFERENCE = '{}' ".format(cust_ref)
@@ -183,16 +183,16 @@ LEFT JOIN OFFERTOOL.PLANT PL ON PL.PLANTCODE = P.PLANTCODE {} '''.format(wherest
     try:
         
        
-    
+        db.insert('rollback')
         df = pd.read_sql(query1, con=con)
         
-        if(search_string!="all" and search_string!=None):
+        if(search_string!="All" and search_string!='all' and search_string!=None):
                           df=df[df.eq(search_string).any(1)]
             
         data=json.loads(df.to_json(orient='records'))
         
         customer_name=list(set(df.accountname))
-        customer_name.append('all')
+        customer_name.append('All')
         # status=list(set(df.pgl_validation_levels))
         df['creationdatetime']=pd.to_datetime(df['creationdatetime'])
         
@@ -200,11 +200,11 @@ LEFT JOIN OFFERTOOL.PLANT PL ON PL.PLANTCODE = P.PLANTCODE {} '''.format(wherest
         df['creationdatetime']=df['creationdatetime'].astype(str)
         created=list(set(df.creationdatetime))
         status=list(set(df.offerstatustext))
-        status.append('all')
-        created.append('all')
+        status.append('All')
+        created.append('All')
         pending_with=[]
         
-        pending_with.append('all')
+        pending_with.append('All')
         
         
         return jsonify({"data":data ,"customer_name":customer_name,"status":status,"pending_with":pending_with,"created":created}),200
