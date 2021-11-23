@@ -33,7 +33,7 @@ import random
 taskbar1 = Blueprint('taskbar1', __name__)
 
 CORS(taskbar1)
-con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
+con = psycopg2.connect(dbname='offertool',user='pgapp',password='Fulcrum_17',host='offertool2-pro.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
 cur = con.cursor()
 engine = create_engine('postgresql://postgres:ocpphase01@ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com:5432/offertool')
      
@@ -86,7 +86,7 @@ def add_income():
         
         customer=request.args.get('customer',type=str)
         pending_with=request.args.get('pending_with')
-        status=request.args.get('status')
+        status='Pending Business Validation'
         created=request.args.get('created')
         
         offerid=request.args.get('offerid')
@@ -188,17 +188,36 @@ LEFT JOIN OFFERTOOL.PLANT PL ON PL.PLANTCODE = P.PLANTCODE {} '''.format(wherest
         
         if(search_string!="All" and search_string!='all' and search_string!=None):
                           df=df[df.eq(search_string).any(1)]
+                          
+        df['creationdatetime']=df['creationdatetime'].astype(str)
+        df['closedate']=df['closedate'].astype(str)
+                          
+        created=list(set(df.creationdatetime))
+        
+        
+        df['creationdatetime'] = df['creationdatetime'].str.split(' ').str[0]
+       
+        df['creationdatetime']=pd.to_datetime(df['creationdatetime'], format='%Y/%m/%d')
+        df['closedate'] = df['closedate'].str.split(' ').str[0]
+       
+        df['closedate']=pd.to_datetime(df['closedate'], format='%Y/%m/%d')
+        
+        
+        df['creationdatetime']=df['creationdatetime'].astype(str)
+        df['closedate']=df['closedate'].astype(str)
             
         data=json.loads(df.to_json(orient='records'))
         
         customer_name=list(set(df.accountname))
         customer_name.append('All')
         # status=list(set(df.pgl_validation_levels))
-        df['creationdatetime']=pd.to_datetime(df['creationdatetime'])
         
+       
+       
         
-        df['creationdatetime']=df['creationdatetime'].astype(str)
-        created=list(set(df.creationdatetime))
+            
+            
+        
         status=list(set(df.offerstatustext))
         status.append('All')
         created.append('All')
