@@ -75,33 +75,42 @@ input_directory="C:/Users/Administrator/Documents/SMB_INPUT/"
 
 con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
 
-app=Flask(__name__)
-CORS(app)
+web_api_response = Blueprint('web_api_response', __name__)
 
-@app.route("/web_api_response",methods=['GET','POST'])
+CORS(web_api_response)
+
+@web_api_response.route("/web_api_response",methods=['GET','POST'])
 def web_api():
    
+         print('hi')
+      
         
-         
-         
-         
-    try:    
+    
          data=json.loads(request.data)
-         tableName = data['tableName']
+         tableId = data['tableId']
+         print(tableId)
+         
          data=data['data']
+         print(data)
          wherestr=''
          db.insert("rollback")
-         query='select tablename from "SMB"."table_mapping" where id ={}'.format(tableName)
+         query='select tablename from "SMB"."table_mapping" where id ={}'.format(tableId)
          
          tableName=db.query(query)[0][0]
+         print(tableName)
          k=0
          query='''select * from "SMB"."{}" where '''.format(tableName)
          for i in data:
              if(k==0):
                  wherestr=wherestr +'"' + i +'"' +" = " + "'" +str(data[i])+"'"
                  k=1
+             if(i=="Currency"):
+                  wherestr=wherestr + " and " +'"' + i +'"' +" = " + "''" +str(data[i])+"''"
+                  k=1
+                
              else:
                  wherestr=wherestr + " and " +'"' + i +'"' +" = " + "'" +str(data[i])+"'"
+                 
                     
          query=query+wherestr
          print(query)
@@ -113,8 +122,4 @@ def web_api():
               
          return {"data":df_json}
                
-    except:
-            return {"data":"failure"}
-        
-if __name__ == '__main__':
-    app.run()
+  

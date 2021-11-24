@@ -33,7 +33,7 @@ import random
 taskbar1 = Blueprint('taskbar1', __name__)
 
 CORS(taskbar1)
-con = psycopg2.connect(dbname='offertool',user='pgapp',password='Fulcrum_17',host='offertool2-pro.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
+con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
 cur = con.cursor()
 engine = create_engine('postgresql://postgres:ocpphase01@ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com:5432/offertool')
      
@@ -211,13 +211,7 @@ LEFT JOIN OFFERTOOL.PLANT PL ON PL.PLANTCODE = P.PLANTCODE {} '''.format(wherest
         customer_name=list(set(df.accountname))
         customer_name.append('All')
         # status=list(set(df.pgl_validation_levels))
-        
-       
-       
-        
-            
-            
-        
+   
         status=list(set(df.offerstatustext))
         status.append('All')
         created.append('All')
@@ -229,5 +223,55 @@ LEFT JOIN OFFERTOOL.PLANT PL ON PL.PLANTCODE = P.PLANTCODE {} '''.format(wherest
         return jsonify({"data":data ,"customer_name":customer_name,"status":status,"pending_with":pending_with,"created":created}),200
     except:
         return {"status":"failure"},500
+
+@taskbar1.route('/invoice_payments', methods=['POST','GET'])
+def  invoice_payments():
+    customer=request.args.get('customer')
+    invoice_ageing=request.args.get('invoice_ageing')
+    invoice_posting_date=request.args.get('invoice_posting_date')
     
-           
+    search_string=request.args.get('serach_string')
+    
+    wherestr=''
+    flag=0
+    
+    
+    if(customer!='All' and customer!='all'  and customer!=None):
+       
+        if(flag==0):wherestr+="where C.ACCOUNTNAME = '{}' ".format(customer)
+        else:wherestr+=" and  C.ACCOUNTNAME = '{}' ".format(customer)
+        flag=1
+    if(invoice_ageing!='All' and invoice_ageing!='all' and invoice_ageing!=None ):
+       
+        if(flag==0):wherestr+=" where C.pgl_validator = '{}' ".format(invoice_ageing)
+        else:wherestr+=" and  C.pgl_validator ='{}' ".format(invoice_ageing)
+        flag=1
+        
+    if(invoice_posting_date!='All' and invoice_posting_date!='all' and invoice_posting_date!=None):
+        
+        if(flag==0):wherestr+="where S.DESCRIPTION = '{}' ".format(invoice_posting_date)
+        else:wherestr+=" and  S.DESCRIPTION = '{}' ".format(invoice_posting_date)
+        flag=1
+        
+    query=''' SELECT b.KUNNR Customer_Number,n.NAME1 Customer_Name,b.BELNR Sales_Order_Number, b.VBEL2 Invoice_Number,
+b.BUDAT Invoice_Posting_date,b.BUZEI Item_Number,b.WRBTR Amount,(CURRENT_DATE)::VARCHAR Invoice_Aging,'NONE'::VARCHAR  as Invoice_Aging_Bucket
+FROM invoice.BSID b INNER JOIN invoice.KNA1 n ON n.KUNNR=b.KUNNR '''
+
+    
+    db.insert('rollback')
+    df = pd.read_sql(query, con=con)
+    
+    df['invoice_posting_date']=df['invoice_posting_date'].astype(str)
+    df['invoice_posting_date'] = df['invoice_posting_date'].str.split(' ').str[0]
+       
+    df['invoice_posting_date']=pd.to_datetime(df['invoice_posting_date'], format='%Y/%m/%d')
+    df['invoice_posting_date']=df['invoice_posting_date'].astype(str)
+    if(search_string!="All" and search_string!='all' and search_string!=None):
+                          df=df[df.eq(search_string).any(1)]
+    data=json.loads(df.to_json(orient='records'))
+    
+
+    
+    
+    return jsonify({"data":data})
+     

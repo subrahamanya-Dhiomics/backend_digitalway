@@ -14,6 +14,7 @@ from smb_phase2 import smb_app2
 from smb_phase3 import smb_app3
 from smb_history import smb_history
 from taskbar1 import taskbar1
+from web_api_response import web_api_response
 
 
 app = Flask(__name__)
@@ -29,6 +30,7 @@ app.register_blueprint(smb_app1)
 app.register_blueprint(smb_app2)
 app.register_blueprint(smb_app3)
 app.register_blueprint(taskbar1)
+app.register_blueprint(web_api_response)
 
 
 app.register_blueprint(smb_history)
