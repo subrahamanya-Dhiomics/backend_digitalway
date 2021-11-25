@@ -85,6 +85,7 @@ def upload_files():
         
        
         stock_df = pd.read_excel(input_path +"/"+f.filename)
+        stock_df=stock_df[stock_df['Mill']=='Duisburg']
         stock_df_columns=list(stock_df.columns)
 
         try:

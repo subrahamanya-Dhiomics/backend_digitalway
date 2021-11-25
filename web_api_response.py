@@ -79,47 +79,42 @@ web_api_response = Blueprint('web_api_response', __name__)
 
 CORS(web_api_response)
 
-@web_api_response.route("/web_api_response",methods=['GET','POST'])
+@web_api_response.route("/SMBMinibarService",methods=['GET','POST'])
 def web_api():
    
-         print('hi')
-      
-        
-    
          data=json.loads(request.data)
          tableId = data['tableId']
-         print(tableId)
-         
          data=data['data']
-         print(data)
          wherestr=''
          db.insert("rollback")
-         query='select tablename from "SMB"."table_mapping" where id ={}'.format(tableId)
          
-         tableName=db.query(query)[0][0]
-         print(tableName)
-         k=0
-         query='''select * from "SMB"."{}" where '''.format(tableName)
-         for i in data:
-             if(k==0):
-                 wherestr=wherestr +'"' + i +'"' +" = " + "'" +str(data[i])+"'"
-                 k=1
-             if(i=="Currency"):
-                  wherestr=wherestr + " and " +'"' + i +'"' +" = " + "''" +str(data[i])+"''"
-                  k=1
-                
-             else:
-                 wherestr=wherestr + " and " +'"' + i +'"' +" = " + "'" +str(data[i])+"'"
-                 
-                    
-         query=query+wherestr
-         print(query)
-         data=db.query(query)
+         try:
+             
+             query='select tablename from "SMB"."table_mapping" where id ={}'.format(tableId)
+             tableName=db.query(query)[0][0]
             
-         df=pd.read_sql(query,con=con)
-         df_json=json.loads(df.to_json(orient='records'))
+             k=0
+             query='''select * from "SMB"."{}" where '''.format(tableName)
+             for i in data:
+                 if(k==0):
+                     wherestr=wherestr +'"' + i +'"' +" = " + "'" +str(data[i])+"'"
+                     k=1
+                 if(i=="Currency"):
+                      wherestr=wherestr + " and " +'"' + i +'"' +" = " + "''" +str(data[i])+"''"
+                      k=1
+                    
+                 else:
+                     wherestr=wherestr + " and " +'"' + i +'"' +" = " + "'" +str(data[i])+"'"
+             query=query+wherestr
+             print(query)
+             data=db.query(query)
                 
-              
-         return {"data":df_json}
+             df=pd.read_sql(query,con=con)
+             df_json=json.loads(df.to_json(orient='records'))
+                    
+                  
+             return {"data":df_json,"status":"sucess"}
+         except:
+             return {"status":"invalid request"}
                
   

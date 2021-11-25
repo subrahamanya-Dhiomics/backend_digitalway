@@ -36,5 +36,5 @@ app.register_blueprint(web_api_response)
 app.register_blueprint(smb_history)
 
 if __name__ == '__main__':
-    # app.run(host='172.16.4.75', port=5000)
-    app.run()
+   app.run()
+   
