@@ -62,7 +62,7 @@ def tupleToList(tupleVar):
             return(listVar)
 
 
-csv_out_path="C:/ocpphase1/ftp/Q72/"
+csv_out_path="C:/Users/Administrator/Documents/Input_files/"
 input_path='C:/Users/Administrator/Documents/Input_files/'
 
 @scrap_app.route('/Alloy_wire_upload',methods=['GET','POST'])

@@ -227,10 +227,21 @@ LEFT JOIN OFFERTOOL.PLANT PL ON PL.PLANTCODE = P.PLANTCODE {} '''.format(wherest
 @taskbar1.route('/invoice_payments', methods=['POST','GET'])
 def  invoice_payments():
     customer=request.args.get('customer')
-    invoice_ageing=request.args.get('invoice_ageing')
+    invoice_aging=request.args.get('invoice_ageing')
     invoice_posting_date=request.args.get('invoice_posting_date')
     
-    search_string=request.args.get('serach_string')
+    search_string=request.args.get("search_string")
+    
+    limit=request.args.get("limit",type=int)
+    offset=request.args.get("offset",type=int)
+    
+    # pagination logic
+    
+    try:
+        lowerLimit=offset*limit 
+        upperLimit=lowerLimit+limit
+    except:
+        pass
     
     wherestr=''
     flag=0
@@ -238,40 +249,48 @@ def  invoice_payments():
     
     if(customer!='All' and customer!='all'  and customer!=None):
        
-        if(flag==0):wherestr+="where C.ACCOUNTNAME = '{}' ".format(customer)
-        else:wherestr+=" and  C.ACCOUNTNAME = '{}' ".format(customer)
+        if(flag==0):wherestr+="where n.NAME1 = '{}' ".format(customer)
+        else:wherestr+=" and  n.NAME1 = '{}' ".format(customer)
         flag=1
-    if(invoice_ageing!='All' and invoice_ageing!='all' and invoice_ageing!=None ):
+    if(invoice_aging!='All' and invoice_aging!='all' and invoice_aging!=None ):
        
-        if(flag==0):wherestr+=" where C.pgl_validator = '{}' ".format(invoice_ageing)
-        else:wherestr+=" and  C.pgl_validator ='{}' ".format(invoice_ageing)
+        if(flag==0):wherestr+=" where C.pgl_validator = '{}' ".format(invoice_aging)
+        else:wherestr+=" and  C.pgl_validator ='{}' ".format(invoice_aging)
         flag=1
         
     if(invoice_posting_date!='All' and invoice_posting_date!='all' and invoice_posting_date!=None):
         
-        if(flag==0):wherestr+="where S.DESCRIPTION = '{}' ".format(invoice_posting_date)
-        else:wherestr+=" and  S.DESCRIPTION = '{}' ".format(invoice_posting_date)
+        if(flag==0):wherestr+="where b.BUDAT = '{}' ".format(invoice_posting_date)
+        else:wherestr+=" and  b.BUDAT = '{}' ".format(invoice_posting_date)
         flag=1
         
-    query=''' SELECT b.KUNNR Customer_Number,n.NAME1 Customer_Name,b.BELNR Sales_Order_Number, b.VBEL2 Invoice_Number,
-b.BUDAT Invoice_Posting_date,b.BUZEI Item_Number,b.WRBTR Amount,(CURRENT_DATE)::VARCHAR Invoice_Aging,'NONE'::VARCHAR  as Invoice_Aging_Bucket
-FROM invoice.BSID b INNER JOIN invoice.KNA1 n ON n.KUNNR=b.KUNNR '''
+    query='''SELECT b.KUNNR Customer_Number,n.NAME1 Customer_Name,b.BELNR Sales_Order_Number, b.VBEL2 Invoice_Number,
+b.BUDAT Invoice_Posting_date,b.BUZEI Item_Number,b.WRBTR Amount,extract(day from CURRENT_DATE-(ZFBDT::date+((concat(ZBD1T::varchar,' day'))::varchar)::INTERVAL)) Invoice_Aging,
+CONCAT((CASE WHEN floor(extract(day from CURRENT_DATE-(ZFBDT::date+((concat(ZBD1T::varchar,' day'))::varchar)::INTERVAL))/30) <= 0 THEN 0 ELSE (floor(extract(day from CURRENT_DATE-(ZFBDT::date+((concat(ZBD1T::varchar,' day'))::varchar)::INTERVAL))/30)*30)+1 END)::VARCHAR,
+'-',(CASE WHEN ceil(extract(day from CURRENT_DATE-(ZFBDT::date+((concat(ZBD1T::varchar,' day'))::varchar)::INTERVAL))/30) <= 0 THEN 0 ELSE (ceil(extract(day from CURRENT_DATE-(ZFBDT::date+((concat(ZBD1T::varchar,' day'))::varchar)::INTERVAL))/30)*30) END)::VARCHAR) Invoice_Aging_Bucket
 
-    
+FROM invoice.BSID b INNER JOIN invoice.KNA1 n ON n.KUNNR=b.KUNNR  {}  ; '''.format(wherestr)
+
+    print(query)
     db.insert('rollback')
     df = pd.read_sql(query, con=con)
+    customer_name=list(set(df.customer_name))
+   
     
     df['invoice_posting_date']=df['invoice_posting_date'].astype(str)
-    df['invoice_posting_date'] = df['invoice_posting_date'].str.split(' ').str[0]
-       
+    df['invoice_posting_date'] = df['invoice_posting_date'].str.split(' ').str[0]  
     df['invoice_posting_date']=pd.to_datetime(df['invoice_posting_date'], format='%Y/%m/%d')
     df['invoice_posting_date']=df['invoice_posting_date'].astype(str)
+    
+    
+    invoice_posting_date=list(set(df.invoice_posting_date))
     if(search_string!="All" and search_string!='all' and search_string!=None):
                           df=df[df.eq(search_string).any(1)]
+    df=df.loc[lowerLimit:upperLimit]
     data=json.loads(df.to_json(orient='records'))
     
 
     
     
-    return jsonify({"data":data})
+    return jsonify({"data":data,"customer_name":customer_name,"invoice_posting_date":invoice_posting_date})
      
