@@ -272,25 +272,29 @@ CONCAT((CASE WHEN floor(extract(day from CURRENT_DATE-(ZFBDT::date+((concat(ZBD1
 FROM invoice.BSID b INNER JOIN invoice.KNA1 n ON n.KUNNR=b.KUNNR  {}  ; '''.format(wherestr)
 
     print(query)
-    db.insert('rollback')
-    df = pd.read_sql(query, con=con)
-    customer_name=list(set(df.customer_name))
-   
+    try:
+        db.insert('rollback')
+        df = pd.read_sql(query, con=con)
+        customer_name=list(set(df.customer_name))
+        customer_name.append('All')
+       
+        
+        df['invoice_posting_date']=df['invoice_posting_date'].astype(str)
+        df['invoice_posting_date'] = df['invoice_posting_date'].str.split(' ').str[0]  
+        df['invoice_posting_date']=pd.to_datetime(df['invoice_posting_date'], format='%Y/%m/%d')
+        df['invoice_posting_date']=df['invoice_posting_date'].astype(str)
+        
+        
+        invoice_posting_date=list(set(df.invoice_posting_date))
+        invoice_posting_date.append('All')
+        if(search_string!="All" and search_string!='all' and search_string!=None):
+                              df=df[df.eq(search_string).any(1)]
+        # df=df.loc[lowerLimit:upperLimit]
+        data=json.loads(df.to_json(orient='records'))
+        
     
-    df['invoice_posting_date']=df['invoice_posting_date'].astype(str)
-    df['invoice_posting_date'] = df['invoice_posting_date'].str.split(' ').str[0]  
-    df['invoice_posting_date']=pd.to_datetime(df['invoice_posting_date'], format='%Y/%m/%d')
-    df['invoice_posting_date']=df['invoice_posting_date'].astype(str)
-    
-    
-    invoice_posting_date=list(set(df.invoice_posting_date))
-    if(search_string!="All" and search_string!='all' and search_string!=None):
-                          df=df[df.eq(search_string).any(1)]
-    df=df.loc[lowerLimit:upperLimit]
-    data=json.loads(df.to_json(orient='records'))
-    
-
-    
-    
-    return jsonify({"data":data,"customer_name":customer_name,"invoice_posting_date":invoice_posting_date})
-     
+        
+        
+        return jsonify({"data":data,"customer_name":customer_name,"invoice_posting_date":invoice_posting_date})
+    except:
+        return {"stataus":"sucess"},500
