@@ -289,7 +289,7 @@ FROM invoice.BSID b INNER JOIN invoice.KNA1 n ON n.KUNNR=b.KUNNR  {}  ; '''.form
         invoice_posting_date.append('All')
         if(search_string!="All" and search_string!='all' and search_string!=None):
                               df=df[df.eq(search_string).any(1)]
-        # df=df.loc[lowerLimit:upperLimit]
+        df=df.loc[lowerLimit:upperLimit]
         data=json.loads(df.to_json(orient='records'))
         
     
