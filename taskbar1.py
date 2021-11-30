@@ -227,10 +227,12 @@ LEFT JOIN OFFERTOOL.PLANT PL ON PL.PLANTCODE = P.PLANTCODE {} '''.format(wherest
 @taskbar1.route('/invoice_payments', methods=['POST','GET'])
 def  invoice_payments():
     customer=request.args.get('customer')
-    invoice_aging=request.args.get('invoice_ageing')
-    invoice_posting_date=request.args.get('invoice_posting_date')
+    invoice_aging=request.args.get('invoice_aging')
+    invoice_posting_date_from=request.args.get('invoice_posting_date_from')
+    invoice_posting_date_to=request.args.get('invoice_posting_date_to')
     
     search_string=request.args.get("search_string")
+    invoice_aging_bucket=request.args.get("invoice_aging_bucket")
     
     limit=request.args.get("limit",type=int)
     offset=request.args.get("offset",type=int)
@@ -249,35 +251,81 @@ def  invoice_payments():
     
     if(customer!='All' and customer!='all'  and customer!=None):
        
-        if(flag==0):wherestr+="where n.NAME1 = '{}' ".format(customer)
-        else:wherestr+=" and  n.NAME1 = '{}' ".format(customer)
+        if(flag==0):wherestr+="where customer_name = '{}' ".format(customer)
+        else:wherestr+=" and  customer_name = '{}' ".format(customer)
         flag=1
     if(invoice_aging!='All' and invoice_aging!='all' and invoice_aging!=None ):
        
-        if(flag==0):wherestr+=" where C.pgl_validator = '{}' ".format(invoice_aging)
-        else:wherestr+=" and  C.pgl_validator ='{}' ".format(invoice_aging)
+        if(flag==0):wherestr+=" where Invoice_Aging = '{}' ".format(invoice_aging)
+        else:wherestr+=" and  Invoice_Aging ='{}' ".format(invoice_aging)
+        flag=1
+    if(invoice_aging_bucket!='All' and invoice_aging_bucket!='all' and invoice_aging_bucket!=None and invoice_aging_bucket!='Not Due'):
+        
+        bucket=invoice_aging_bucket.split(' ')[0]
+        bucket_from=bucket.split('-')[0]
+        bucket_to=bucket.split('-')[1]
+        
+        
+        
+        
+       
+        if(flag==0):
+            flag=1
+            if(invoice_aging_bucket=='Not Due'):
+                wherestr+="where invoice_aging < 0";
+            else:
+                wherestr+=" where SPLIT_PART(invoice_aging_bucket, '-', 1) :: INTEGER > {}  and SPLIT_PART(invoice_aging_bucket, '-', 2) :: INTEGER < {}  ".format(bucket_from,bucket_to)
+        else:
+           
+            if(invoice_aging_bucket=='Not Due'):
+                wherestr+="and invoice_aging < 0"
+            else:
+                wherestr+=" and  SPLIT_PART(invoice_aging_bucket, '-', 1) :: INTEGER > {}  and SPLIT_PART(invoice_aging_bucket, '-', 2) :: INTEGER < {}  ".format(bucket_from,bucket_to)
+        
+       
+        
+   
+        
+        
+    if(invoice_posting_date_to!='All' and invoice_posting_date_to!='all' and invoice_posting_date_to!=None):
+        
+        if(flag==0):wherestr+="where Invoice_Posting_Date between '{}'  and '{}' ".format(invoice_posting_date_from,invoice_posting_date_to)
+        else:wherestr+=" and  Invoice_Posting_Date between '{}'  and '{}' ".format(invoice_posting_date_from,invoice_posting_date_to)
         flag=1
         
-    if(invoice_posting_date!='All' and invoice_posting_date!='all' and invoice_posting_date!=None):
+    
         
-        if(flag==0):wherestr+="where b.BUDAT = '{}' ".format(invoice_posting_date)
-        else:wherestr+=" and  b.BUDAT = '{}' ".format(invoice_posting_date)
-        flag=1
         
-    query='''SELECT b.KUNNR Customer_Number,n.NAME1 Customer_Name,b.BELNR Sales_Order_Number, b.VBEL2 Invoice_Number,
+        
+        
+    query='''select  * from ( SELECT b.KUNNR Customer_Number,n.NAME1 Customer_Name,b.BELNR Sales_Order_Number, b.VBEL2 Invoice_Number,
 b.BUDAT Invoice_Posting_date,b.BUZEI Item_Number,b.WRBTR Amount,extract(day from CURRENT_DATE-(ZFBDT::date+((concat(ZBD1T::varchar,' day'))::varchar)::INTERVAL)) Invoice_Aging,
 CONCAT((CASE WHEN floor(extract(day from CURRENT_DATE-(ZFBDT::date+((concat(ZBD1T::varchar,' day'))::varchar)::INTERVAL))/30) <= 0 THEN 0 ELSE (floor(extract(day from CURRENT_DATE-(ZFBDT::date+((concat(ZBD1T::varchar,' day'))::varchar)::INTERVAL))/30)*30)+1 END)::VARCHAR,
 '-',(CASE WHEN ceil(extract(day from CURRENT_DATE-(ZFBDT::date+((concat(ZBD1T::varchar,' day'))::varchar)::INTERVAL))/30) <= 0 THEN 0 ELSE (ceil(extract(day from CURRENT_DATE-(ZFBDT::date+((concat(ZBD1T::varchar,' day'))::varchar)::INTERVAL))/30)*30) END)::VARCHAR) Invoice_Aging_Bucket
 
-FROM invoice.BSID b INNER JOIN invoice.KNA1 n ON n.KUNNR=b.KUNNR  {}  ; '''.format(wherestr)
+
+
+FROM invoice.BSID b INNER JOIN invoice.KNA1 n ON n.KUNNR=b.KUNNR )  as tbl {} ;'''.format(wherestr)
 
     print(query)
+    
     try:
+        
         db.insert('rollback')
         df = pd.read_sql(query, con=con)
+       
+       
+       
         customer_name=list(set(df.customer_name))
         customer_name.append('All')
+        
        
+        
+        
+        invoice_aging_bucket_data=['Not Due','0-30 days','31-60 days','61-90 days','91-180 days','above 180 days']
+        
+        
+        df.loc[(df.invoice_aging_bucket =='0-0'), 'invoice_aging_bucket'] = 'Not Due'
         
         df['invoice_posting_date']=df['invoice_posting_date'].astype(str)
         df['invoice_posting_date'] = df['invoice_posting_date'].str.split(' ').str[0]  
@@ -285,16 +333,23 @@ FROM invoice.BSID b INNER JOIN invoice.KNA1 n ON n.KUNNR=b.KUNNR  {}  ; '''.form
         df['invoice_posting_date']=df['invoice_posting_date'].astype(str)
         
         
-        invoice_posting_date=list(set(df.invoice_posting_date))
-        invoice_posting_date.append('All')
+        print(invoice_aging_bucket)
+        print("***********************")
+        if(invoice_aging_bucket=='Not Due'):
+            df=df[df.invoice_aging_bucket=='Not Due']
+            
+        invoice_aging=list(set(df.invoice_aging))
+        invoice_aging.append('All')
+        
+        
+       
         if(search_string!="All" and search_string!='all' and search_string!=None):
                               df=df[df.eq(search_string).any(1)]
+                                                  
         df=df.loc[lowerLimit:upperLimit]
         data=json.loads(df.to_json(orient='records'))
-        
+      
     
-        
-        
-        return jsonify({"data":data,"customer_name":customer_name,"invoice_posting_date":invoice_posting_date})
+        return jsonify({"data":data,"customer_name":customer_name,"invoice_aging":invoice_aging,"invoice_aging_bucket":invoice_aging_bucket_data})
     except:
-        return {"stataus":"sucess"},500
+        return {"stataus":"sucess"},200
