@@ -7,8 +7,6 @@ Created on Thu Oct  12 07:33:38 2021
 """
 
 from flask import Blueprint
-
-
 import pandas as pd
 import time
 import json
@@ -28,8 +26,6 @@ from datetime import datetime,date
 
 
 engine = create_engine('postgresql://postgres:ocpphase01@ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com:5432/offertool')
-     
-
 class Database:
     host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com'  # your host
     user='postgres'      # usernames
@@ -79,7 +75,7 @@ db=Database()
 input_directory="C:/Users/Administrator/Documents/SMB_INPUT/"
 
 
-download_path='C:/SMB/smb_download/'
+download_path='/home/ubuntu/SMBDir/smb_download/'
 
 con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
 
@@ -93,8 +89,7 @@ def Hello():
 @smb_app1.route('/Base_Price_Data',methods=['GET','POST'])
 def SMB_data():
     # query_paramters 
-    search_string=request.args.get("search_string")
-    
+    search_string=request.args.get("search_string") 
     limit=request.args.get("limit",type=int)
     offset=request.args.get("offset",type=int)
     
@@ -103,8 +98,7 @@ def SMB_data():
     if(offset==None):
         offset=0
     
-    print(limit)
-    print(offset)
+
     
     # pagination logic
     lowerLimit=offset*limit 
@@ -162,21 +156,24 @@ def get_record():
 
 @smb_app1.route('/update_record_baseprice',methods=['POST'])
 def update_record1():
-    username = getpass.getuser()
-    now = datetime.now()
-    date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
-    query_parameters =json.loads(request.data) 
+        username = getpass.getuser()
+        now = datetime.now()
+        date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
+        query_parameters =json.loads(request.data) 
+        
+        sequence_id=(query_parameters['sequence_id'])
     
-    BusinessCode=(query_parameters['BusinessCode'])
-    Market_Country =( query_parameters["Market_Country"])
-    Product_Division =( query_parameters["Product_Division"])
-    Product_Level_02 =( query_parameters["Product_Level_02"])
-    Document_Item_Currency =( query_parameters["Document_Item_Currency"])
-    Amount =( query_parameters["Amount"])
-    Currency =( query_parameters["Currency"])
-    id_value=(query_parameters['id_value'])
+        BusinessCode=(query_parameters['BusinessCode'])
+        Market_Country =( query_parameters["Market_Country"])
+        Product_Division =( query_parameters["Product_Division"])
+        Product_Level_02 =( query_parameters["Product_Level_02"])
+        Document_Item_Currency =( query_parameters["Document_Item_Currency"])
+        Amount =( query_parameters["Amount"])
+        Currency =( query_parameters["Currency"])
+        id_value=(query_parameters['id_value'])
+        
+        
     
-    try:
         
         query1='''INSERT INTO "SMB"."SMB - Base Price - Category Addition_History" 
         SELECT 
@@ -200,17 +197,12 @@ def update_record1():
        "Document Item Currency"='{5}',
        "Amount"='{6}',
        "Currency"=''{7}'',
-       "updated_on"='{8}'
+       "updated_on"='{8}',
         WHERE "id"={9} '''.format(username,BusinessCode,Market_Country,Product_Division,Product_Level_02,Document_Item_Currency,Amount,Currency,date_time,id_value)
         result1=db.insert(query2)
         if result1=='failed' :raise ValueError
-        print(query1)
-        print("*****************************")
-        print(query2)
         return {"status":"success"},200
-    except:
-        return {"status":"failure"},500
-     
+   
 
 @smb_app1.route('/add_record_baseprice',methods=['POST'])
 def add_record1():
@@ -346,18 +338,17 @@ def  SMB_validate():
 def SMB_baseprice_download1():
    
         now = datetime.now()
-        try:
-            df = pd.read_sql('''select * from "SMB"."SMB - Base Price - Category Addition" where "active"='1' order by "id" ''', con=con)
-            df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
-            t=now.strftime("%d-%m-%Y-%H-%M-%S")
-            file=download_path+t+'baseprice_category_addition.xlsx'
-            print(file)
-            df.to_excel(file,index=False)
-            
-            return send_file(file, as_attachment=True)
-           
-        except:
-            return {"status":"failure"},500
+       
+        df = pd.read_sql('''select * from "SMB"."SMB - Base Price - Category Addition" where "active"='1' order by sequence_id ''', con=con)
+        df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
+        t=now.strftime("%d-%m-%Y-%H-%M-%S")
+        file=download_path+t+'baseprice_category_addition.xlsx'
+        print(file)
+        df.to_excel(file,index=False)
+        
+        return send_file(file, as_attachment=True)
+       
+        
     
 # ***************************************************************************************************************************************************************************************
 # baseprice_minibar
@@ -382,7 +373,7 @@ def SMB_data_baseprice_mini():
    
     # fetching the data from database and filtering    
     try:
-        query='''select * from "SMB"."SMB - Base Price - Category Addition - MiniBar" where "active"='1' order by "id"  OFFSET {} LIMIT {} '''.format(lowerLimit,upperLimit) 
+        query='''select * from "SMB"."SMB - Base Price - Category Addition - MiniBar" where "active"='1' order by sequence_id  OFFSET {} LIMIT {} '''.format(lowerLimit,upperLimit) 
         df = pd.read_sql(query, con=con)
         
         
@@ -448,7 +439,7 @@ def update_record_category_minibar():
         Document_Item_Currency =( query_parameters["Document_Item_Currency"])
         Amount =( query_parameters["Amount"])
         Currency =( query_parameters["Currency"])
-        
+        sequence_id=(query_parameters['sequence_id'])
         id_value=(query_parameters['id_value'])
     
         try:
@@ -478,8 +469,9 @@ def update_record_category_minibar():
            "Document Item Currency"='{6}',
            "Amount"='{7}',
            "Currency"=''{8}'',
-           "updated_on"='{9}'
-            WHERE "id"={10} '''.format(username,BusinessCode,Customer_Group,Market_Customer,Market_Country,Beam_Category,Document_Item_Currency,Amount,Currency,date_time,id_value)
+           "updated_on"='{9}',sequence_id= {10}
+            WHERE "id"={11} '''.format(username,BusinessCode,Customer_Group,Market_Customer,Market_Country,Beam_Category,Document_Item_Currency,Amount,Currency,date_time,sequence_id,id_value)
+            print(query2)
             
             result1=db.insert(query2)
             if result1=='failed' :raise ValueError
@@ -1235,7 +1227,7 @@ def extra_certificate_data_minibar():
    
     # fetching the data from database and filtering    
     try:
-        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Certificate - MiniBar" where "active"='1' order by "id"  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Certificate - MiniBar" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
         count=db.query('select count(*) from "SMB"."SMB - Extra - Certificate - MiniBar"')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer":"Market_Customer"},inplace=True)
@@ -1302,7 +1294,7 @@ def update_record_extra_certificate_minibar():
     Certificate=(query_parameters['Certificate'])
     Grade_Category =( query_parameters["Grade_Category"])
     id_value=(query_parameters['id'])
-    
+    sequence_id=(query_parameters['sequence_id'])
     Document_Item_Currency =( query_parameters["Document_Item_Currency"])
     Amount =( query_parameters["Amount"])
     Currency =( query_parameters["Currency"])
@@ -1327,12 +1319,11 @@ def update_record_extra_certificate_minibar():
        "BusinessCode"='{1}', "Customer Group"='{2}',
        "Market - Customer"='{3}', "Market - Country"='{4}', "Certificate"='{5}',
        "Grade Category"='{6}',
-       
        "Document Item Currency"='{7}',
        "Amount"='{8}',
        "Currency"=''{9}'',
-       "updated_on"='{10}'
-        WHERE "id"={11} '''.format(username,BusinessCode,Customer_Group,Market_Customer,Market_Country,Certificate,Grade_Category,Document_Item_Currency,Amount,Currency,date_time,id_value)
+       "updated_on"='{10}' , sequence_id={11}
+        WHERE "id"={12} '''.format(username,BusinessCode,Customer_Group,Market_Customer,Market_Country,Certificate,Grade_Category,Document_Item_Currency,Amount,Currency,date_time,sequence_id,id_value)
         result1=db.insert(query2)
         if result1=='failed' :raise ValueError
         print(query1)
@@ -1806,7 +1797,7 @@ def data_delivery_mill_minibar():
     
     # fetching the data from database and filtering    
     try:
-        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Delivery Mill - MiniBar" where "active"='1' order by "id"  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Delivery Mill - MiniBar" where "active"='1' order by sequence_id OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
         count=db.query('select count(*) from "SMB"."SMB - Extra - Delivery Mill - MiniBar"')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
@@ -1871,6 +1862,7 @@ def update_record_delivery_mill_minibar():
         Delivering_Mill=(query_parameters["Delivering_Mill"])
         Product_Division =( query_parameters["Product_Division"])
         id_value=(query_parameters['id'])
+        sequence_id=(query_parameters['sequence_id'])
         
         Document_Item_Currency =( query_parameters["Document_Item_Currency"])
         Amount =( query_parameters["Amount"])
@@ -1897,8 +1889,8 @@ def update_record_delivery_mill_minibar():
            "Document Item Currency"='{6}',
            "Amount"='{7}',
            "Currency"=''{8}'',
-           "updated_on"='{9}'
-            WHERE "id"={10} '''.format(username,Market_Country,Market_Customer_Group,Market_Customer,Delivering_Mill,Product_Division,Document_Item_Currency,Amount,Currency,date_time,id_value)
+           "updated_on"='{9}', sequence_id={10},
+            WHERE "id"={11} '''.format(username,Market_Country,Market_Customer_Group,Market_Customer,Delivering_Mill,Product_Division,Document_Item_Currency,Amount,Currency,date_time,sequence_id,id_value)
             result1=db.insert(query2)
             print(query2)
             if result1=='failed' :raise ValueError

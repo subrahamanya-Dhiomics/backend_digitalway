@@ -78,7 +78,7 @@ CORS(smb_app2)
 
 db=Database()
 
-download_path='C:/SMB/smb_download/'
+download_path='/home/ubuntu/SMBDir/smb_download/'
 
 
 input_directory="C:/Users/Administrator/Documents/SMB_INPUT/"
@@ -388,7 +388,7 @@ def  freight_parity_minibar():
     
     # fetching the data from database and filtering    
     try:
-        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Freight Parity - MiniBar" where "active"='1' order by "id"  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Freight Parity - MiniBar" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
         count=db.query('select count(*) from "SMB"."SMB - Extra - Freight Parity - MiniBar"')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
@@ -448,6 +448,8 @@ def update_record_frieght_parity_minibar():
     username = getpass.getuser()
     query_parameters =json.loads(request.data)
     
+    sequence_id=(query_parameters['sequence_id'])
+    
     Delivering_Mill=(query_parameters["Delivering_Mill"])
     Market_Country=(query_parameters['Market_Country'])
     Market_Customer_Group=(query_parameters['Market_Customer_Group'])
@@ -484,8 +486,8 @@ def update_record_frieght_parity_minibar():
        "Document Item Currency"='{7}',
        "Amount"='{8}',
        "Currency"=''{9}'',
-       "updated_on"='{10}'
-        WHERE "id"={11} '''.format(username,Delivering_Mill,Market_Country,Market_Customer_Group,Market_Customer,Zip_Code_Dest,Product_Division,Document_Item_Currency,Amount,Currency,date_time,id_value)
+       "updated_on"='{10}',sequence_id= {11}
+        WHERE "id"={12} '''.format(username,Delivering_Mill,Market_Country,Market_Customer_Group,Market_Customer,Zip_Code_Dest,Product_Division,Document_Item_Currency,Amount,Currency,date_time,sequence_id,id_value)
         result1=db.insert(query2)
         if result1=='failed' :raise ValueError
         print(query1)
@@ -976,7 +978,7 @@ def  extra_grade_data_minibar():
     
     # fetching the data from database and filtering    
     try:
-        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Grade - MiniBar" where "active"='1' order by "id"  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Grade - MiniBar" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
         
         df.columns = df.columns.str.replace(' ', '_')
         
@@ -1093,6 +1095,7 @@ def update_record_extra_grade_minibar():
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     query_parameters =json.loads(request.data)
     
+    sequence_id=(query_parameters['sequence_id'])
     
     
     BusinessCode=(query_parameters["BusinessCode"])
@@ -1130,8 +1133,8 @@ def update_record_extra_grade_minibar():
        "Document Item Currency"='{6}',
        "Amount"='{7}',
        "Currency"=''{8}'',
-       "updated_on"='{9}'
-        WHERE "id"={10} '''.format(username,BusinessCode,Customer_Group,Market_Customer,Market_Country,Grade_Category,Document_Item_Currency,Amount,Currency,date_time,id_value)
+       "updated_on"='{9}',sequence_id= {10}
+        WHERE "id"={11} '''.format(username,BusinessCode,Customer_Group,Market_Customer,Market_Country,Grade_Category,Document_Item_Currency,Amount,Currency,date_time,sequence_id,id_value)
         result1=db.insert(query2)
         if result1=='failed' :raise ValueError
         print(query1)
@@ -1575,7 +1578,7 @@ def  extra_profile_minibar():
     
     # fetching the data from database and filtering    
     try:
-        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Profile - MiniBar" where "active"='1' order by "id"  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Profile - MiniBar" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
         count=db.query('select count(*) from "SMB"."SMB - Extra - Profile - MiniBar"')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
@@ -1691,7 +1694,7 @@ def update_record_extra_profile_minibar():
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     
     
-   
+    sequence_id=(query_parameters['sequence_id'])
     BusinessCode=(query_parameters["BusinessCode"])
     Customer_Group=(query_parameters['Customer_Group'])
     Market_Customer=(query_parameters['Market_Customer'])
@@ -1735,8 +1738,8 @@ def update_record_extra_profile_minibar():
        "Document Item Currency"='{9}',
        "Amount"='{10}',
        "Currency"=''{11}'',
-       "updated_on"='{12}'
-        WHERE "id"={13} '''.format(username,BusinessCode,Customer_Group,Market_Customer,Market_Country,Product_Level_04,Product_Level_05,Product_Level_02,Delivering_Mill,Document_Item_Currency,Amount,Currency,date_time,id_value)
+       "updated_on"='{12}',sequence_id={13}
+        WHERE "id"={14} '''.format(username,BusinessCode,Customer_Group,Market_Customer,Market_Country,Product_Level_04,Product_Level_05,Product_Level_02,Delivering_Mill,Document_Item_Currency,Amount,Currency,date_time,sequence_id,id_value)
         result1=db.insert(query2)
         print(query1)
         if result1=='failed' :raise ValueError
@@ -2196,7 +2199,7 @@ def  extra_profile_minibar_iberia_minibar():
    
     # fetching the data from database and filtering    
     try:
-        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar" where "active"='1' order by "id"  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
         count=db.query('select count(*) from "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar"')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
@@ -2323,6 +2326,7 @@ def update_record_extra_profile_Iberia_minibar():
     Document_Item_Currency =( query_parameters["Document_Item_Currency"])
     Amount =( query_parameters["Amount"])
     Currency =( query_parameters["Currency"])
+    sequence_id=(query_parameters['sequence_id'])
     
     try:
         
@@ -2351,8 +2355,8 @@ def update_record_extra_profile_Iberia_minibar():
        "Document Item Currency"='{8}',
        "Amount"='{9}',
        "Currency"=''{10}'',
-       "updated_on"='{11}'
-        WHERE "id"={12} '''.format(username,BusinessCode,Market_Country,Market_Customer_Group,Market_Customer,Delivering_Mill,Product_Level_02,Product_Level_05,Document_Item_Currency,Amount,Currency,date_time,id_value)
+       "updated_on"='{11}',sequence_id={12}
+        WHERE "id"={13} '''.format(username,BusinessCode,Market_Country,Market_Customer_Group,Market_Customer,Delivering_Mill,Product_Level_02,Product_Level_05,Document_Item_Currency,Amount,Currency,date_time,sequence_id,id_value)
         result1=db.insert(query2)
         if result1=='failed' :raise ValueError
         print(query1)

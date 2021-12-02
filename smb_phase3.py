@@ -78,7 +78,7 @@ CORS(smb_app3)
 db=Database()
 
 
-download_path='C:/SMB/smb_download/'
+download_path='/home/ubuntu/SMBDir/smb_download/'
 
 input_directory="C:/Users/Administrator/Documents/SMB_INPUT/"
 con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
@@ -386,7 +386,7 @@ def  data_transport_minibar():
     
     # fetching the data from database and filtering    
     try:
-        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Transport Mode - MiniBar" where "active"='1' order by "id"  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Transport Mode - MiniBar" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
         count=db.query('select count(*) from "SMB"."SMB - Extra - Transport Mode - MiniBar"')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
@@ -503,6 +503,7 @@ def update_record_transport_minibar():
         Document_Item_Currency =( query_parameters["Document_Item_Currency"])
         Amount =( query_parameters["Amount"])
         Currency =( query_parameters["Currency"])
+        sequence_id=(query_parameters["sequence_id"])
         
    
         try:
@@ -527,8 +528,8 @@ def update_record_transport_minibar():
            "Document Item Currency"='{6}',
            "Amount"='{7}',
            "Currency"=''{8}'',
-           "updated_on"='{9}'
-            WHERE "id"={10} '''.format(username,Product_Division,Market_Country,Market_Customer_Group,Market_Customer,Transport_Mode,Document_Item_Currency,Amount,Currency,date_time,id_value)
+           "updated_on"='{9}', sequence_id={10}
+            WHERE "id"={11} '''.format(username,Product_Division,Market_Country,Market_Customer_Group,Market_Customer,Transport_Mode,Document_Item_Currency,Amount,Currency,date_time,sequence_id,id_value)
             result1=db.insert(query2)
             if result1=='failed' :raise ValueError
             print(query1)
@@ -974,7 +975,7 @@ def  data_length_production_minibar():
     
     # fetching the data from database and filtering    
     try:
-        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Length Production - MiniBar" where "active"='1' order by "id"  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Length Production - MiniBar" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
         count=db.query('select count(*) from "SMB"."SMB - Extra - Length Production - MiniBar"')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
@@ -1103,6 +1104,7 @@ def update_record_length_production_minibar():
     Amount =( query_parameters["Amount"])
     Currency =( query_parameters["Currency"])
     id_value=(query_parameters['id'])
+    sequence_id=(query_parameters['sequence_id'])
     
     try:
         
@@ -1130,8 +1132,8 @@ def update_record_length_production_minibar():
        "Document Item Currency"='{9}',
        "Amount"='{10}',
        "Currency"=''{11}'',
-       "updated_on"='{12}'
-        WHERE "id"={13} '''.format(username,BusinessCode,Customer_Group,Market_Customer,Market_Country,Delivering_Mill,Length,Length_From,Length_To,Document_Item_Currency,Amount,Currency,date_time,id_value)
+       "updated_on"='{12}',sequence_id={13}
+        WHERE "id"={14} '''.format(username,BusinessCode,Customer_Group,Market_Customer,Market_Country,Delivering_Mill,Length,Length_From,Length_To,Document_Item_Currency,Amount,Currency,date_time,id_value)
         result1=db.insert(query2)
         print(query2)
         if result1=='failed' :raise ValueError
@@ -1589,7 +1591,7 @@ def  data_length_logistic_minibar():
     
     # fetching the data from database and filtering    
     try:
-        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Length Logistic - MiniBar" where "active"='1' order by "id"  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Length Logistic - MiniBar" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
         count=db.query('select count(*) from "SMB"."SMB - Extra - Length Logistic - MiniBar"')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
@@ -1720,6 +1722,7 @@ def update_record_length_logistic_minibar():
     Amount =( query_parameters["Amount"])
     Currency =( query_parameters["Currency"])
     id_value=(query_parameters['id'])
+    sequence_id=(query_parameters['sequence_id'])
     
     try:
         
@@ -1747,8 +1750,8 @@ def update_record_length_logistic_minibar():
        "Document Item Currency"='{9}',
        "Amount"='{10}',
        "Currency"=''{11}'',
-       "updated_on"='{12}'
-        WHERE "id"={13} '''.format(username,Customer_Group,Market_Customer,Market_Country,Delivering_Mill,Length,Length_From,Length_To,Transport_Mode,Document_Item_Currency,Amount,Currency,date_time,id_value)
+       "updated_on"='{12}',sequence_id={13}
+        WHERE "id"={14} '''.format(username,Customer_Group,Market_Customer,Market_Country,Delivering_Mill,Length,Length_From,Length_To,Transport_Mode,Document_Item_Currency,Amount,Currency,date_time,sequence_id,id_value)
         result1=db.insert(query2)
         if result1=='failed' :raise ValueError
         print(query1)

@@ -227,23 +227,22 @@ LEFT JOIN OFFERTOOL.PLANT PL ON PL.PLANTCODE = P.PLANTCODE {} '''.format(wherest
 @taskbar1.route('/invoice_payments', methods=['POST','GET'])
 def  invoice_payments():
     customer=request.args.get('customer')
-    invoice_aging=request.args.get('invoice_aging')
+    invoice_aging=request.args.get('invoice_ageing')
     invoice_posting_date_from=request.args.get('invoice_posting_date_from')
     invoice_posting_date_to=request.args.get('invoice_posting_date_to')
     
     search_string=request.args.get("search_string")
-    invoice_aging_bucket=request.args.get("invoice_aging_bucket")
+    invoice_aging_bucket=request.args.get("invoice_ageing_bucket")
     
     limit=request.args.get("limit",type=int)
     offset=request.args.get("offset",type=int)
     
     # pagination logic
     
-    try:
-        lowerLimit=offset*limit 
-        upperLimit=lowerLimit+limit
-    except:
-        pass
+   
+    lowerLimit=offset*limit 
+    upperLimit=lowerLimit+limit
+   
     
     wherestr=''
     flag=0
@@ -259,29 +258,34 @@ def  invoice_payments():
         if(flag==0):wherestr+=" where Invoice_Aging = '{}' ".format(invoice_aging)
         else:wherestr+=" and  Invoice_Aging ='{}' ".format(invoice_aging)
         flag=1
-    if(invoice_aging_bucket!='All' and invoice_aging_bucket!='all' and invoice_aging_bucket!=None and invoice_aging_bucket!='Not Due'):
+    if(invoice_aging_bucket!='All' and invoice_aging_bucket!='all' and invoice_aging_bucket!=None ):
         
-        bucket=invoice_aging_bucket.split(' ')[0]
-        bucket_from=bucket.split('-')[0]
-        bucket_to=bucket.split('-')[1]
+        try:
         
-        
+            bucket=invoice_aging_bucket.split(' ')[0]
+            bucket_from=bucket.split('-')[0]
+            bucket_to=bucket.split('-')[1]
+            
+            
+        except:
+            pass
+            
         
         
        
         if(flag==0):
-            flag=1
+         
             if(invoice_aging_bucket=='Not Due'):
                 wherestr+="where invoice_aging < 0";
             else:
-                wherestr+=" where SPLIT_PART(invoice_aging_bucket, '-', 1) :: INTEGER > {}  and SPLIT_PART(invoice_aging_bucket, '-', 2) :: INTEGER < {}  ".format(bucket_from,bucket_to)
+                wherestr+=" where SPLIT_PART(invoice_aging_bucket, '-', 1) :: INTEGER >= {}  and SPLIT_PART(invoice_aging_bucket, '-', 2) :: INTEGER <= {}  ".format(bucket_from,bucket_to)
         else:
            
             if(invoice_aging_bucket=='Not Due'):
                 wherestr+="and invoice_aging < 0"
             else:
-                wherestr+=" and  SPLIT_PART(invoice_aging_bucket, '-', 1) :: INTEGER > {}  and SPLIT_PART(invoice_aging_bucket, '-', 2) :: INTEGER < {}  ".format(bucket_from,bucket_to)
-        
+                wherestr+=" and  SPLIT_PART(invoice_aging_bucket, '-', 1) :: INTEGER >= {}  and SPLIT_PART(invoice_aging_bucket, '-', 2) :: INTEGER <= {}  ".format(bucket_from,bucket_to)
+        flag=1
        
         
    
@@ -314,15 +318,12 @@ FROM invoice.BSID b INNER JOIN invoice.KNA1 n ON n.KUNNR=b.KUNNR )  as tbl {} ;'
         db.insert('rollback')
         df = pd.read_sql(query, con=con)
        
-       
+        df['invoice_aging']=df['invoice_aging'].astype(int)
        
         customer_name=list(set(df.customer_name))
         customer_name.append('All')
-        
-       
-        
-        
-        invoice_aging_bucket_data=['Not Due','0-30 days','31-60 days','61-90 days','91-180 days','above 180 days']
+      
+        invoice_aging_bucket_data=['Not Due','0-30 days','31-60 days','61-90 days','91-180 days','above 180 days','All']
         
         
         df.loc[(df.invoice_aging_bucket =='0-0'), 'invoice_aging_bucket'] = 'Not Due'
@@ -333,23 +334,25 @@ FROM invoice.BSID b INNER JOIN invoice.KNA1 n ON n.KUNNR=b.KUNNR )  as tbl {} ;'
         df['invoice_posting_date']=df['invoice_posting_date'].astype(str)
         
         
-        print(invoice_aging_bucket)
-        print("***********************")
-        if(invoice_aging_bucket=='Not Due'):
-            df=df[df.invoice_aging_bucket=='Not Due']
-            
+        
         invoice_aging=list(set(df.invoice_aging))
+        
+        invoice_aging.sort()
         invoice_aging.append('All')
         
         
        
         if(search_string!="All" and search_string!='all' and search_string!=None):
                               df=df[df.eq(search_string).any(1)]
-                                                  
-        df=df.loc[lowerLimit:upperLimit]
+                             
+        try:                        
+          df=df.loc[lowerLimit:upperLimit]
+        except:
+            pass
+        
         data=json.loads(df.to_json(orient='records'))
       
     
-        return jsonify({"data":data,"customer_name":customer_name,"invoice_aging":invoice_aging,"invoice_aging_bucket":invoice_aging_bucket_data})
+        return jsonify({"data":data,"customer_name":customer_name,"invoice_aging":invoice_aging,"invoice_aging_bucket_data":invoice_aging_bucket_data})
     except:
         return {"stataus":"sucess"},200

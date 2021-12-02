@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 Created on Wed Oct 20 09:56:42 2021
-
 @author: subbu
 """
 
@@ -22,8 +21,6 @@ CORS(app)
 
 
 app.register_blueprint(scrap_app)
-
-
 
 app.register_blueprint(smb_app1)
 

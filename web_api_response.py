@@ -2,7 +2,7 @@
 """
 Created on Wed Nov 10 07:21:49 2021
 
-@author: Administrator
+@author: subbu
 """
 from flask import Blueprint
 
@@ -83,6 +83,10 @@ CORS(web_api_response)
 def web_api():
    
          data=json.loads(request.data)
+         
+         if(str(data)[0]=='['):
+             data=data[0]
+         
          tableId = data['tableId']
          data=data['data']
          wherestr=''
