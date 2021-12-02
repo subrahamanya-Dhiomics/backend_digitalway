@@ -1889,7 +1889,7 @@ def update_record_delivery_mill_minibar():
            "Document Item Currency"='{6}',
            "Amount"='{7}',
            "Currency"=''{8}'',
-           "updated_on"='{9}', sequence_id={10},
+           "updated_on"='{9}', sequence_id={10}
             WHERE "id"={11} '''.format(username,Market_Country,Market_Customer_Group,Market_Customer,Delivering_Mill,Product_Division,Document_Item_Currency,Amount,Currency,date_time,sequence_id,id_value)
             result1=db.insert(query2)
             print(query2)
