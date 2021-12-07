@@ -80,7 +80,9 @@ db=Database()
 
 download_path='/home/ubuntu/SMBDir/smb_download/'
 
-input_directory="C:/Users/Administrator/Documents/SMB_INPUT/"
+
+input_directory='/home/ubuntu/SMBDir/smb_upload/'
+
 con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
 
 
@@ -556,12 +558,13 @@ def upload_transport_minibar():
             
             df=smb_df[["id","Product Division", "Market - Country",
        "Market - Customer Group", "Market - Customer", "Transport Mode",
-       "Document Item Currency", "Amount", "Currency"]]  
+       "Document Item Currency", "Amount", "Currency","sequence_id"]]  
             df["id"]=df["id"].astype(int)
+            df["sequence_id"]=df["sequence_id"].astype(int)
             
             df_main = pd.read_sql('''select "id","Product Division", "Market - Country",
        "Market - Customer Group", "Market - Customer", "Transport Mode",
-       "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Transport Mode - MiniBar" where "active"='1' order by "id" ''', con=con)
+       "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Transport Mode - MiniBar" where "active"='1' order by "id" ''', con=con)
             
             
             df3 = df.merge(df_main, how='left', indicator=True)
@@ -596,7 +599,7 @@ def  validate_transport_minibar():
        
         df=df[ ["Username","Product_Division", "Market_Country",
        "Market_Customer_Group", "Market_Customer", "Transport_Mode",
-       "Document_Item_Currency", "Amount", "Currency","date_time","id"]]
+       "Document_Item_Currency", "Amount", "Currency","date_time","sequence_id","id"]]
         
         query1='''INSERT INTO "SMB"."SMB - Extra - Transport Mode - MiniBar_History"
         SELECT 
@@ -626,7 +629,7 @@ def  validate_transport_minibar():
        "Document Item Currency"='%s',
        "Amount"='%s',
        "Currency"=''%s'',
-       "updated_on"='%s'
+       "updated_on"='%s',sequence_id='%s'
         WHERE "id"= '%s' ''' % tuple(df.loc[i])
             result=db.insert(query2)
             if result=='failed' :raise ValueError
@@ -1160,14 +1163,15 @@ def upload_length_production_minibar():
             df=smb_df[["id","BusinessCode", "Customer Group",
        "Market - Customer", "Market - Country", "Delivering Mill", "Length",
        "Length From", "Length To", "Document Item Currency", "Amount",
-       "Currency"]]  
+       "Currency","sequence_id"]]  
             df["id"]=df["id"].astype(int)
+            df["sequence_id"]=df["sequence_id"].astype(int)
             print(df.columns)
             
             df_main = pd.read_sql('''select "id","BusinessCode", "Customer Group",
        "Market - Customer", "Market - Country", "Delivering Mill", "Length",
        "Length From", "Length To", "Document Item Currency", "Amount",
-       "Currency" from "SMB"."SMB - Extra - Length Production - MiniBar" where "active"='1' order by "id" ''', con=con)
+       "Currency",sequence_id from "SMB"."SMB - Extra - Length Production - MiniBar" where "active"='1' order by "id" ''', con=con)
             
             
             df3 = df.merge(df_main, how='left', indicator=True)
@@ -1205,7 +1209,7 @@ def  validate_length_production_minibar():
         df=df[ ["Username","BusinessCode", "Customer_Group",
        "Market_Customer", "Market_Country", "Delivering_Mill", "Length",
        "Length_From", "Length_To", "Document_Item_Currency", "Amount",
-       "Currency","date_time","id"]]
+       "Currency","date_time","sequence_id","id"]]
         
         query1='''INSERT INTO "SMB"."SMB - Extra - Length Production - MiniBar_History"
         SELECT 
@@ -1236,7 +1240,7 @@ def  validate_length_production_minibar():
        "Document Item Currency"='%s',
        "Amount"='%s',
        "Currency"=''%s'',
-       "updated_on"='%s'
+       "updated_on"='%s',sequence_id='%s'
         WHERE "id"= '%s' ''' % tuple(df.loc[i])
             result=db.insert(query2)
             print(query2)
@@ -1778,13 +1782,13 @@ def upload_length_logistic_minibar():
             df=smb_df[["id","Customer Group", "Market - Customer",
        "Market - Country", "Delivering Mill", "Length", "Length From",
        "Length To", "Transport Mode", "Document Item Currency", "Amount",
-       "Currency"]]  
+       "Currency","sequence_id"]]  
             df["id"]=df["id"].astype(int)
             
             df_main = pd.read_sql('''select "id","Customer Group", "Market - Customer",
        "Market - Country", "Delivering Mill", "Length", "Length From",
        "Length To", "Transport Mode", "Document Item Currency", "Amount",
-       "Currency" from "SMB"."SMB - Extra - Length Logistic - MiniBar" where "active"='1' order by "id" ''', con=con)
+       "Currency",sequence_id from "SMB"."SMB - Extra - Length Logistic - MiniBar" where "active"='1' order by "id" ''', con=con)
             
             
             df3 = df.merge(df_main, how='left', indicator=True)
@@ -1822,7 +1826,7 @@ def  validate_length_logistic_minibar():
         df=df[ ["Username","Customer_Group", "Market_Customer",
        "Market_Country", "Delivering_Mill", "Length", "Length_From",
        "Length_To", "Transport_Mode", "Document_Item_Currency", "Amount",
-       "Currency","date_time","id"]]
+       "Currency","date_time","sequence_id","id"]]
         
         query1='''INSERT INTO "SMB"."SMB - Extra - Length Logistic - MiniBar_History"
         SELECT 
@@ -1852,7 +1856,7 @@ def  validate_length_logistic_minibar():
        "Document Item Currency"='%s',
        "Amount"='%s',
        "Currency"=''%s'',
-       "updated_on"='%s'
+       "updated_on"='%s',sequence_id='%s'
         WHERE "id"= '%s' ''' % tuple(df.loc[i])
             result=db.insert(query2)
             if result=='failed' :raise ValueError

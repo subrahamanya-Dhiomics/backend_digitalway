@@ -62,8 +62,8 @@ def tupleToList(tupleVar):
             return(listVar)
 
 
-csv_out_path="C:/Users/Administrator/Documents/Input_files/"
-input_path='C:/Users/Administrator/Documents/Input_files/'
+csv_out_path="/home/ubuntu/SMBDir/Alloy_Out/"
+input_path="/home/ubuntu/SMBDir/Alloy_Input/"
 
 @scrap_app.route('/Alloy_wire_upload',methods=['GET','POST'])
 def upload_files():

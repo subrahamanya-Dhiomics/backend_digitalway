@@ -26,6 +26,8 @@ from datetime import datetime,date
 
 
 engine = create_engine('postgresql://postgres:ocpphase01@ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com:5432/offertool')
+
+
 class Database:
     host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com'  # your host
     user='postgres'      # usernames
@@ -72,10 +74,11 @@ CORS(smb_app1)
 
 db=Database()
 
-input_directory="C:/Users/Administrator/Documents/SMB_INPUT/"
-
-
 download_path='/home/ubuntu/SMBDir/smb_download/'
+
+
+input_directory='/home/ubuntu/SMBDir/smb_upload/'
+
 
 con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
 
@@ -537,17 +540,17 @@ def add_record_mini():
 def  SMB_upload_baseprice_minibar():
     
             f=request.files['filename']
-      
-                
+             
             f.save(input_directory+f.filename)
         
         
             smb_df=pd.read_excel(input_directory+f.filename,dtype=str)
             
-            df=smb_df[['id','BusinessCode', 'Customer Group','Market - Customer', 'Market - Country', 'Beam Category','Document Item Currency', 'Amount', 'Currency']]  
+            df=smb_df[['id','BusinessCode', 'Customer Group','Market - Customer', 'Market - Country', 'Beam Category','Document Item Currency', 'Amount', 'Currency','sequence_id']]  
             df['id']=df['id'].astype(int)
+            df['sequence_id']=df['sequence_id'].astype(int)
             
-            df_main = pd.read_sql('''select "id","BusinessCode", "Customer Group","Market - Customer", "Market - Country", "Beam Category","Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Base Price - Category Addition - MiniBar" where "active"='1' order by "id" ''', con=con)
+            df_main = pd.read_sql('''select "id","BusinessCode", "Customer Group","Market - Customer", "Market - Country", "Beam Category","Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Base Price - Category Addition - MiniBar" where "active"='1' order by "id" ''', con=con)
             
             
             df3 = df.merge(df_main, how='left', indicator=True)
@@ -580,7 +583,7 @@ def  SMB_validate_baseprice_minibar():
     
         df=df[ ["Username","BusinessCode", "Customer_Group",
        "Market_Customer", "Market_Country", "Beam_Category",
-       "Document_Item_Currency", "Amount", "Currency","date_time","id"]]
+       "Document_Item_Currency", "Amount", "Currency","date_time","sequence_id","id"]]
         
         query1='''INSERT INTO "SMB"."SMB - Base Price - Category Addition - MiniBar_History" 
         SELECT 
@@ -603,7 +606,7 @@ def  SMB_validate_baseprice_minibar():
         SET 
        "Username"='%s',
        "BusinessCode"='%s', "Customer Group"='%s',"Market - Customer"='%s', "Market - Country"='%s', "Beam Category"='%s',"Document Item Currency"='%s', "Amount"='%s', "Currency"=''%s'',
-       "updated_on"='%s'
+       "updated_on"='%s',sequence_id ='%s'
         WHERE "id"= '%s' ''' % tuple(df.loc[i])
             result=db.insert(query2)
             print(query2)
@@ -1389,12 +1392,13 @@ def  Upload_extra_certificate_minibar():
             
             df=smb_df[["id","BusinessCode", "Customer Group",
        "Market - Customer", "Market - Country", "Certificate",
-       "Grade Category", "Document Item Currency", "Amount", "Currency"]]  
+       "Grade Category", "Document Item Currency", "Amount", "Currency","sequence_id"]]  
             df["id"]=df["id"].astype(int)
+            df["sequence_id"]=df["sequence_id"].astype(int)
             
             df_main = pd.read_sql('''select "id","BusinessCode", "Customer Group",
        "Market - Customer", "Market - Country", "Certificate",
-       "Grade Category", "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Certificate - MiniBar" where "active"='1' order by "id" ''', con=con)
+       "Grade Category", "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Certificate - MiniBar" where "active"='1' order by "id" ''', con=con)
             
             
             df3 = df.merge(df_main, how='left', indicator=True)
@@ -1428,7 +1432,7 @@ def  validate_extra_certificate_minibar():
 
              df=df[ ["Username","BusinessCode", "Customer_Group",
         "Market_Customer", "Market_Country", "Certificate",
-        "Grade_Category", "Document_Item_Currency", "Amount", "Currency","date_time","id"]]
+        "Grade_Category", "Document_Item_Currency", "Amount", "Currency","date_time","sequence_id","id"]]
              
              query1='''INSERT INTO "SMB"."SMB - Extra - Certificate - MiniBar_History" 
              SELECT 
@@ -1456,7 +1460,7 @@ def  validate_extra_certificate_minibar():
             "Document Item Currency"='%s',
             "Amount"='%s',
             "Currency"=''%s'',
-            "updated_on"='%s'
+            "updated_on"='%s',sequence_id='%s'
              WHERE "id"= '%s' ''' % tuple(df.loc[i])
                  result=db.insert(query2)
                  if result=='failed' :raise ValueError
@@ -1951,12 +1955,13 @@ def upload_delivery_mill_minibar():
             
             df=smb_df[["id","Market - Country",
        "Market - Customer Group", "Market - Customer", "Delivering Mill",
-       "Product Division", "Document Item Currency", "Amount", "Currency"]]  
+       "Product Division", "Document Item Currency", "Amount", "Currency","sequence_id"]]  
             df["id"]=df["id"].astype(int)
+            df["sequence_id"]=df["sequence_id"].astype(int)
             
             df_main = pd.read_sql('''select "id","Market - Country",
        "Market - Customer Group", "Market - Customer", "Delivering Mill",
-       "Product Division", "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Delivery Mill - MiniBar" where "active"='1' order by "id" ''', con=con)
+       "Product Division", "Document Item Currency", "Amount", "Currency","sequence_id" from "SMB"."SMB - Extra - Delivery Mill - MiniBar" where "active"='1' order by "id" ''', con=con)
             
             
             df3 = df.merge(df_main, how='left', indicator=True)
@@ -1994,7 +1999,7 @@ def  validate_delivery_mill_minibar():
        
                 df=df[ ["Username","Market_Country",
                "Market_Customer_Group", "Market_Customer", "Delivering_Mill",
-               "Product_Division", "Document_Item_Currency", "Amount", "Currency","date_time","id"]]
+               "Product_Division", "Document_Item_Currency", "Amount", "Currency","date_time","sequence_id","id"]]
                 
                 query1='''INSERT INTO "SMB"."SMB - Extra - Delivery Mill - MiniBar_History"
                 SELECT 
@@ -2022,7 +2027,7 @@ def  validate_delivery_mill_minibar():
                "Document Item Currency"='%s',
                "Amount"='%s',
                "Currency"=''%s'',
-               "updated_on"='%s'
+               "updated_on"='%s',sequence_id='%s'
                 WHERE "id"= '%s' ''' % tuple(df.loc[i])
                     result=db.insert(query2)
                     print(query2)

@@ -33,15 +33,15 @@ import random
 taskbar1 = Blueprint('taskbar1', __name__)
 
 CORS(taskbar1)
-con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
+con = psycopg2.connect(dbname='offertool',user='pgapp',password='Fulcrum_17',host='offertool2-pro.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
 cur = con.cursor()
 engine = create_engine('postgresql://postgres:ocpphase01@ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com:5432/offertool')
      
 
 class Database:
-    host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com'  # your host
-    user='postgres'      # usernames
-    password='ocpphase01'
+    host='offertool2-pro.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com'  # your host
+    user='pgapp'      # usernames
+    password='Fulcrum_17'
     
     db='offertool'
    
@@ -138,7 +138,9 @@ def add_income():
         if(flag==0):wherestr+="where P.RFQREFERENCE = '{}' ".format(cust_ref)
         else:wherestr+=" and  P.RFQREFERENCE = '{}' ".format(cust_ref)
         flag=1
-    
+    # if(flag==0):
+    #     wherestr+="where p.pgl_validation_levels is not null"
+    # else
     
     
    
@@ -151,7 +153,7 @@ def add_income():
 	
 	C.ACCOUNTNAME,
 	P.INCOTERMCODE,
-    p.pgl_validation_levels,
+    p.pgl_validation_levels, p.offer_status_pgl_received,
     pgl_validator,
 	P.STARTDATE,
 	P.CREATIONDATETIME,
@@ -223,6 +225,19 @@ LEFT JOIN OFFERTOOL.PLANT PL ON PL.PLANTCODE = P.PLANTCODE {} '''.format(wherest
         return jsonify({"data":data ,"customer_name":customer_name,"status":status,"pending_with":pending_with,"created":created}),200
     except:
         return {"status":"failure"},500
+    
+    
+@taskbar1.route('/order_status_delay',methods=['POST','GET'])
+def order_status_delay():
+    
+    wherestr=''
+    query='''select A.VBELN as sales_doc_number,A.POSNR as sales_doc_item_number ,null as order_status,A.ZZLIEFDAT_01 as confirmed_delivery_date,  A.WERKS as delivering_plant, null as sold_to, null as ship_to, null as DELV_Week, KWMENG as quantity,B.BSTNK as customer_reference from invoice.vbap A 
+inner join invoice.vbak B on B.VBELN = A.VBELN'''
+
+    df=pd.read_sql(query,con=con)
+    df_json=json.loads(df.to_json(orient='records'))
+    
+    return {"data":df_json},200
 
 @taskbar1.route('/invoice_payments', methods=['POST','GET'])
 def  invoice_payments():
@@ -238,12 +253,8 @@ def  invoice_payments():
     offset=request.args.get("offset",type=int)
     
     # pagination logic
-    
-   
     lowerLimit=offset*limit 
     upperLimit=lowerLimit+limit
-   
-    
     wherestr=''
     flag=0
     
@@ -296,11 +307,7 @@ def  invoice_payments():
         if(flag==0):wherestr+="where Invoice_Posting_Date between '{}'  and '{}' ".format(invoice_posting_date_from,invoice_posting_date_to)
         else:wherestr+=" and  Invoice_Posting_Date between '{}'  and '{}' ".format(invoice_posting_date_from,invoice_posting_date_to)
         flag=1
-        
-    
-        
-        
-        
+  
         
     query='''select  * from ( SELECT b.KUNNR Customer_Number,n.NAME1 Customer_Name,b.BELNR Sales_Order_Number, b.VBEL2 Invoice_Number,
 b.BUDAT Invoice_Posting_date,b.BUZEI Item_Number,b.WRBTR Amount,extract(day from CURRENT_DATE-(ZFBDT::date+((concat(ZBD1T::varchar,' day'))::varchar)::INTERVAL)) Invoice_Aging,
