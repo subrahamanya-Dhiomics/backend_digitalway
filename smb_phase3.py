@@ -77,11 +77,15 @@ CORS(smb_app3)
 
 db=Database()
 
+download_path='C:/Users/Administrator/Documents/test_path/'
+input_directory='C:/Users/Administrator/Documents/test_path/'
 
-download_path='/home/ubuntu/SMBDir/smb_download/'
 
 
-input_directory='/home/ubuntu/SMBDir/smb_upload/'
+# download_path='/home/ubuntu/SMBDir/smb_download/'
+
+
+# input_directory='/home/ubuntu/SMBDir/smb_upload/'
 
 con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
 
@@ -564,7 +568,7 @@ def upload_transport_minibar():
             
             df_main = pd.read_sql('''select "id","Product Division", "Market - Country",
        "Market - Customer Group", "Market - Customer", "Transport Mode",
-       "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Transport Mode - MiniBar" where "active"='1' order by "id" ''', con=con)
+       "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Transport Mode - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             
             
             df3 = df.merge(df_main, how='left', indicator=True)
@@ -643,7 +647,7 @@ def  validate_transport_minibar():
 def download_transport_minibar():
         now = datetime.now()
         try:
-            df = pd.read_sql('''select * from "SMB"."SMB - Extra - Transport Mode - MiniBar" where "active"='1' order by "id" ''', con=con)
+            df = pd.read_sql('''select * from "SMB"."SMB - Extra - Transport Mode - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'transport_mode_minibar.xlsx'
@@ -1171,7 +1175,7 @@ def upload_length_production_minibar():
             df_main = pd.read_sql('''select "id","BusinessCode", "Customer Group",
        "Market - Customer", "Market - Country", "Delivering Mill", "Length",
        "Length From", "Length To", "Document Item Currency", "Amount",
-       "Currency",sequence_id from "SMB"."SMB - Extra - Length Production - MiniBar" where "active"='1' order by "id" ''', con=con)
+       "Currency",sequence_id from "SMB"."SMB - Extra - Length Production - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             
             
             df3 = df.merge(df_main, how='left', indicator=True)
@@ -1255,7 +1259,7 @@ def download_length_production_minibar():
    
         now = datetime.now()
         try:
-            df = pd.read_sql('''select * from "SMB"."SMB - Extra - Length Production - MiniBar" where "active"='1' order by "id" ''', con=con)
+            df = pd.read_sql('''select * from "SMB"."SMB - Extra - Length Production - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'length_production_minibar.xlsx'
@@ -1788,7 +1792,7 @@ def upload_length_logistic_minibar():
             df_main = pd.read_sql('''select "id","Customer Group", "Market - Customer",
        "Market - Country", "Delivering Mill", "Length", "Length From",
        "Length To", "Transport Mode", "Document Item Currency", "Amount",
-       "Currency",sequence_id from "SMB"."SMB - Extra - Length Logistic - MiniBar" where "active"='1' order by "id" ''', con=con)
+       "Currency",sequence_id from "SMB"."SMB - Extra - Length Logistic - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             
             
             df3 = df.merge(df_main, how='left', indicator=True)
@@ -1871,7 +1875,7 @@ def download_length_logistic_minibar():
    
         now = datetime.now()
         try:
-            df = pd.read_sql('''select * from "SMB"."SMB - Extra - Length Logistic - MiniBar" where "active"='1' order by "id" ''', con=con)
+            df = pd.read_sql('''select * from "SMB"."SMB - Extra - Length Logistic - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
             df.to_excel('C:/Users/Administrator/Downloads/'+now.strftime("%d-%m-%Y-%H-%M-%S") +'bse_price_extra_length_logistic_minibar.xlsx',index=False)
             return {"status":"success"},200
