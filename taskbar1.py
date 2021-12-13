@@ -382,10 +382,12 @@ inner join invoice.vbak B on B.VBELN = A.VBELN limit 400 '''
 def invoice():
     
     customer=request.args.get('customer')
-    invoice_aging=request.args.get('invoice_ageing')
+    
     invoice_posting_date_from=request.args.get('invoice_posting_date_from')
     invoice_posting_date_to=request.args.get('invoice_posting_date_to')
     
+    invoice_aging_from=request.args.get('invoice_aging_from')
+    invoice_aging_to=request.args.get('invoice_aging_to')
     search_string=request.args.get("search_string")
     invoice_aging_bucket=request.args.get("invoice_ageing_bucket")
     
@@ -405,10 +407,11 @@ def invoice():
         else:wherestr+=" and  tf.Customer_Name = '{}' ".format(customer)
         flag=1
         
-    if(invoice_aging!='All' and invoice_aging!='all' and invoice_aging!=None ):
+    if(invoice_aging_to!='All' and invoice_aging_to!='all' and invoice_aging_to!=None ):
+        
        
-        if(flag==0):wherestr+=" where tf.Invoice_Aging = '{}' ".format(invoice_aging)
-        else:wherestr+=" and  tf.Invoice_Aging ='{}' ".format(invoice_aging)
+        if(flag==0):wherestr+=" where tf.Invoice_Aging  between '{}' and '{}' ".format(invoice_aging_from,invoice_aging_to)
+        else:wherestr+=" and  tf.Invoice_Aging between '{}' and '{}' ".format(invoice_aging_from,invoice_aging_to)
         flag=1
         
     if(invoice_posting_date_to!='All' and invoice_posting_date_to!='all' and invoice_posting_date_to!=None):
@@ -486,6 +489,12 @@ FROM invoice.BSID b INNER JOIN invoice.KNA1 n ON n.KUNNR=b.KUNNR )  as  tbl )as 
         
         
         invoice_aging=list(set(df.invoice_aging))
+        
+        invoice_aging_from=invoice_aging
+        invoice_aging_to=invoice_aging
+        
+        
+        
         invoice_aging.sort()
         invoice_aging.append('All')
         
@@ -500,7 +509,7 @@ FROM invoice.BSID b INNER JOIN invoice.KNA1 n ON n.KUNNR=b.KUNNR )  as  tbl )as 
         data=json.loads(df.to_json(orient='records'))
       
     
-        return jsonify({"data":data,"customer_name":customer_name,"invoice_aging":invoice_aging,"invoice_aging_bucket_data":invoice_aging_bucket_data})
+        return jsonify({"data":data,"customer_name":customer_name,"invoice_aging":invoice_aging,"invoice_aging_bucket_data":invoice_aging_bucket_data,"invoice_aging_from":invoice_aging_from,"invoice_aging_to":invoice_aging_to})
     except:
         return {"stataus":"sucess"},200
     

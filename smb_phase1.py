@@ -167,7 +167,7 @@ def update_record1():
         date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
         query_parameters =json.loads(request.data) 
         
-        sequence_id=(query_parameters['sequence_id'])
+       
     
         BusinessCode=(query_parameters['BusinessCode'])
         Market_Country =( query_parameters["Market_Country"])
@@ -179,34 +179,23 @@ def update_record1():
         id_value=(query_parameters['id_value'])
         
         
-    
         
-        query1='''INSERT INTO "SMB"."SMB - Base Price - Category Addition_History" 
-        SELECT 
-        "id","Username","BusinessCode","Market - Country",
-      	   "Product Division",
-       "Product Level 02",
-       "Document Item Currency",
-       "Amount",
-       "Currency"  FROM "SMB"."SMB - Base Price - Category Addition"
-        WHERE "id"={} '''.format(id_value)
+        query1='''
+INSERT INTO "SMB"."SMB - Base Price - Category Addition_Pending_Aproval"(
+             id,
+             "Username",
+             "BusinessCode",
+             "Market - Country",
+             "Product Division",
+             "Product Level 02",
+             "Document Item Currency",
+             "Amount",
+             "Currency")
+             VALUES{}; '''.format((id_value,username,BusinessCode,Market_Country,Product_Division,Product_Level_02,Document_Item_Currency,Amount,Currency.strip("'")))
         result=db.insert(query1)
+        print(query1)
         if result=='failed' :raise ValueError
-    
-        query2='''UPDATE "SMB"."SMB - Base Price - Category Addition"
-        SET 
-       "Username"='{0}',
-       "BusinessCode"='{1}',
-       "Market - Country"='{2}',
-      	   "Product Division"='{3}',
-       "Product Level 02"='{4}',
-       "Document Item Currency"='{5}',
-       "Amount"='{6}',
-       "Currency"=''{7}'',
-       "updated_on"='{8}',
-        WHERE "id"={9} '''.format(username,BusinessCode,Market_Country,Product_Division,Product_Level_02,Document_Item_Currency,Amount,Currency,date_time,id_value)
-        result1=db.insert(query2)
-        if result1=='failed' :raise ValueError
+       
         return {"status":"success"},200
    
 
@@ -226,11 +215,12 @@ def add_record1():
     Amount =( query_parameters["Amount"])
     Currency =( query_parameters["Currency"])
     Document_Item_Currency =( query_parameters["Document_Item_Currency"])
+    flag='add'
     
     
     try:
-        input_tuple=(username, BusinessCode,  Market_Country, Product_Division,Product_Level_02,Document_Item_Currency, Amount,Currency.strip("'"))
-        query='''INSERT INTO "SMB"."SMB - Base Price - Category Addition"(
+        input_tuple=(username, BusinessCode,  Market_Country, Product_Division,Product_Level_02,Document_Item_Currency, Amount,Currency.strip("'"),flag)
+        query='''INSERT INTO "SMB"."SMB - Base Price - Category Addition_Pending_Aproval"(
              
              "Username",
              "BusinessCode",
@@ -239,8 +229,9 @@ def add_record1():
              "Product Level 02",
              "Document Item Currency",
              "Amount",
-             "Currency")
+             "Currency",flag)
              VALUES{};'''.format(input_tuple)
+        print(query)
         result=db.insert(query)  
         if result=='failed' :raise ValueError
         
@@ -296,41 +287,23 @@ def  SMB_validate():
     df.insert(1,'date_time',date_time)
     
     try:
-        df=df[ ['Username','BusinessCode','Market_Country','Product_Division','Product_Level_02','Document_Item_Currency', 'Amount', 'Currency','date_time','id']]
+        df=df[ ['id','Username','BusinessCode','Market_Country','Product_Division','Product_Level_02','Document_Item_Currency', 'Amount', 'Currency']]
         
-        query1='''INSERT INTO "SMB"."SMB - Base Price - Category Addition_History" 
-        SELECT 
-        "id",
-        "Username",
-        "BusinessCode",
-        "Market - Country",
-    	"Product Division",
-       "Product Level 02",
-       "Document Item Currency",
-       "Amount",
-       "Currency"  FROM "SMB"."SMB - Base Price - Category Addition"
-        WHERE "id" in {} '''
-        
-        id_tuple=tuple(df["id"])
-        if len(id_tuple)==1:id=id_tuple[0] ;id_tuple=(id,id)
-        result=db.insert(query1.format(id_tuple))
-        if result=='failed' :raise ValueError
         
         # looping for update query
         for i in range(0,len(df)):
            
-            query2='''UPDATE "SMB"."SMB - Base Price - Category Addition"
-        SET 
-       "Username"='%s',
-       "BusinessCode"='%s',
-       "Market - Country"='%s',
-       "Product Division"='%s',
-       "Product Level 02"='%s',
-       "Document Item Currency"='%s',
-       "Amount"='%s',
-       "Currency"=''%s'',
-       "updated_on"='%s'
-        WHERE "id"= '%s' ''' % tuple(df.loc[i])
+            query2='''INSERT INTO "SMB"."SMB - Base Price - Category Addition_Pending_Aproval"(
+             id,
+             "Username",
+             "BusinessCode",
+             "Market - Country",
+             "Product Division",
+             "Product Level 02",
+             "Document Item Currency",
+             "Amount",
+             "Currency","sequence_id")
+             VALUES{}; '''.format(tuple(df.loc[i]))
             result=db.insert(query2)
             if result=='failed' :raise ValueError
             
@@ -345,7 +318,7 @@ def SMB_baseprice_download1():
    
         now = datetime.now()
        
-        df = pd.read_sql('''select * from "SMB"."SMB - Base Price - Category Addition" where "active"='1' order by sequence_id ''', con=con)
+        df = pd.read_sql('''select * from "SMB"."SMB - Base Price - Category Addition" where "active"='1' order by id ''', con=con)
         df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
         t=now.strftime("%d-%m-%Y-%H-%M-%S")
         file=download_path+t+'baseprice_category_addition.xlsx'
@@ -549,11 +522,10 @@ def  SMB_upload_baseprice_minibar():
         
             smb_df=pd.read_excel(input_directory+f.filename,dtype=str)
             
-            df=smb_df[['id','BusinessCode', 'Customer Group','Market - Customer', 'Market - Country', 'Beam Category','Document Item Currency', 'Amount', 'Currency','sequence_id']]  
+            df=smb_df[['id','BusinessCode', 'Customer Group','Market - Customer', 'Market - Country', 'Beam Category','Document Item Currency', 'Amount', 'Currency']]  
             df['id']=df['id'].astype(int)
-            df['sequence_id']=df['sequence_id'].astype(int)
-            
-            df_main = pd.read_sql('''select "id","BusinessCode", "Customer Group","Market - Customer", "Market - Country", "Beam Category","Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Base Price - Category Addition - MiniBar" where "active"='1' order by sequence_id ''', con=con)
+           
+            df_main = pd.read_sql('''select "id","BusinessCode", "Customer Group","Market - Customer", "Market - Country", "Beam Category","Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Base Price - Category Addition - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             
             
             df3 = df.merge(df_main, how='left', indicator=True)
@@ -586,7 +558,7 @@ def  SMB_validate_baseprice_minibar():
     
         df=df[ ["Username","BusinessCode", "Customer_Group",
        "Market_Customer", "Market_Country", "Beam_Category",
-       "Document_Item_Currency", "Amount", "Currency","date_time","sequence_id","id"]]
+       "Document_Item_Currency", "Amount", "Currency","date_time","id"]]
         
         query1='''INSERT INTO "SMB"."SMB - Base Price - Category Addition - MiniBar_History" 
         SELECT 
@@ -609,7 +581,7 @@ def  SMB_validate_baseprice_minibar():
         SET 
        "Username"='%s',
        "BusinessCode"='%s', "Customer Group"='%s',"Market - Customer"='%s', "Market - Country"='%s', "Beam Category"='%s',"Document Item Currency"='%s', "Amount"='%s', "Currency"=''%s'',
-       "updated_on"='%s',sequence_id ='%s'
+       "updated_on"='%s'
         WHERE "id"= '%s' ''' % tuple(df.loc[i])
             result=db.insert(query2)
             print(query2)
