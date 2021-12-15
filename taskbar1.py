@@ -386,8 +386,8 @@ def invoice():
     invoice_posting_date_from=request.args.get('invoice_posting_date_from')
     invoice_posting_date_to=request.args.get('invoice_posting_date_to')
     
-    invoice_aging_from=request.args.get('invoice_aging_from')
-    invoice_aging_to=request.args.get('invoice_aging_to')
+    invoice_aging_from=request.args.get('invoice_ageing_from')
+    invoice_aging_to=request.args.get('invoice_ageing_to')
     search_string=request.args.get("search_string")
     invoice_aging_bucket=request.args.get("invoice_ageing_bucket")
     
