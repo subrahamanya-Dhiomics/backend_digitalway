@@ -74,10 +74,13 @@ CORS(smb_app1)
 
 db=Database()
 
-download_path='/home/ubuntu/SMBDir/smb_download/'
+# download_path='/home/ubuntu/SMBDir/smb_download/'
 
 
-input_directory='/home/ubuntu/SMBDir/smb_upload/'
+# input_directory='/home/ubuntu/SMBDir/smb_upload/'
+
+download_path='C:/Users/Administrator/Documents/test_path/'
+input_directory='C:/Users/Administrator/Documents/test_path/'
 
 
 con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
@@ -352,6 +355,19 @@ def SMB_baseprice_download1():
         return send_file(file, as_attachment=True)
        
         
+   
+    
+   
+   
+    
+    
+    
+    
+    
+
+         
+       
+        
     
 # ***************************************************************************************************************************************************************************************
 # baseprice_minibar
@@ -546,11 +562,10 @@ def  SMB_upload_baseprice_minibar():
         
             smb_df=pd.read_excel(input_directory+f.filename,dtype=str)
             
-            df=smb_df[['id','BusinessCode', 'Customer Group','Market - Customer', 'Market - Country', 'Beam Category','Document Item Currency', 'Amount', 'Currency','sequence_id']]  
+            df=smb_df[['id','BusinessCode', 'Customer Group','Market - Customer', 'Market - Country', 'Beam Category','Document Item Currency', 'Amount', 'Currency']]  
             df['id']=df['id'].astype(int)
-            df['sequence_id']=df['sequence_id'].astype(int)
-            
-            df_main = pd.read_sql('''select "id","BusinessCode", "Customer Group","Market - Customer", "Market - Country", "Beam Category","Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Base Price - Category Addition - MiniBar" where "active"='1' order by "id" ''', con=con)
+           
+            df_main = pd.read_sql('''select "id","BusinessCode", "Customer Group","Market - Customer", "Market - Country", "Beam Category","Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Base Price - Category Addition - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             
             
             df3 = df.merge(df_main, how='left', indicator=True)
@@ -583,7 +598,7 @@ def  SMB_validate_baseprice_minibar():
     
         df=df[ ["Username","BusinessCode", "Customer_Group",
        "Market_Customer", "Market_Country", "Beam_Category",
-       "Document_Item_Currency", "Amount", "Currency","date_time","sequence_id","id"]]
+       "Document_Item_Currency", "Amount", "Currency","date_time","id"]]
         
         query1='''INSERT INTO "SMB"."SMB - Base Price - Category Addition - MiniBar_History" 
         SELECT 
@@ -606,7 +621,7 @@ def  SMB_validate_baseprice_minibar():
         SET 
        "Username"='%s',
        "BusinessCode"='%s', "Customer Group"='%s',"Market - Customer"='%s', "Market - Country"='%s', "Beam Category"='%s',"Document Item Currency"='%s', "Amount"='%s', "Currency"=''%s'',
-       "updated_on"='%s',sequence_id ='%s'
+       "updated_on"='%s'
         WHERE "id"= '%s' ''' % tuple(df.loc[i])
             result=db.insert(query2)
             print(query2)
@@ -623,7 +638,7 @@ def SMB_baseprice_catecory_minibar_download():
         now = datetime.now()
         try:
             print("hi")
-            df = pd.read_sql('''select * from "SMB"."SMB - Base Price - Category Addition - MiniBar" where "active"='1' order by "id" ''', con=con)
+            df = pd.read_sql('''select * from "SMB"."SMB - Base Price - Category Addition - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             
             df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
@@ -1398,7 +1413,7 @@ def  Upload_extra_certificate_minibar():
             
             df_main = pd.read_sql('''select "id","BusinessCode", "Customer Group",
        "Market - Customer", "Market - Country", "Certificate",
-       "Grade Category", "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Certificate - MiniBar" where "active"='1' order by "id" ''', con=con)
+       "Grade Category", "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Certificate - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             
             
             df3 = df.merge(df_main, how='left', indicator=True)
@@ -1476,7 +1491,7 @@ def  download_extra_certificate_minibar():
    
         now = datetime.now()
         try:
-            df = pd.read_sql('''select * from "SMB"."SMB - Extra - Certificate - MiniBar" where "active"='1' order by "id" ''', con=con)
+            df = pd.read_sql('''select * from "SMB"."SMB - Extra - Certificate - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'extra_certificate_minibar.xlsx'
@@ -1961,7 +1976,7 @@ def upload_delivery_mill_minibar():
             
             df_main = pd.read_sql('''select "id","Market - Country",
        "Market - Customer Group", "Market - Customer", "Delivering Mill",
-       "Product Division", "Document Item Currency", "Amount", "Currency","sequence_id" from "SMB"."SMB - Extra - Delivery Mill - MiniBar" where "active"='1' order by "id" ''', con=con)
+       "Product Division", "Document Item Currency", "Amount", "Currency","sequence_id" from "SMB"."SMB - Extra - Delivery Mill - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             
             
             df3 = df.merge(df_main, how='left', indicator=True)
@@ -2042,7 +2057,7 @@ def  download_delivery_mill_minibar():
    
         now = datetime.now()
         try:
-            df = pd.read_sql('''select * from "SMB"."SMB - Extra - Delivery Mill - MiniBar" where "active"='1' order by "id" ''', con=con)
+            df = pd.read_sql('''select * from "SMB"."SMB - Extra - Delivery Mill - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'delivery_mill_minibar.xlsx'

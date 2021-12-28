@@ -78,10 +78,15 @@ CORS(smb_app2)
 
 db=Database()
 
-download_path='/home/ubuntu/SMBDir/smb_download/'
+# download_path='/home/ubuntu/SMBDir/smb_download/'
 
 
-input_directory='/home/ubuntu/SMBDir/smb_upload/'
+# input_directory='/home/ubuntu/SMBDir/smb_upload/'
+
+download_path='C:/Users/Administrator/Documents/test_path/'
+input_directory='C:/Users/Administrator/Documents/test_path/'
+
+
 
 con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
 
@@ -573,7 +578,7 @@ def upload_freight_parity_minibar():
             
             df_main = pd.read_sql('''select "id","Delivering Mill", "Market - Country",
        "Market - Customer Group", "Market - Customer", "Zip Code (Dest)",
-       "Product Division", "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Freight Parity - MiniBar" where "active"='1' order by "id" ''', con=con)
+       "Product Division", "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Freight Parity - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             
             
             df3 = df.merge(df_main, how='left', indicator=True)
@@ -652,7 +657,7 @@ def download_freight_parity_minibar():
    
         now = datetime.now()
         try:
-            df = pd.read_sql('''select * from "SMB"."SMB - Extra - Freight Parity - MiniBar" where "active"='1' order by "id" ''', con=con)
+            df = pd.read_sql('''select * from "SMB"."SMB - Extra - Freight Parity - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'freight_parity_minibar.xlsx'
@@ -1163,10 +1168,11 @@ def upload_extra_grade_minibar():
        "Market - Customer", "Market - Country", "Grade Category",
        "Document Item Currency", "Amount", "Currency","sequence_id"]]  
          df["id"]=df["id"].astype(int)
+         df["sequence_id"]=df["sequence_id"].astype(int)
          
          df_main = pd.read_sql('''select "id","BusinessCode", "Customer Group",
        "Market - Customer", "Market - Country", "Grade Category",
-       "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Grade - MiniBar" where "active"='1' order by "id" ''', con=con)
+       "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Grade - MiniBar" where "active"='1' order by sequence_id ''', con=con)
          
          
          df3 = df.merge(df_main, how='left', indicator=True)
@@ -1245,7 +1251,7 @@ def  validate_extra_grade_minibar():
 def download_extra_grade_minibar():
         now = datetime.now()
         try:
-            df = pd.read_sql('''select * from "SMB"."SMB - Extra - Grade - MiniBar" where "active"='1' order by "id" ''', con=con)
+            df = pd.read_sql('''select * from "SMB"."SMB - Extra - Grade - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'extra_grade_minibar.xlsx'
@@ -1771,11 +1777,12 @@ def upload_extra_profile_minibar():
        "Product Level 05", "Product Level 02", "Delivering Mill",
        "Document Item Currency", "Amount", "Currency","sequence_id"]]  
             df["id"]=df["id"].astype(int)
+            df["sequence_id"]=df["sequence_id"].astype(int)
             
             df_main = pd.read_sql('''select "id","BusinessCode", "Customer Group",
        "Market - Customer", "Market - Country", "Product Level 04",
        "Product Level 05", "Product Level 02", "Delivering Mill",
-       "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Profile - MiniBar" where "active"='1' order by "id" ''', con=con)
+       "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Profile - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             
             
             df3 = df.merge(df_main, how='left', indicator=True)
@@ -1858,7 +1865,7 @@ def download_extra_profile_minibar():
     
         now = datetime.now()
         try:
-            df = pd.read_sql('''select * from "SMB"."SMB - Extra - Profile - MiniBar" where "active"='1' order by "id" ''', con=con)
+            df = pd.read_sql('''select * from "SMB"."SMB - Extra - Profile - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'extra_profile_minibar.xlsx'
@@ -2392,7 +2399,7 @@ def upload_extra_profile_Iberia_minibar():
             df_main = pd.read_sql('''select "id","BusinessCode", "Market - Country",
        "Market - Customer Group", "Market - Customer", "Delivering Mill",
        "Product Level 02", "Product Level 05", "Document Item Currency",
-       "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar" where "active"='1' order by "id" ''', con=con)
+       "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             
             
             df3 = df.merge(df_main, how='left', indicator=True)
@@ -2472,7 +2479,7 @@ def  validate_extra_profile_Iberia_minibar():
 def download_extra_profile_Iberia_minibar():
         now = datetime.now()
         try:
-            df = pd.read_sql('''select * from "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar" where "active"='1' order by "id" ''', con=con)
+            df = pd.read_sql('''select * from "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'extra_profile_Iberia_minibar.xlsx'
