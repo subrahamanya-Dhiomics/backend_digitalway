@@ -77,26 +77,10 @@ CORS(app)
 
 @app.route('/user_access', methods=['POST','GET'])
 def useraccess():
-    query='SELECT  distinct(group_description) as group FROM user_management_ocp.group'''
+    query='''SELECT  groupid, group_description FROM user_management_ocp.group'''
     df=pd.read_sql(query,con=con)
-    group=list(df['group'])
-    return {"group_description":group}
-    
-@app.route('/emailexist',methods=['POST','GET'])
-def usernameAndEmailExist():
-    username=request.args.get('username')
-    email=request.args.get('email')
-    try:       
-        query = '''select distinct(1)  from  user_management_ocp.user_details  where user_name='{}' and email='{}' '''.format(username,email)     
-        #data=db.query(query)
-        cur.execute(query)
-        print(query)
-        status=cur.fetchall()[0][0]
-    except:
-        status=0
-    if status==1:
-        return{"status":"exist-account"},200
-    else:
-        return{"status":"not-exist"},500    
+    data=json.loads(df.to_json(orient='records'))
+    return {"data":data}
+
 if __name__ == "__main__":
     app.run()
