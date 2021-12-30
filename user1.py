@@ -91,15 +91,17 @@ def insert_values():
     Address=Request_body['Address']
     save_with_table=(First_name,Middle_name,Last_name,User_name,Email,Phone_number,Address)
 
- 
-    query='''insert into user_management_ocp.user_details VALUES{}'''.format(save_with_table)
-    result=db.insert(query)
-    print(query)
-   
-    
-    return {"status":"success",'status_code':204}
+    try:
+            query='''insert into  user_management_ocp.user_details (user_name,first_name,middle_name,last_name,address,password,email)  VALUES{}'''.format(save_with_table)
+            result=db.insert(query)
+            print(query)
+            if result=='failed' :raise ValueError
+            
+            return {"status":"success",'status_code':204}
+        
+    except:
+        return {"status":"failure",'status_code':500}
 
-   
 @app.route('/valid_user',methods=['GET''POST'])
 
 def valid_user():
