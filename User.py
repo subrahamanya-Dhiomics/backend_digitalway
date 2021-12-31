@@ -82,14 +82,13 @@ cursor=con.cursor()
 
 def insert_values():
     Request_body = request.get_json()
-    First_name=Request_body['First_name']
-    Middle_name=Request_body['Middle_name']
-    Last_name=Request_body['Last_name']
-    User_name=request.args.get('User_name')
-    Email=request.args.get('Email')
-    Phone_number=Request_body['Phone_number']
-    Address=Request_body['Address']
-#    User_id=Request_body['user_id']
+    First_name=Request_body['first_name']
+    Middle_name=Request_body['middle_name']
+    Last_name=Request_body['last_name']
+    User_name=request.args.get('user_name')
+    Email=request.args.get('email')
+    Phone_number=Request_body['phone_no']
+    Address=Request_body['address']
     
     save_with_table=(User_name,First_name,Middle_name,Last_name,Address,Email,Phone_number)
 
