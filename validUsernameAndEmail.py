@@ -93,9 +93,9 @@ def valid_user():
         status=0
     
     if status==1:
-        return{"status":"Exist Username"},200
-    else:
-        return{"status":"Not-Exist Username"},500
+        return{"status":"Exist Username"}
+    if status==0:
+        return{"status":"Not-Exist Username"}
     
 @app.route('/existEmail',methods=['GET','POST'])
 def valid_email():
@@ -109,9 +109,41 @@ def valid_email():
         status=0
     
     if status==1:
-        return{"status":"Exist-Email"},200
-    else:
-        return{"status":"Not-Exist Email"},500
+        return{"status":"Exist-Email"}
+    if status==0:
+        return{"status":"Not-Exist Email"}
+    
+@app.route('/insert_values',methods=['POST','GET','PUT'])
+
+def insert_values():
+    Request_body = request.get_json()
+    First_name=Request_body['first_name']
+    Middle_name=Request_body['middle_name']
+    Last_name=Request_body['last_name']
+    User_name=request.args.get('user_name')
+    Email=request.args.get('email')
+    Phone_number=Request_body['phone_no']
+    Address=Request_body['address']
+    
+    save_with_table=(User_name,First_name,Middle_name,Last_name,Address,Email,Phone_number)
+
+    try:
+           query='''insert into  user_management_ocp.user_details (
+           "user_name",
+           "first_name",
+           "middle_name",
+           "last_name",
+           "address",
+           "email",
+           "phone_number")  VALUES {}'''.format(save_with_table)
+           db.insert(query)
+           print(query)
+           return {"status":"success",'status_code':204}
+
+        
+    except:
+        return {"status":"failure",'status_code':500}
+    
     
 if __name__=="__main__":
     app.run()
