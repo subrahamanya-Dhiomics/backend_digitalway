@@ -143,7 +143,13 @@ def insert_values():
         
     except:
         return {"status":"failure",'status_code':500}
-    
+
+@app.route('/user_access', methods=['POST','GET'])
+def useraccess():
+    query='''SELECT  groupid, group_description FROM user_management_ocp.group'''
+    df=pd.read_sql(query,con=con)
+    data=json.loads(df.to_json(orient='records'))
+    return {"data":data}
     
 if __name__=="__main__":
     app.run()
