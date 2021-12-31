@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Dec 30 11:28:02 2021
-
-@author: Administrator
-"""
-
 from flask import Blueprint
 import pandas as pd
 import time
@@ -77,38 +70,34 @@ CORS(app)
 
 con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
 cursor=con.cursor()
+'''
+@app.route('/valid_user',methods=['GET','POST'])
 
-@app.route('/insert_values',methods=['POST','GET','PUT'])
-
-def insert_values():
+def valid_user():
     Request_body = request.get_json()
-    First_name=Request_body['First_name']
-    Middle_name=Request_body['Middle_name']
-    Last_name=Request_body['Last_name']
-    User_name=request.args.get('User_name')
-    Email=request.args.get('Email')
-    Phone_number=Request_body['Phone_number']
-    Address=Request_body['Address']
-#    User_id=Request_body['user_id']
+    Username=Request_body['User_name']
+    Email=Request_body['Email']   
     
-    save_with_table=(User_name,First_name,Middle_name,Last_name,Address,Email,Phone_number)
-
+    
     try:
-           query='''insert into  user_management_ocp.user_details (
-           "user_name",
-           "first_name",
-           "middle_name",
-           "last_name",
-           "address",
-           "email",
-           "phone_number")  VALUES {}'''.format(save_with_table)
-           db.insert(query)
-           print(query)
-           return {"status":"success",'status_code':204}
-
         
+        query_1='#''select distinct(1) username,email from  user_management_ocp.user_details  where user_name='{}' or email='{}' '''.format(Username,Email)
+     
+        print(query_1)
+        cursor.execute(query_1)
+        status=cursor.fetchall()[0][0]
+     
     except:
-        return {"status":"failure",'status_code':500}
+        status=0
+        
     
+    if status==1:
+        return{"status":"exist-account",'status_code':204}
+    else:
+        return{"status":"not-exist",'status_code':500}
+    
+        
 if __name__=="__main__":
     app.run()
+
+#        BusinessCode=(query_parameters['BusinessCode'])
