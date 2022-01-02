@@ -1,9 +1,4 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Fri Dec 31 09:19:43 2021
 
-@author: Administrator
-"""
 
 # -*- coding: utf-8 -*-
 """
@@ -120,12 +115,13 @@ def insert_values():
     First_name=Request_body['first_name']
     Middle_name=Request_body['middle_name']
     Last_name=Request_body['last_name']
-    User_name=request.args.get('user_name')
-    Email=request.args.get('email')
+    User_name=Request_body['username']
+    Email=Request_body['email']
     Phone_number=Request_body['phone_no']
-    Address=Request_body['address']
+    Address = Request_body['address']
+    Group_id = Request_body['group_id']
     
-    save_with_table=(User_name,First_name,Middle_name,Last_name,Address,Email,Phone_number)
+    save_with_table=(User_name,First_name,Middle_name,Last_name,Address,Email,Phone_number,Group_id)
 
     try:
            query='''insert into  user_management_ocp.user_details (
@@ -135,7 +131,9 @@ def insert_values():
            "last_name",
            "address",
            "email",
-           "phone_number")  VALUES {}'''.format(save_with_table)
+           "group_id",
+           "phone_number"
+           )  VALUES {}'''.format(save_with_table)
            db.insert(query)
            print(query)
            return {"status":"success",'status_code':204}
