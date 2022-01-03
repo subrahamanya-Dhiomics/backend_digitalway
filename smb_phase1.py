@@ -18,13 +18,17 @@ from collections import OrderedDict
 from flask import Blueprint
 import psycopg2
 import shutil
+from functools import wraps
 from pathlib import Path
 import os
 from sqlalchemy import create_engine
 import getpass
 from datetime import datetime,date
+from smb_phase2 import token_required
 
 
+
+import smb_phase2
 engine = create_engine('postgresql://postgres:ocpphase01@ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com:5432/offertool')
 
 
@@ -74,6 +78,8 @@ CORS(smb_app1)
 
 db=Database()
 
+
+
 # download_path='/home/ubuntu/SMBDir/smb_download/'
 
 
@@ -88,16 +94,23 @@ con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',
 
 
 @smb_app1.route('/hello_world',methods=['GET'])
+
 def Hello():
+    
     return {"status":"success"}
 
 
+
 @smb_app1.route('/Base_Price_Data',methods=['GET','POST'])
+
+@token_required
 def SMB_data():
+    
     # query_paramters 
     search_string=request.args.get("search_string") 
     limit=request.args.get("limit",type=int)
     offset=request.args.get("offset",type=int)
+    
     
     if(limit==None):
         limit=500
@@ -295,6 +308,8 @@ def  SMB_validate():
     df.insert(0,'Username',username)
     df.insert(1,'date_time',date_time)
     
+    print(json_data)
+    
     try:
         df=df[ ['Username','BusinessCode','Market_Country','Product_Division','Product_Level_02','Document_Item_Currency', 'Amount', 'Currency','date_time','id']]
         
@@ -373,6 +388,8 @@ def SMB_baseprice_download1():
 # baseprice_minibar
 
 @smb_app1.route('/data_baseprice_category_minibar',methods=['GET','POST'])
+
+@token_required
 def SMB_data_baseprice_mini():
     # query_paramters 
     search_string=request.args.get("search_string")  
@@ -882,7 +899,7 @@ def  SMB_validate_baseprice_incoterm():
         df.insert(0,'Username',username)
         df.insert(1,'date_time',date_time)
     
-   
+        print(json_data)
     
         df=df[ ["Username","Market_Country", "Customer_Group",
        "Incoterm1", "Product_Division", "Beam_Category", "Delivering_Mill",

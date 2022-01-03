@@ -7,7 +7,7 @@ Created on Wed Oct 20 10:07:00 2021
 
 
 
-from flask import Blueprint
+from flask import Blueprint,current_app
 
 
 import pandas as pd
@@ -17,9 +17,11 @@ from flask import Flask, request, send_file, render_template
 from flask import jsonify
 from flask_cors import CORS
 from json import JSONEncoder
+from functools import wraps
 from collections import OrderedDict
 from flask import Blueprint
 import psycopg2
+import jwt
 import shutil
 from pathlib import Path
 import os
@@ -91,11 +93,32 @@ input_directory='C:/Users/Administrator/Documents/test_path/'
 con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
 
 
+def token_required(func):
+    # decorator factory which invoks update_wrapper() method and passes decorated function as an argument
+    @wraps(func)
+    def decorated(*args, **kwargs):
+        #token = request.args.get('token')
+        #if 'x-access-token' in request.headers:
+        token = request.args.get('x-access-token')           
+        if not token:
+            return jsonify({'Alert!': 'Token is missing!'}), 401
+        try:
+            data = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=["HS256"])
+            print(data)
+        except :      
+             return {"msg":"Invalid token;"}
+        return func(*args, **kwargs)
+    return decorated
+
+
+# Login page
+
 
 # *****************************************************************************************************************************************
 # freight_parity
 
 @smb_app2.route('/data_freight_parity',methods=['GET','POST'])
+@token_required
 def  freight_parity():
     # query_paramters 
     search_string=request.args.get("search_string")
