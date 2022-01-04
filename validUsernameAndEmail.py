@@ -75,14 +75,13 @@ CORS(app)
 
 con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
 cursor=con.cursor()
-@app.route('/existUsername',methods=['GET','POST'])
+@app.route('/exist_username',methods=['GET','POST'])
 def valid_user():
     username = request.args.get('username')   
     try:       
         query_1='''select distinct(1) user_name from  user_management_ocp.user_details  where  user_name='{}' '''.format(username)  
-        print(query_1)
-        cursor.execute(query_1)
-        status=cursor.fetchall()[0][0]
+        status=db.query(query_1)[0][0]
+
      
     except:
         status=0
@@ -92,14 +91,13 @@ def valid_user():
     if status==0:
         return{"status":"Not-Exist Username"}
     
-@app.route('/existEmail',methods=['GET','POST'])
+@app.route('/exist_email',methods=['GET','POST'])
 def valid_email():
     email = request.args.get('email')
     try:     
         query_1='''select distinct(1) email from  user_management_ocp.user_details  where  email='{}' '''.format(email)   
-        print(query_1)
-        cursor.execute(query_1)
-        status=cursor.fetchall()[0][0]   
+        status=db.query(query_1)[0][0]
+       
     except:
         status=0
     
