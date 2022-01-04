@@ -236,7 +236,7 @@ LEFT JOIN OFFERTOOL.PLANT PL ON PL.PLANTCODE = P.PLANTCODE {} '''.format(wherest
 def order_status_delay():
     search_string=request.args.get('search_string')
     
-    wherestr=''
+    #wherestr=''
     query='''select A.VBELN as sales_doc_number,
 A.POSNR as sales_doc_item_number ,
 null as order_status,
@@ -251,22 +251,23 @@ inner join  invoice.ocp_vbpa C on ((C.VBELN = A.VBELN) and (C.POSNR = A.POSNR) a
 	  or (C.VBELN = A.VBELN) and (C.PARVW = 'AG')) '''
     
              
-
-    df=pd.read_sql(query,con=con)
+    try:
+            df=pd.read_sql(query,con=con)
+            
+            if(search_string!="All" and search_string!='all' and search_string!='ALL' and search_string!= None):
+                                      df=df[df.eq(search_string).any(1)]
+                                      
+            df_json=json.loads(df.to_json(orient='records'))
+            
+            
+            order_status=list(set(df.order_status))
+            sold_to=list(set(df.sold_to))
+            ship_to=list(set(df.ship_to))
+            
+            return {"data":df_json,"oder_status":order_status,"sold_to":sold_to,"ship_to":ship_to },200
     
-    if(search_string!="All" and search_string!='all' and search_string!=None):
-                              df=df[df.eq(search_string).any(1)]
-                              
-    df_json=json.loads(df.to_json(orient='records'))
-    
-    
-    order_status=list(set(df.order_status))
-    sold_to=list(set(df.sold_to))
-    ship_to=list(set(df.ship_to))
-    
-    return {"data":df_json,"oder_status":order_status,"sold_to":sold_to,"ship_to":ship_to },200
-
-    
+    except:
+            return {"status":"failure"},500
     
     
     
