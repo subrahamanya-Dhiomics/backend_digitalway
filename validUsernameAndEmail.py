@@ -1,9 +1,4 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Fri Dec 31 09:19:43 2021
 
-@author: Administrator
-"""
 
 # -*- coding: utf-8 -*-
 """
@@ -80,38 +75,77 @@ CORS(app)
 
 con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
 cursor=con.cursor()
-@app.route('/existUsername',methods=['GET','POST'])
+@app.route('/exist_username',methods=['GET','POST'])
 def valid_user():
     username = request.args.get('username')   
     try:       
         query_1='''select distinct(1) user_name from  user_management_ocp.user_details  where  user_name='{}' '''.format(username)  
-        print(query_1)
-        cursor.execute(query_1)
-        status=cursor.fetchall()[0][0]
+        status=db.query(query_1)[0][0]
+
      
     except:
         status=0
     
     if status==1:
-        return{"status":"Exist Username"},200
-    else:
-        return{"status":"Not-Exist Username"},500
+        return{"status":"Exist Username"}
+    if status==0:
+        return{"status":"Not-Exist Username"}
     
-@app.route('/existEmail',methods=['GET','POST'])
+@app.route('/exist_email',methods=['GET','POST'])
 def valid_email():
     email = request.args.get('email')
     try:     
         query_1='''select distinct(1) email from  user_management_ocp.user_details  where  email='{}' '''.format(email)   
-        print(query_1)
-        cursor.execute(query_1)
-        status=cursor.fetchall()[0][0]   
+        status=db.query(query_1)[0][0]
+       
     except:
         status=0
     
     if status==1:
-        return{"status":"Exist-Email"},200
-    else:
-        return{"status":"Not-Exist Email"},500
+        return{"status":"Exist-Email"}
+    if status==0:
+        return{"status":"Not-Exist Email"}
+    
+@app.route('/insert_values',methods=['POST','GET','PUT'])
+
+def insert_values():
+    Request_body = request.get_json()
+    First_name=Request_body['first_name']
+    Middle_name=Request_body['middle_name']
+    Last_name=Request_body['last_name']
+    User_name=Request_body['username']
+    Email=Request_body['email']
+    Phone_number=Request_body['phone_no']
+    Address = Request_body['address']
+    Group_id = Request_body['group_id']
+    
+    save_with_table=(User_name,First_name,Middle_name,Last_name,Address,Email,Phone_number,Group_id)
+
+    try:
+           query='''insert into  user_management_ocp.user_details (
+           "user_name",
+           "first_name",
+           "middle_name",
+           "last_name",
+           "address",
+           "email",
+           "group_id",
+           "phone_number"
+           )  VALUES {}'''.format(save_with_table)
+           db.insert(query)
+           print(query)
+           return {"status":"success",'status_code':204}
+
+        
+    except:
+        return {"status":"failure",'status_code':500}
+
+@app.route('/user_access', methods=['POST','GET'])
+def useraccess():
+    query='''SELECT  groupid, group_description FROM user_management_ocp.group'''
+    df=pd.read_sql(query,con=con)
+    data=json.loads(df.to_json(orient='records'))
+    return {"data":data}
     
 if __name__=="__main__":
     app.run()

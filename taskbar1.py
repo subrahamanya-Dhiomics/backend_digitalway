@@ -236,22 +236,75 @@ LEFT JOIN OFFERTOOL.PLANT PL ON PL.PLANTCODE = P.PLANTCODE {} '''.format(wherest
 def order_status_delay():
     search_string=request.args.get('search_string')
     
+    #wherestr=''
+    query='''select A.VBELN as sales_doc_number,
+A.POSNR as sales_doc_item_number ,
+null as order_status,
+A.ZZLIEFDAT_01 as confirmed_delivery_date,  
+A.WERKS as delivering_plant, 
+C.KUNNR as sold_to, 
+C.KUNNR as ship_to, 
+A.KWMENG as quantity,B.BSTNK as customer_reference from invoice.vbap A 
+inner join invoice.vbak B on B.VBELN = A.VBELN 
+inner join  invoice.ocp_vbpa C on ((C.VBELN = A.VBELN) and (C.POSNR = A.POSNR) and (C.PARVW = 'AG')
+      or (C.VBELN = A.VBELN) and (C.POSNR is null) and (C.PARVW = 'AG') 
+	  or (C.VBELN = A.VBELN) and (C.PARVW = 'AG')) '''
+    
+             
+    try:
+            df=pd.read_sql(query,con=con)
+            
+            if(search_string!="All" and search_string!='all' and search_string!='ALL' and search_string!= None):
+                                      df=df[df.eq(search_string).any(1)]
+                                      
+            df_json=json.loads(df.to_json(orient='records'))
+            
+            
+            order_status=list(set(df.order_status))
+            sold_to=list(set(df.sold_to))
+            ship_to=list(set(df.ship_to))
+            
+            return {"data":df_json,"oder_status":order_status,"sold_to":sold_to,"ship_to":ship_to },200
+    
+    except:
+            return {"status":"failure"},500
     
     
-    wherestr=''
-    query='''select A.VBELN as sales_doc_number,A.POSNR as sales_doc_item_number ,null as order_status,A.ZZLIEFDAT_01 as confirmed_delivery_date,  A.WERKS as delivering_plant, null as sold_to, null as ship_to, null as DELV_Week, KWMENG as quantity,B.BSTNK as customer_reference from invoice.vbap A 
-inner join invoice.vbak B on B.VBELN = A.VBELN limit 400 '''
+    
+    
+    
+    
+# @taskbar1.route('/order_status_delay',methods=['POST','GET'])
+# def order_status_delay():
+#     search_string=request.args.get('search_string')
+    
+#     wherestr=''
+#     query='''select A.VBELN as sales_doc_number,
+# A.POSNR as sales_doc_item_number ,
+# null as order_status,
+# A.ZZLIEFDAT_01 as confirmed_delivery_date,  
+# A.WERKS as delivering_plant, 
+# C.KUNNR as sold_to, 
+# C.KUNNR as ship_to, 
+# A.KWMENG as quantity,B.BSTNK as customer_reference from invoice.vbap A 
+# inner join invoice.vbak B on B.VBELN = A.VBELN 
+# inner join  invoice.ocp_vbpa C on ((C.VBELN = A.VBELN) and (C.POSNR = A.POSNR) and (C.PARVW = 'AG')
+#       or (C.VBELN = A.VBELN) and (C.POSNR is null) and (C.PARVW = 'AG') 
+# 	  or (C.VBELN = A.VBELN) and (C.PARVW = 'AG')) '''
     
              
 
-    df=pd.read_sql(query,con=con)
+#     df=pd.read_sql(query,con=con)
     
-    if(search_string!="All" and search_string!='all' and search_string!=None):
-                              df=df[df.eq(search_string).any(1)]
+#     if(search_string!="All" and search_string!='all' and search_string!=None):
+#                               df=df[df.eq(search_string).any(1)]
                               
-    df_json=json.loads(df.to_json(orient='records'))
+#     df_json=json.loads(df.to_json(orient='records'))
     
-    return {"data":df_json},200
+#     return {"data":df_json},200
+
+
+
 
 # @taskbar1.route('/invoice_paydments', methods=['POST','GET'])
 # def  invoice_payments():
