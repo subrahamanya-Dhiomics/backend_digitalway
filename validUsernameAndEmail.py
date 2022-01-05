@@ -109,7 +109,7 @@ def valid_email():
 @app.route('/insert_values',methods=['POST','GET','PUT'])
 
 def insert_values():
-    Request_body = request.get_json()
+    Request_body = json.loads(request.data)
     First_name=Request_body['first_name']
     Middle_name=Request_body['middle_name']
     Last_name=Request_body['last_name']
@@ -119,22 +119,21 @@ def insert_values():
     Address = Request_body['address']
     Group_id = Request_body['group_id']
     
-    save_with_table=(User_name,First_name,Middle_name,Last_name,Address,Email,Phone_number,Group_id)
-
+    save_with_table=(User_name,First_name,Middle_name,Last_name,Address,Email,Group_id,Phone_number)
     try:
-           query='''insert into  user_management_ocp.user_details (
-           "user_name",
-           "first_name",
-           "middle_name",
-           "last_name",
-           "address",
-           "email",
-           "group_id",
-           "phone_number"
-           )  VALUES {}'''.format(save_with_table)
-           db.insert(query)
-           print(query)
-           return {"status":"success",'status_code':204}
+        query='''insert into  user_management_ocp.user_details (
+               "user_name",
+               "first_name",
+               "middle_name",
+               "last_name",
+               "address",
+               "email",
+               "group_id",
+               "phone_number"
+               )  VALUES {}'''.format(save_with_table)
+        db.insert(query)
+        print(query)
+        return {"status":"success",'status_code':204}
 
         
     except:
