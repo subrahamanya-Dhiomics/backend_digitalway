@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Jan  5 10:02:00 2022
+Created on Wed Jan  5 09:20:41 2022
 
 @author: Administrator
 """
@@ -19,7 +19,7 @@ Created on Thu Dec 23 11:17:05 2021
 @author: Administrator
 """
 
-
+from flask import Blueprint
 import pandas as pd
 import time
 import json
@@ -28,6 +28,7 @@ from flask import jsonify
 from flask_cors import CORS
 from json import JSONEncoder
 from collections import OrderedDict
+from flask import Blueprint
 import psycopg2
 import shutil
 from pathlib import Path
@@ -37,7 +38,6 @@ import getpass
 from datetime import datetime,date
 import smtplib
 import re
-from flask import Flask
 app= Flask(__name__)
 
 CORS(app)
@@ -58,6 +58,7 @@ class Database:
            
    
     def insert(self, query):
+ #           print('inside insert')
             var = 'failed'
             try:
                 self.cursor = self.connection.cursor()
@@ -92,20 +93,39 @@ CORS(app)
 con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
 cursor=con.cursor()
 
+@app.route('/valid_email',methods=['POST','GET'])
+def valid_email():
+    pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+    email = request.args.get('email')
+    if(re.fullmatch(pattern, email)):
+        query_1='''select distinct(1) email from  user_management_ocp.user_details  where  email='{}' '''.format(email)   
+        status=db.query(query_1)[0][0]        
+        return{"status":"Exist-Email"},204
+    else:
+        return{"status":"Not-Exist Email"},500
+            
+@app.route('/password',methods=['POST','GET'])
+def password():
+    password=request.args.get('password')
+    try:
+        query_1='''select distinct(1) email from  user_management_ocp.user_details  where  password='{}' '''.format(password)   
+        result=db.query(query_1)[0][0]        
+        if result=='failed' :raise ValueError
+        return{"status":"password-correct"},204
+    except:
+        return{"status":"password-incorrect"},500
+        
 def send_email(receivers):
     sender = 'ymsyathish@gmail.com'
-    message = """From:Reset Password <ymsyathish@gmail.com>
-To: Person <yathish.susandhi@gmail.com>
-Subject: reset passoword
+#    receivers = ['yathish.susandhi@gmail.com']
 
-This is a test e-mail message.
+    message = """From: No Reply <no_reply@mydomain.com>
+    To: Person <yathish.susandhi@gmail.com>
+    Subject: reset passoword
 
-CLick on this Link to Reset Your Password.
-
-Link:https://smbprice.dcc-am.com/auth/reset-password
-
-
-"""
+    This is a test e-mail message.
+    Link:www.google.com
+    """
     try :
 
         server = smtplib.SMTP('smtp.gmail.com:587')
@@ -119,27 +139,26 @@ Link:https://smbprice.dcc-am.com/auth/reset-password
         
     except :
        return 0
-@app.route('/forget_password',methods=['POST','GET'])
-def forget_password():
+@app.route('/reset_password',methods=['POST','GET'])
+def reset_password():
     pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
     email = request.args.get('email')
+    receivers=email
     try :
         if(re.fullmatch(pattern, email)):
             query_1='''select distinct(1) email from  user_management_ocp.user_details  where  email='{}' '''.format(email)   
-            status=db.query(query_1)[0][0]
-            receivers=email
-            if(status==1):
+            status=db.query(query_1)[0][0] 
+            if(status==0):
+ #               receivers=[]
                 email_sent_status = send_email(receivers)
                 if email_sent_status :
-                        return{"status":"Email sent successfully"},200
+                    return{"status":"Email sent successfully"},204
                 else :
-                        return{"status":"Error sending email to the user, Please try again later"},500
+                    return{"status":"Error sending email to the user, Please try again later"},500
             else:
-                return{"status":"Email does not exist"},200
+                return{"status":"Email does not exist"},500
         else :
             return{"status":"Please send the valid email address"},500
-        
-
     except :
         return{"status":"Not-Exist Email"},500
     
