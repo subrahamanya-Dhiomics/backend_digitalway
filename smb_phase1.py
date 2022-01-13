@@ -79,14 +79,12 @@ CORS(smb_app1)
 db=Database()
 
 
+download_path="/home/ubuntu/mega_dir/"
+input_directory="/home/ubuntu/mega_dir/"
 
-# download_path='/home/ubuntu/SMBDir/smb_download/'
 
-
-# input_directory='/home/ubuntu/SMBDir/smb_upload/'
-
-download_path='C:/Users/Administrator/Documents/test_path/'
-input_directory='C:/Users/Administrator/Documents/test_path/'
+# download_path="C:/Users/Administrator/Documents/"
+# input_directory="C:/Users/Administrator/Documents/"
 
 
 con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
@@ -145,6 +143,8 @@ def SMB_data():
         
 
 @smb_app1.route('/delete_record_baseprice',methods=['POST','GET','DELETE'])
+@token_required
+
 def delete_record():  
     id_value=request.args.get('id')
     
@@ -157,7 +157,8 @@ def delete_record():
         return {"status":"failure"},500
 
 
-@smb_app1.route('/get_record_baseprice',methods=['GET','POST'])       
+@smb_app1.route('/get_record_baseprice',methods=['GET','POST'])  
+@token_required     
 def get_record():
     id_value=request.args.get('id')  
     
@@ -174,6 +175,7 @@ def get_record():
   
 
 @smb_app1.route('/update_record_baseprice',methods=['POST'])
+@token_required
 def update_record1():
         username = getpass.getuser()
         now = datetime.now()
@@ -224,6 +226,7 @@ def update_record1():
    
 
 @smb_app1.route('/add_record_baseprice',methods=['POST'])
+@token_required
 def add_record1():
     username = getpass.getuser()
     now = datetime.now()
@@ -267,6 +270,7 @@ def add_record1():
 
    
 @smb_app1.route('/Base_Price_Upload', methods=['GET','POST'])
+
 def  SMB_upload():
     
             f=request.files['filename']
@@ -274,7 +278,7 @@ def  SMB_upload():
                 
             f.save(input_directory+f.filename)
             
-       
+            
             smb_df=pd.read_excel(input_directory+f.filename,dtype=str)
             
             df=smb_df[['id','BusinessCode','Market - Country','Product Division','Product Level 02','Document Item Currency', 'Amount', 'Currency']]  
@@ -297,6 +301,7 @@ def  SMB_upload():
        
 
 @smb_app1.route('/Base_Price_validate', methods=['GET','POST'])
+@token_required
 def  SMB_validate():
     json_data=json.loads(request.data)
     username = getpass.getuser() 
@@ -360,11 +365,12 @@ def SMB_baseprice_download1():
    
         now = datetime.now()
        
-        df = pd.read_sql('''select * from "SMB"."SMB - Base Price - Category Addition" where "active"='1' order by sequence_id ''', con=con)
+        df = pd.read_sql('''select * from "SMB"."SMB - Base Price - Category Addition" where "active"='1' order by id ''', con=con)
         df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
         t=now.strftime("%d-%m-%Y-%H-%M-%S")
         file=download_path+t+'baseprice_category_addition.xlsx'
-        print(file)
+        
+        
         df.to_excel(file,index=False)
         
         return send_file(file, as_attachment=True)
@@ -429,6 +435,7 @@ def SMB_data_baseprice_mini():
         return {"statuscode":500,"msg":"failure"},500
   
 @smb_app1.route('/delete_record_baseprice_category_minibar',methods=['POST','GET','DELETE'])
+@token_required
 def delete_record_baseprice_mini():  
     id_value=request.args.get('id')
     try:
@@ -441,7 +448,8 @@ def delete_record_baseprice_mini():
         return {"status":"failure"},500
 
 
-@smb_app1.route('/get_record_baseprice_category_minibar',methods=['GET','POST'])       
+@smb_app1.route('/get_record_baseprice_category_minibar',methods=['GET','POST'])     
+@token_required  
 def get_record_minibar():
     id_value=request.args.get('id')  
     
@@ -458,6 +466,7 @@ def get_record_minibar():
     
 
 @smb_app1.route('/update_record_baseprice_category_minibar',methods=['POST'])
+@token_required
 def update_record_category_minibar():
         username = getpass.getuser()
         now = datetime.now()
@@ -518,6 +527,7 @@ def update_record_category_minibar():
 
 
 @smb_app1.route('/add_record_baseprice_category_minibar',methods=['POST'])
+@token_required
 def add_record_mini():
     
     today = date.today()
@@ -570,11 +580,20 @@ def add_record_mini():
  
    
 @smb_app1.route('/upload_baseprice_category_minibar', methods=['GET','POST'])
+
 def  SMB_upload_baseprice_minibar():
-    
+            print("step1 : here")
+            request.files['filename']
+            
             f=request.files['filename']
+            print("step2 ",f.filename)
+            
              
+            
+            
             f.save(input_directory+f.filename)
+            
+            print("step3",type(f))
         
         
             smb_df=pd.read_excel(input_directory+f.filename,dtype=str)
@@ -600,56 +619,57 @@ def  SMB_upload_baseprice_minibar():
 
 
 @smb_app1.route('/validate_baseprice_category_minibar', methods=['GET','POST'])
+@token_required
 def  SMB_validate_baseprice_minibar():
-    json_data=json.loads(request.data)
-    username = getpass.getuser() 
-    now = datetime.now()
-    date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
+     json_data=json.loads(request.data)
+     username = getpass.getuser() 
+     now = datetime.now()
+     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     
-    df=pd.DataFrame(json_data["billet"]) 
+     df=pd.DataFrame(json_data["billet"]) 
     
-    df.insert(0,'Username',username)
-    df.insert(1,'date_time',date_time)
+     df.insert(0,'Username',username)
+     df.insert(1,'date_time',date_time)
     
-    try:
     
-        df=df[ ["Username","BusinessCode", "Customer_Group",
-       "Market_Customer", "Market_Country", "Beam_Category",
-       "Document_Item_Currency", "Amount", "Currency","date_time","id"]]
+    
+     df=df[ ["Username","BusinessCode", "Customer_Group",
+    "Market_Customer", "Market_Country", "Beam_Category",
+    "Document_Item_Currency", "Amount", "Currency","date_time","id"]]
+     
+     query1='''INSERT INTO "SMB"."SMB - Base Price - Category Addition - MiniBar_History" 
+     SELECT 
+     "id",
+     "Username",now(),
+     "BusinessCode", "Customer Group","Market - Customer", "Market - Country", "Beam Category","Document Item Currency", "Amount", "Currency" FROM "SMB"."SMB - Base Price - Category Addition - MiniBar"
+     WHERE "id" in {} '''
+     
+     id_tuple=tuple(df["id"])
+     if len(id_tuple)==1:id=id_tuple[0] ;id_tuple=(id,id)
+     result=db.insert(query1.format(id_tuple))
+     print(query1.format(id_tuple))
+     if result=='failed' :raise ValueError
+     
+     
+     # looping for update query
+     for i in range(0,len(df)):
         
-        query1='''INSERT INTO "SMB"."SMB - Base Price - Category Addition - MiniBar_History" 
-        SELECT 
-        "id",
-        "Username",now(),
-        "BusinessCode", "Customer Group","Market - Customer", "Market - Country", "Beam Category","Document Item Currency", "Amount", "Currency" FROM "SMB"."SMB - Base Price - Category Addition - MiniBar"
-        WHERE "id" in {} '''
-        
-        id_tuple=tuple(df["id"])
-        if len(id_tuple)==1:id=id_tuple[0] ;id_tuple=(id,id)
-        result=db.insert(query1.format(id_tuple))
-        print(query1.format(id_tuple))
-        if result=='failed' :raise ValueError
-        
-        
-        # looping for update query
-        for i in range(0,len(df)):
-           
-            query2='''UPDATE "SMB"."SMB - Base Price - Category Addition - MiniBar"
-        SET 
-       "Username"='%s',
-       "BusinessCode"='%s', "Customer Group"='%s',"Market - Customer"='%s', "Market - Country"='%s', "Beam Category"='%s',"Document Item Currency"='%s', "Amount"='%s', "Currency"=''%s'',
-       "updated_on"='%s'
-        WHERE "id"= '%s' ''' % tuple(df.loc[i])
-            result=db.insert(query2)
-            print(query2)
-            if result=='failed' :raise ValueError
-            
-        return {"status":"success"},200
-    except: return {"status":"failure"},500
-
+         query2='''UPDATE "SMB"."SMB - Base Price - Category Addition - MiniBar"
+     SET 
+    "Username"='%s',
+    "BusinessCode"='%s', "Customer Group"='%s',"Market - Customer"='%s', "Market - Country"='%s', "Beam Category"='%s',"Document Item Currency"='%s', "Amount"='%s', "Currency"=''%s'',
+    "updated_on"='%s'
+     WHERE "id"= '%s' ''' % tuple(df.loc[i])
+         result=db.insert(query2)
+         print(query2)
+         if result=='failed' :raise ValueError
+         
+     return {"status":"success"},200
+   
   
          
 @smb_app1.route('/download_baseprice_category_minibar',methods=['GET'])
+
 def SMB_baseprice_catecory_minibar_download():
    
         now = datetime.now()
@@ -659,6 +679,7 @@ def SMB_baseprice_catecory_minibar_download():
             
             df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
+            
             file=download_path+t+'baseprice_addition_minibar.xlsx'
             print(file)
             df.to_excel(file,index=False)
@@ -674,6 +695,7 @@ def SMB_baseprice_catecory_minibar_download():
 # incoterm exceptions
 
 @smb_app1.route('/data_baseprice_incoterm',methods=['GET','POST'])
+
 def SMB_data_baseprice_incoterm():
     # query_paramters 
     search_string=request.args.get("search_string")
@@ -711,6 +733,7 @@ def SMB_data_baseprice_incoterm():
         
 
 @smb_app1.route('/delete_record_baseprice_incoterm',methods=['POST','GET','DELETE'])
+@token_required
 def delete_record_baseprice_incoterm():  
     id_value=request.args.get('id')
     try:
@@ -723,7 +746,8 @@ def delete_record_baseprice_incoterm():
         return {"status":"failure"},500
 
 
-@smb_app1.route('/get_record_baseprice_incoterm',methods=['GET','POST'])       
+@smb_app1.route('/get_record_baseprice_incoterm',methods=['GET','POST'])     
+@token_required  
 def get_record_incoterm():
     id_value=request.args.get('id')  
     
@@ -742,6 +766,7 @@ def get_record_incoterm():
 
 
 @smb_app1.route('/update_record_baseprice_incoterm',methods=['POST'])
+@token_required
 def update_record_incoterm():
     
     today = date.today()
@@ -805,6 +830,7 @@ def update_record_incoterm():
        
 
 @smb_app1.route('/add_record_baseprice_incoterm',methods=['POST'])
+@token_required
 def add_record_incoterm():
     
     today = date.today()
@@ -851,6 +877,7 @@ def add_record_incoterm():
 
    
 @smb_app1.route('/upload_baseprice_incoterm', methods=['GET','POST'])
+@token_required
 def  SMB_upload_baseprice_incoterm():
     
         f=request.files['filename']
@@ -888,6 +915,7 @@ def  SMB_upload_baseprice_incoterm():
    
 
 @smb_app1.route('/validate_baseprice_incoterm', methods=['GET','POST'])
+@token_required
 def  SMB_validate_baseprice_incoterm():
         json_data=json.loads(request.data)
         username = getpass.getuser() 
@@ -941,13 +969,14 @@ def  SMB_validate_baseprice_incoterm():
   
         
 @smb_app1.route('/download_baseprice_incoterm',methods=['GET'])
+
 def SMB_baseprice_download_incoterm():
    
         now = datetime.now()
         try:
             df = pd.read_sql('''select * from "SMB"."SMB - Base Price - Incoterm Exceptions" where "active"='1' order by "id" ''', con=con)
             df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
-            df.to_excel('C:/Users/Administrator/Downloads/'+now.strftime("%d-%m-%Y-%H-%M-%S") +'baseprice_incoterm_exceptions.xlsx',index=False)
+            df.to_excel(download_path+now.strftime("%d-%m-%Y-%H-%M-%S") +'baseprice_incoterm_exceptions.xlsx',index=False)
             return {"status":"success"},200
         except:
             return {"status":"failure"},500
@@ -959,6 +988,7 @@ def SMB_baseprice_download_incoterm():
 
 
 @smb_app1.route('/data_extra_certificate',methods=['GET','POST'])
+@token_required
 def extra_certificate_data():
     # query_paramters 
     search_string=request.args.get("search_string")
@@ -980,7 +1010,7 @@ def extra_certificate_data():
     # fetching the data from database and filtering    
     try:
         df = pd.read_sql('''select * from "SMB"."SMB - Extra - Certificate" where "active"='1' order by "id"  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
-        count=db.query('select count(*) from "SMB"."SMB - Extra - Certificate"')[0][0]
+        count=db.query('select count(*) from "SMB"."SMB - Extra - Certificate" where "active"=1 ')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         df.rename(columns={"Market_-_Country":"Market_Country"},inplace=True)
         
@@ -998,6 +1028,7 @@ def extra_certificate_data():
 
   
 @smb_app1.route('/delete__record_extra_certificate',methods=['POST','GET','DELETE'])
+@token_required
 def delete_extra_certificate():  
     id_value=request.args.get('id')
     try:
@@ -1009,7 +1040,8 @@ def delete_extra_certificate():
         return {"status":"failure"},500
 
 
-@smb_app1.route('/get_record_extra_certificate',methods=['GET','POST'])       
+@smb_app1.route('/get_record_extra_certificate',methods=['GET','POST']) 
+@token_required      
 def get_record_extra_certificate():
     id_value=request.args.get('id')  
     
@@ -1028,6 +1060,7 @@ def get_record_extra_certificate():
 
 
 @smb_app1.route('/update_record_extra_certificate',methods=['POST'])
+@token_required
 def add_record_extra_certificate():
     
     today = date.today()
@@ -1085,6 +1118,7 @@ def add_record_extra_certificate():
      
         
 @smb_app1.route('/add_record_extra_certificate',methods=['GET','POST'])
+@token_required
 def smb_add_certificate():
     today = date.today()
     username = getpass.getuser()
@@ -1128,6 +1162,7 @@ def smb_add_certificate():
 
    
 @smb_app1.route('/upload_extra_certificate', methods=['GET','POST'])
+@token_required
 def  Upload_extra_certificate():
     
         f=request.files['filename']
@@ -1164,6 +1199,7 @@ def  Upload_extra_certificate():
 
 
 @smb_app1.route('/validate_extra_certificate', methods=['GET','POST'])
+@token_required
 def  validate_extra_certificate():
     
         
@@ -1221,6 +1257,7 @@ def  validate_extra_certificate():
             
          
 @smb_app1.route('/download_extra_certificate',methods=['GET'])
+
 def download_extra_certificate():
    
         now = datetime.now()
@@ -1244,6 +1281,7 @@ def download_extra_certificate():
 
 
 @smb_app1.route('/data_extra_certificate_minibar',methods=['GET','POST'])
+@token_required
 def extra_certificate_data_minibar():
     # query_paramters 
     search_string=request.args.get("search_string")
@@ -1263,7 +1301,7 @@ def extra_certificate_data_minibar():
     # fetching the data from database and filtering    
     try:
         df = pd.read_sql('''select * from "SMB"."SMB - Extra - Certificate - MiniBar" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
-        count=db.query('select count(*) from "SMB"."SMB - Extra - Certificate - MiniBar"')[0][0]
+        count=db.query('select count(*) from "SMB"."SMB - Extra - Certificate - MiniBar" where "active"=1 ')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer":"Market_Customer"},inplace=True)
         
@@ -1281,6 +1319,7 @@ def extra_certificate_data_minibar():
 
   
 @smb_app1.route('/delete_record_extra_certificate_minibar',methods=['POST','GET','DELETE'])
+@token_required
 def delete_extra_certificate_minibar():  
     id_value=request.args.get('id')
     try:
@@ -1314,7 +1353,9 @@ def get_record_extra_certificate_minibar():
 
 
 @smb_app1.route('/update_record_extra_certificate_minibar',methods=['POST'])
+@token_required
 def update_record_extra_certificate_minibar():
+    
     
     today = date.today()
     username = getpass.getuser()
@@ -1370,6 +1411,7 @@ def update_record_extra_certificate_minibar():
      
 
 @smb_app1.route('/add_record_extra_certificate_minibar',methods=['GET','POST'])
+@token_required
 def add_record_extra_certificate_minibar():
     
     
@@ -1412,6 +1454,7 @@ def add_record_extra_certificate_minibar():
 
    
 @smb_app1.route('/upload_extra_certificate_minibar', methods=['GET','POST'])
+@token_required
 def  Upload_extra_certificate_minibar():
     
         f=request.files['filename']
@@ -1450,6 +1493,7 @@ def  Upload_extra_certificate_minibar():
 
 
 @smb_app1.route('/validate_extra_certificate_minibar', methods=['GET','POST'])
+@token_required
 def  validate_extra_certificate_minibar():
          json_data=json.loads(request.data)
          username = getpass.getuser() 
@@ -1504,6 +1548,7 @@ def  validate_extra_certificate_minibar():
         
          
 @smb_app1.route('/download_extra_certificate_minibar',methods=['GET'])
+
 def  download_extra_certificate_minibar():
    
         now = datetime.now()
@@ -1550,7 +1595,7 @@ def data_delivery_mill():
     # fetching the data from database and filtering    
     try:
         df = pd.read_sql('''select * from "SMB"."SMB - Extra - Delivery Mill" where "active"='1' order by "id"  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
-        count=db.query('select count(*) from "SMB"."SMB - Extra - Delivery Mill"')[0][0]
+        count=db.query('select count(*) from "SMB"."SMB - Extra - Delivery Mill" where "active"=1 ')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         df.rename(columns={"Market_-_Country":"Market_Country"},inplace=True)
         
@@ -1568,6 +1613,7 @@ def data_delivery_mill():
 
   
 @smb_app1.route('/delete_record_delivery_mill',methods=['POST','GET','DELETE'])
+@token_required
 def delete_record_delivery_mill():  
     id_value=request.args.get('id')
     try:
@@ -1581,7 +1627,8 @@ def delete_record_delivery_mill():
         return {"status":"failure"},500
 
 
-@smb_app1.route('/get_record_delivery_mill',methods=['GET','POST'])       
+@smb_app1.route('/get_record_delivery_mill',methods=['GET','POST']) 
+@token_required      
 def get_record_delivery_mill():
     id_value=request.args.get('id')  
     
@@ -1600,6 +1647,7 @@ def get_record_delivery_mill():
 
 
 @smb_app1.route('/update_record_delivery_mill',methods=['POST'])
+@token_required
 def update_record_delivery_mill():
     
     today = date.today()
@@ -1654,6 +1702,7 @@ def update_record_delivery_mill():
         return {"status":"failure"},500
 
 @smb_app1.route('/add_record_delivery_mill',methods=['POST'])
+@token_required
 def add_record_delivery_mill():
     
     
@@ -1695,6 +1744,7 @@ def add_record_delivery_mill():
 
    
 @smb_app1.route('/upload_delivery_mill', methods=['GET','POST'])
+@token_required
 def upload_delivery_mill():
         f=request.files['filename']
   
@@ -1734,6 +1784,7 @@ def upload_delivery_mill():
 
 
 @smb_app1.route('/validate_delivery_mill', methods=['GET','POST'])
+@token_required
 def  validate_delivery_mill():
     
         
@@ -1813,6 +1864,7 @@ def  download_delivery_mill():
 
 
 @smb_app1.route('/data_delivery_mill_minibar',methods=['GET','POST'])
+@token_required
 def data_delivery_mill_minibar():
     # query_paramters 
     search_string=request.args.get("search_string")
@@ -1834,7 +1886,7 @@ def data_delivery_mill_minibar():
     # fetching the data from database and filtering    
     try:
         df = pd.read_sql('''select * from "SMB"."SMB - Extra - Delivery Mill - MiniBar" where "active"='1' order by sequence_id OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
-        count=db.query('select count(*) from "SMB"."SMB - Extra - Delivery Mill - MiniBar"')[0][0]
+        count=db.query('select count(*) from "SMB"."SMB - Extra - Delivery Mill - MiniBar" where "active"=1 ')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
         df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer_Group":"Market_Customer_Group","Market_-_Customer":"Market_Customer"},inplace=True)
@@ -1853,6 +1905,7 @@ def data_delivery_mill_minibar():
 
   
 @smb_app1.route('/delete_record_delivery_mill_minibar',methods=['POST','GET','DELETE'])
+@token_required
 def delete_record_delivery_mill_minibar():  
     id_value=request.args.get('id')
     try:
@@ -1883,6 +1936,7 @@ def get_record_delivery_mill_minibar():
 
 
 @smb_app1.route('/update_record_delivery_mill_minibar',methods=['POST'])
+@token_required
 def update_record_delivery_mill_minibar():
     
         today = date.today()
@@ -1936,6 +1990,7 @@ def update_record_delivery_mill_minibar():
             return {"status":"failure"}
     
 @smb_app1.route('/add_record_delivery_mill_minibar',methods=['POST'])
+@token_required
 def add_record_delivery_mill_minibar():
     
     username = getpass.getuser()
@@ -1975,6 +2030,7 @@ def add_record_delivery_mill_minibar():
     
    
 @smb_app1.route('/upload_delivery_mill_minibar', methods=['GET','POST'])
+@token_required
 def upload_delivery_mill_minibar():
     
         f=request.files['filename']
@@ -2013,6 +2069,7 @@ def upload_delivery_mill_minibar():
 
 
 @smb_app1.route('/validate_delivery_mill_minibar', methods=['GET','POST'])
+@token_required
 def  validate_delivery_mill_minibar():
     
         
@@ -2070,6 +2127,7 @@ def  validate_delivery_mill_minibar():
                 return {"status":"failure"},500        
            
 @smb_app1.route('/download_delivery_mill_minibar',methods=['GET'])
+
 def  download_delivery_mill_minibar():
    
         now = datetime.now()
@@ -2089,6 +2147,7 @@ def  download_delivery_mill_minibar():
         
     
 @smb_app1.route('/history_delivering_mill',methods=['GET'])
+
 def  download_delivery_mill_minibar_history():
     search_string=request.args.get("search_string")
     

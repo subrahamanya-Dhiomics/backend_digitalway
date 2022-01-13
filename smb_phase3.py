@@ -26,6 +26,8 @@ import os
 from sqlalchemy import create_engine
 import getpass
 from datetime import datetime,date
+from smb_phase2 import token_required
+
 
 
 
@@ -78,15 +80,14 @@ CORS(smb_app3)
 
 db=Database()
 
-download_path='C:/Users/Administrator/Documents/test_path/'
-input_directory='C:/Users/Administrator/Documents/test_path/'
+download_path="/home/ubuntu/mega_dir/"
+input_directory="/home/ubuntu/mega_dir/"
 
 
+# download_path="C:/Users/Administrator/Documents/"
+# input_directory="C:/Users/Administrator/Documents/"
 
-# download_path='/home/ubuntu/SMBDir/smb_download/'
 
-
-# input_directory='/home/ubuntu/SMBDir/smb_upload/'
 
 con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
 
@@ -96,6 +97,7 @@ con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',
 # transport mode
 
 @smb_app3.route('/data_transport',methods=['GET','POST'])
+@token_required
 def  data_transport():
     # query_paramters 
     search_string=request.args.get("search_string")
@@ -119,7 +121,7 @@ def  data_transport():
     # fetching the data from database and filtering    
     try:
         df = pd.read_sql('''select * from "SMB"."SMB - Extra - Transport Mode" where "active"='1' order by "id"  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
-        count=db.query('select count(*) from "SMB"."SMB - Extra - Transport Mode"')[0][0]
+        count=db.query('select count(*) from "SMB"."SMB - Extra - Transport Mode" where "active"=1 ')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
         df.rename(columns={"Market_-_Country":"Market_Country"},inplace=True)
@@ -138,6 +140,7 @@ def  data_transport():
 
   
 @smb_app3.route('/delete_record_transport',methods=['POST','GET','DELETE'])
+@token_required
 def delete_record_transport():  
     id_value=request.args.get('id')
     try:
@@ -149,7 +152,8 @@ def delete_record_transport():
         return {"status":"failure"},500
 
 
-@smb_app3.route('/get_record_transport',methods=['GET','POST'])       
+@smb_app3.route('/get_record_transport',methods=['GET','POST'])      
+@token_required 
 def get_record_transport():
     id_value=request.args.get('id')  
     
@@ -168,6 +172,7 @@ def get_record_transport():
 
 
 @smb_app3.route('/add_record_transport',methods=['POST'])
+@token_required
 def add_record_transport():
     
     today = date.today()
@@ -212,6 +217,7 @@ def add_record_transport():
     
 
 @smb_app3.route('/update_record_transport',methods=['POST'])
+@token_required
 def update_record_transport():
     
     today = date.today()
@@ -263,6 +269,7 @@ def update_record_transport():
 
    
 @smb_app3.route('/upload_transport', methods=['GET','POST'])
+@token_required
 def upload_transport():
     
         f=request.files['filename']
@@ -297,6 +304,7 @@ def upload_transport():
 
 
 @smb_app3.route('/validate_transport', methods=['GET','POST'])
+@token_required
 def  validate_transport():
     
         
@@ -352,6 +360,7 @@ def  validate_transport():
         return {"status":"failure"},500
          
 @smb_app3.route('/download_transport',methods=['GET'])
+
 def download_transport():
    
         now = datetime.now()
@@ -373,6 +382,7 @@ def download_transport():
 # transport mode Minibar
 
 @smb_app3.route('/data_transport_minibar',methods=['GET','POST'])
+@token_required
 def  data_transport_minibar():
     # query_paramters 
     search_string=request.args.get("search_string")
@@ -394,7 +404,7 @@ def  data_transport_minibar():
     # fetching the data from database and filtering    
     try:
         df = pd.read_sql('''select * from "SMB"."SMB - Extra - Transport Mode - MiniBar" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
-        count=db.query('select count(*) from "SMB"."SMB - Extra - Transport Mode - MiniBar"')[0][0]
+        count=db.query('select count(*) from "SMB"."SMB - Extra - Transport Mode - MiniBar" where "active"=1 ')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
         df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer_Group":"Market_Customer_Group","Market_-_Customer":"Market_Customer"},inplace=True)  
@@ -413,6 +423,7 @@ def  data_transport_minibar():
 
   
 @smb_app3.route('/delete_record_transport_minibar',methods=['POST','GET','DELETE'])
+@token_required
 def delete_record_transport_minibar():  
     id_value=request.args.get('id')
     try:
@@ -424,7 +435,8 @@ def delete_record_transport_minibar():
         return {"status":"failure"},500
 
 
-@smb_app3.route('/get_record_transport_minibar',methods=['GET','POST'])       
+@smb_app3.route('/get_record_transport_minibar',methods=['GET','POST'])   
+@token_required    
 def get_record_transport_minibar():
     id_value=request.args.get('id')  
     
@@ -443,6 +455,7 @@ def get_record_transport_minibar():
 
 
 @smb_app3.route('/add_record_transport_minibar',methods=['POST'])
+@token_required
 def add_record_transport_minibar():
     
     today = date.today()
@@ -492,6 +505,7 @@ def add_record_transport_minibar():
 
 
 @smb_app3.route('/update_record_transport_minibar',methods=['POST'])
+@token_required
 def update_record_transport_minibar():
     
         today = date.today()
@@ -551,6 +565,7 @@ def update_record_transport_minibar():
 
    
 @smb_app3.route('/upload_transport_minibar', methods=['GET','POST'])
+@token_required
 def upload_transport_minibar():
     
         f=request.files['filename']
@@ -588,6 +603,7 @@ def upload_transport_minibar():
 
 
 @smb_app3.route('/validate_transport_minibar', methods=['GET','POST'])
+@token_required
 def  validate_transport_minibar():
     
         
@@ -645,6 +661,7 @@ def  validate_transport_minibar():
         
          
 @smb_app3.route('/download_transport_minibar',methods=['GET'])
+
 def download_transport_minibar():
         now = datetime.now()
         try:
@@ -666,6 +683,7 @@ def download_transport_minibar():
 
 
 @smb_app3.route('/data_length_production',methods=['GET','POST'])
+@token_required
 def  data_length_production():
     # query_paramters 
     search_string=request.args.get("search_string")
@@ -686,7 +704,7 @@ def  data_length_production():
     # fetching the data from database and filtering    
     try:
         df = pd.read_sql('''select * from "SMB"."SMB - Extra - Length Production" where "active"='1' order by "id"  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
-        count=db.query('select count(*) from "SMB"."SMB - Extra - Length Production"')[0][0]
+        count=db.query('select count(*) from "SMB"."SMB - Extra - Length Production" where "active"=1 ')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
         df.rename(columns={"Market_-_Country":"Market_Country"},inplace=True)
@@ -705,6 +723,7 @@ def  data_length_production():
 
   
 @smb_app3.route('/delete_record_length_production',methods=['POST','GET','DELETE'])
+@token_required
 def delete_record_length_production():  
     id_value=request.args.get('id')
     try:
@@ -715,7 +734,8 @@ def delete_record_length_production():
         return {"status":"failure"},500
 
 
-@smb_app3.route('/get_record_length_production',methods=['GET','POST'])       
+@smb_app3.route('/get_record_length_production',methods=['GET','POST'])   
+@token_required    
 def get_record_length_production():
     id_value=request.args.get('id')  
     
@@ -734,6 +754,7 @@ def get_record_length_production():
 
 
 @smb_app3.route('/add_record_length_production',methods=['POST'])
+@token_required
 def add_record_length_production():
     
     today = date.today()
@@ -788,6 +809,7 @@ def add_record_length_production():
 
 
 @smb_app3.route('/update_record_length_production',methods=['POST'])
+@token_required
 def update_record_length_production():
     
     today = date.today()
@@ -848,6 +870,7 @@ def update_record_length_production():
 
    
 @smb_app3.route('/upload_length_production', methods=['GET','POST'])
+@token_required
 def upload_length_production():
     
         f=request.files['filename']
@@ -883,6 +906,7 @@ def upload_length_production():
             return {"status":"failure"},500
 
 @smb_app3.route('/validate_length_production', methods=['GET','POST'])
+@token_required
 def  validate_length_production():
     
         
@@ -940,6 +964,7 @@ def  validate_length_production():
         
          
 @smb_app3.route('/download_length_production',methods=['GET'])
+
 def download_length_production():
    
         now = datetime.now()
@@ -963,6 +988,7 @@ def download_length_production():
 
 
 @smb_app3.route('/data_length_production_minibar',methods=['GET','POST'])
+@token_required
 def  data_length_production_minibar():
     # query_paramters 
     search_string=request.args.get("search_string")
@@ -984,7 +1010,7 @@ def  data_length_production_minibar():
     # fetching the data from database and filtering    
     try:
         df = pd.read_sql('''select * from "SMB"."SMB - Extra - Length Production - MiniBar" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
-        count=db.query('select count(*) from "SMB"."SMB - Extra - Length Production - MiniBar"')[0][0]
+        count=db.query('select count(*) from "SMB"."SMB - Extra - Length Production - MiniBar" where "active"=1 ')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
         df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer":"Market_Customer"},inplace=True)
@@ -1003,6 +1029,7 @@ def  data_length_production_minibar():
 
   
 @smb_app3.route('/delete_record_length_production_minibar',methods=['POST','GET','DELETE'])
+@token_required
 def delete_record_length_production_minibar():  
     id_value=request.args.get('id')
     try:
@@ -1014,7 +1041,8 @@ def delete_record_length_production_minibar():
         return {"status":"failure"},500
 
 
-@smb_app3.route('/get_record_length_production_minibar',methods=['GET','POST'])       
+@smb_app3.route('/get_record_length_production_minibar',methods=['GET','POST'])   
+@token_required    
 def get_record_length_production_minibar():
     id_value=request.args.get('id')  
     
@@ -1034,6 +1062,7 @@ def get_record_length_production_minibar():
 
 
 @smb_app3.route('/add_record_length_production_minibar',methods=['POST'])
+@token_required
 def add_record_length_production_minibar():
     
     today = date.today()
@@ -1089,6 +1118,7 @@ def add_record_length_production_minibar():
 
 
 @smb_app3.route('/update_record_length_production_minibar',methods=['POST'])
+@token_required
 def update_record_length_production_minibar():
     
     today = date.today()
@@ -1155,6 +1185,7 @@ def update_record_length_production_minibar():
     
 
 @smb_app3.route('/upload_length_production_minibar', methods=['GET','POST'])
+@token_required
 def upload_length_production_minibar():
     
         f=request.files['filename']
@@ -1197,6 +1228,7 @@ def upload_length_production_minibar():
 
 
 @smb_app3.route('/validate_length_production_minibar', methods=['GET','POST'])
+@token_required
 def  validate_length_production_minibar():
     
         
@@ -1256,6 +1288,7 @@ def  validate_length_production_minibar():
         return {"status":"failure"},500
          
 @smb_app3.route('/download_length_production_minibar',methods=['GET'])
+
 def download_length_production_minibar():
    
         now = datetime.now()
@@ -1280,6 +1313,7 @@ def download_length_production_minibar():
 
 
 @smb_app3.route('/data_length_logistic',methods=['GET','POST'])
+@token_required
 def  data_length_logistic():
     # query_paramters 
     search_string=request.args.get("search_string")
@@ -1300,7 +1334,7 @@ def  data_length_logistic():
     # fetching the data from database and filtering    
     try:
         df = pd.read_sql('''select * from "SMB"."SMB - Extra - Length Logistic" where "active"='1' order by "id"  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
-        count=db.query('select count(*) from "SMB"."SMB - Extra - Length Logistic"')[0][0]
+        count=db.query('select count(*) from "SMB"."SMB - Extra - Length Logistic" where "active"=1 ')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
         df.rename(columns={"Market_-_Country":"Market_Country"},inplace=True)
@@ -1319,6 +1353,7 @@ def  data_length_logistic():
 
   
 @smb_app3.route('/delete_record_length_logistic',methods=['POST','GET','DELETE'])
+@token_required
 def delete_record_length_logistic():  
     id_value=request.args.get('id')
     try:
@@ -1330,7 +1365,8 @@ def delete_record_length_logistic():
         return {"status":"failure"},500
 
 
-@smb_app3.route('/get_record_length_logistic',methods=['GET','POST'])       
+@smb_app3.route('/get_record_length_logistic',methods=['GET','POST']) 
+@token_required      
 def get_record_length_logistic():
     id_value=request.args.get('id')  
     
@@ -1350,6 +1386,7 @@ def get_record_length_logistic():
 
 
 @smb_app3.route('/add_record_length_logistic',methods=['POST'])
+@token_required
 def add_record_length_logistic():
     
     today = date.today()
@@ -1406,6 +1443,7 @@ def add_record_length_logistic():
 
 
 @smb_app3.route('/update_record_length_logistic',methods=['POST'])
+@token_required
 def update_record_length_logistic():
     
     today = date.today()
@@ -1469,6 +1507,7 @@ def update_record_length_logistic():
     
    
 @smb_app3.route('/upload_length_logistic', methods=['GET','POST'])
+@token_required
 def upload_length_logistic():
     
         f=request.files['filename']
@@ -1505,6 +1544,7 @@ def upload_length_logistic():
 
 
 @smb_app3.route('/validate_length_logistic', methods=['GET','POST'])
+@token_required
 def  validate_length_logistic():
     
          json_data=json.loads(request.data)
@@ -1557,6 +1597,7 @@ def  validate_length_logistic():
           
           
 @smb_app3.route('/download_length_logistic',methods=['GET'])
+
 def download_length_logistic():
    
         now = datetime.now()
@@ -1581,6 +1622,7 @@ def download_length_logistic():
 
 
 @smb_app3.route('/data_length_logistic_minibar',methods=['GET','POST'])
+@token_required
 def  data_length_logistic_minibar():
     # query_paramters 
     search_string=request.args.get("search_string")
@@ -1601,7 +1643,7 @@ def  data_length_logistic_minibar():
     # fetching the data from database and filtering    
     try:
         df = pd.read_sql('''select * from "SMB"."SMB - Extra - Length Logistic - MiniBar" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
-        count=db.query('select count(*) from "SMB"."SMB - Extra - Length Logistic - MiniBar"')[0][0]
+        count=db.query('select count(*) from "SMB"."SMB - Extra - Length Logistic - MiniBar" where "active"=1 ')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
         df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer":"Market_Customer"},inplace=True)  
@@ -1620,6 +1662,7 @@ def  data_length_logistic_minibar():
 
   
 @smb_app3.route('/delete_record_length_logistic_minibar',methods=['POST','GET','DELETE'])
+@token_required
 def delete_record_length_logistic_minibar():  
     id_value=request.args.get('id')
     try:
@@ -1631,7 +1674,8 @@ def delete_record_length_logistic_minibar():
         return {"status":"failure"},500
 
 
-@smb_app3.route('/get_record_length_logistic_minibar',methods=['GET','POST'])       
+@smb_app3.route('/get_record_length_logistic_minibar',methods=['GET','POST'])  
+@token_required     
 def get_record_length_logistic_minibar():
     id_value=request.args.get('id')  
     
@@ -1651,6 +1695,7 @@ def get_record_length_logistic_minibar():
 
 
 @smb_app3.route('/add_record_length_logistic_minibar',methods=['POST'])
+@token_required
 def add_record_length_logistic_minibar():
     
     today = date.today()
@@ -1707,6 +1752,7 @@ def add_record_length_logistic_minibar():
 
 
 @smb_app3.route('/update_record_length_logistic_minibar',methods=['POST'])
+@token_required
 def update_record_length_logistic_minibar():
     
     today = date.today()
@@ -1774,6 +1820,7 @@ def update_record_length_logistic_minibar():
     
    
 @smb_app3.route('/upload_length_logistic_minibar', methods=['GET','POST'])
+@token_required
 def upload_length_logistic_minibar():
     
         f=request.files['filename']
@@ -1814,6 +1861,7 @@ def upload_length_logistic_minibar():
 
 
 @smb_app3.route('/validate_length_logistic_minibar', methods=['GET','POST'])
+@token_required
 def  validate_length_logistic_minibar():
     
         
@@ -1872,6 +1920,7 @@ def  validate_length_logistic_minibar():
         
          
 @smb_app3.route('/download_length_logistic_minibar',methods=['GET'])
+
 def download_length_logistic_minibar():
    
         now = datetime.now()

@@ -12,6 +12,10 @@ import json
 import psycopg2
 
 from flask_cors import CORS
+
+
+from datetime import datetime
+from datetime import date
 from Alloy_scrap import scrap_app
 from smb_phase1 import smb_app1
 from smb_phase2 import smb_app2
@@ -22,6 +26,8 @@ from web_api_response import web_api_response
 import pandas as pd
 
 from user_management import user_management_app
+
+from taskbar_invoice import taskbar_invoice_app
 
 
 
@@ -39,10 +45,8 @@ app.register_blueprint(smb_app3)
 app.register_blueprint(taskbar1)
 app.register_blueprint(web_api_response)
 app.register_blueprint(user_management_app)
-
+app.register_blueprint(taskbar_invoice_app)
 app.register_blueprint(smb_history)
-
-
 
 
 
@@ -52,27 +56,7 @@ cursor=con.cursor()
 
 
 app.config['SECRET_KEY'] = 'YOU_SECRET_KEY'
-
-
-
-
-def token_required(func):
-    # decorator factory which invoks update_wrapper() method and passes decorated function as an argument
-    @wraps(func)
-    def decorated(*args, **kwargs):
-        #token = request.args.get('token')
-        #if 'x-access-token' in request.headers:
-        token = request.args.get('x-access-token')           
-        if not token:
-            return jsonify({'Alert!': 'Token is missing!'}), 401
-        try:
-            data = jwt.decode(token, app.config['SECRET_KEY'], algorithms=["HS256"])
-            print(data)
-        except :      
-             return {"msg":"Invalid token;"}
-        return func(*args, **kwargs)
-    return decorated
-
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1000 * 1000
 
 # Login page
 
@@ -102,8 +86,7 @@ def login():
         
        
         token = jwt.encode({
-            'user':username,
-            'expiration': str(datetime.utcnow() + timedelta(seconds=2000))
+            'user':username
         },
             app.config['SECRET_KEY'])
         
@@ -112,6 +95,9 @@ def login():
         return make_response('Unable to verify',  {'WWW-Authenticate': 'Basic realm: "Authentication Failed "'}),500
 
 
+       
+ 
 if __name__ == '__main__':
+    # app.run(host='172.16.4.190')
     app.run()
    
