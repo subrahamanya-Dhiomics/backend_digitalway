@@ -5,11 +5,7 @@ Created on Wed Oct 20 10:07:00 2021
 @author: Administrator
 """
 
-
-
 from flask import Blueprint,current_app
-
-
 import pandas as pd
 import time
 import json
@@ -80,13 +76,14 @@ CORS(smb_app2)
 
 db=Database()
 
-# download_path='/home/ubuntu/SMBDir/smb_download/'
+download_path="/home/ubuntu/mega_dir/"
+input_directory="/home/ubuntu/mega_dir/"
 
 
-# input_directory='/home/ubuntu/SMBDir/smb_upload/'
+# download_path="C:/Users/Administrator/Documents/"
+# input_directory="C:/Users/Administrator/Documents/"
 
-download_path='C:/Users/Administrator/Documents/test_path/'
-input_directory='C:/Users/Administrator/Documents/test_path/'
+
 
 
 
@@ -99,9 +96,8 @@ def token_required(func):
     def decorated(*args, **kwargs):
         #token = request.args.get('token')
         #if 'x-access-token' in request.headers:
-        token = request.args.get('x-access-token')           
-        if not token:
-            return jsonify({'Alert!': 'Token is missing!'}), 401
+        token = request.headers['x-access-token']        
+       
         try:
             data = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=["HS256"])
             print(data)
@@ -139,7 +135,7 @@ def  freight_parity():
     # fetching the data from database and filtering    
     try:
         df = pd.read_sql('''select * from "SMB"."SMB - Extra - Freight Parity" where "active"='1' order by "id"  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
-        count=db.query('select count(*) from "SMB"."SMB - Extra - Freight Parity"')[0][0]
+        count=db.query('select count(*) from "SMB"."SMB - Extra - Freight Parity" where "active"=1 ')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
         df.rename(columns={"Market_-_Country":"Market_Country","Zip_Code_(Dest)":"Zip_Code_Dest"},inplace=True)
@@ -158,6 +154,7 @@ def  freight_parity():
 
   
 @smb_app2.route('/delete_record_freight_parity',methods=['POST','GET','DELETE'])
+@token_required
 def delete_record_delivery_mill_minibar():  
     id_value=request.args.get('id')
     try:
@@ -170,7 +167,8 @@ def delete_record_delivery_mill_minibar():
         return {"status":"failure"},500
 
 
-@smb_app2.route('/get_record_freight_parity',methods=['GET','POST'])       
+@smb_app2.route('/get_record_freight_parity',methods=['GET','POST'])    
+@token_required   
 def get_record_freight_parity():
     id_value=request.args.get('id')  
     
@@ -190,6 +188,7 @@ def get_record_freight_parity():
 
 
 @smb_app2.route('/update_record_freight_parity',methods=['POST'])
+@token_required
 def update_record_frieght_parity():
     
     today = date.today()
@@ -243,6 +242,7 @@ def update_record_frieght_parity():
 
      
 @smb_app2.route('/add_record_freight_parity',methods=['POST'])
+@token_required
 def add_record_frieght_parity():
     
     
@@ -280,6 +280,7 @@ def add_record_frieght_parity():
     
    
 @smb_app2.route('/upload_freight_parity', methods=['GET','POST'])
+@token_required
 def upload_freight_parity():
     
         f=request.files['filename']
@@ -316,6 +317,7 @@ def upload_freight_parity():
 
 
 @smb_app2.route('/validate_freight_parity', methods=['GET','POST'])
+@token_required
 def  validate_freight_parity():
     
         
@@ -370,6 +372,7 @@ def  validate_freight_parity():
         return {"status":"failure"},500
     
 @smb_app2.route('/download_freight_parity',methods=['GET'])
+
 def download_freight_parity():
    
         now = datetime.now()
@@ -392,6 +395,7 @@ def download_freight_parity():
 
 
 @smb_app2.route('/data_freight_parity_minibar',methods=['GET','POST'])
+@token_required
 def  freight_parity_minibar():
     # query_paramters 
     search_string=request.args.get("search_string")
@@ -418,7 +422,7 @@ def  freight_parity_minibar():
     # fetching the data from database and filtering    
     try:
         df = pd.read_sql('''select * from "SMB"."SMB - Extra - Freight Parity - MiniBar" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
-        count=db.query('select count(*) from "SMB"."SMB - Extra - Freight Parity - MiniBar"')[0][0]
+        count=db.query('select count(*) from "SMB"."SMB - Extra - Freight Parity - MiniBar" where "active"=1 ')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
         df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer_Group":"Market_Customer_Group","Market_-_Customer":"Market_Customer","Zip_Code_(Dest)":"Zip_Code_Dest"},inplace=True)  
@@ -438,6 +442,7 @@ def  freight_parity_minibar():
 
   
 @smb_app2.route('/delete_record_freight_parity_minibar',methods=['POST','GET','DELETE'])
+@token_required
 def delete_record_freight_parity_minibar():  
     id_value=request.args.get('id')
     try:
@@ -468,6 +473,7 @@ def get_record_freight_parity_minibar():
 
 
 @smb_app2.route('/update_record_freight_parity_minibar',methods=['POST'])
+@token_required
 def update_record_frieght_parity_minibar():
     
     today = date.today()
@@ -529,6 +535,7 @@ def update_record_frieght_parity_minibar():
     
 
 @smb_app2.route('/add_record_freight_parity_minibar',methods=['POST'])
+@token_required
 def add_record_frieght_parity_minibar():
     username = getpass.getuser()
     query_parameters =json.loads(request.data)
@@ -583,6 +590,7 @@ def add_record_frieght_parity_minibar():
 
    
 @smb_app2.route('/upload_freight_parity_minibar', methods=['GET','POST'])
+@token_required
 def upload_freight_parity_minibar():
     
         f=request.files['filename']
@@ -620,6 +628,7 @@ def upload_freight_parity_minibar():
 
 
 @smb_app2.route('/validate_freight_parity_minibar', methods=['GET','POST'])
+@token_required
 def  validate_freight_parity_minibar():
     
         
@@ -676,6 +685,7 @@ def  validate_freight_parity_minibar():
    
          
 @smb_app2.route('/download_freight_parity_minibar',methods=['GET'])
+
 def download_freight_parity_minibar():
    
         now = datetime.now()
@@ -699,6 +709,7 @@ def download_freight_parity_minibar():
 
 
 @smb_app2.route('/data_extra_grade',methods=['GET','POST'])
+
 def  extra_grade_data():
     # query_paramters 
     search_string=request.args.get("search_string")
@@ -715,7 +726,7 @@ def  extra_grade_data():
     # fetching the data from database and filtering    
     try:
         df = pd.read_sql('''select * from "SMB"."SMB - Extra - Grade" where "active"='1' order by "id"  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
-        count=db.query('select count(*) from "SMB"."SMB - Extra - Grade"')[0][0]
+        count=db.query('select count(*) from "SMB"."SMB - Extra - Grade" where "active"=1 ')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
         df.rename(columns={"Market_-_Country":"Market_Country"},inplace=True)  
@@ -735,6 +746,7 @@ def  extra_grade_data():
 
   
 @smb_app2.route('/delete_record_extra_grade',methods=['POST','GET','DELETE'])
+@token_required
 def delete_record_extra_grade():  
     id_value=request.args.get('id')
     try:
@@ -746,7 +758,8 @@ def delete_record_extra_grade():
         return {"status":"failure"},500
 
 
-@smb_app2.route('/get_record_extra_grade',methods=['GET','POST'])       
+@smb_app2.route('/get_record_extra_grade',methods=['GET','POST'])  
+@token_required     
 def get_record_extra_grade():
     id_value=request.args.get('id')  
     
@@ -766,6 +779,7 @@ def get_record_extra_grade():
 
 
 @smb_app2.route('/update_record_extra_grade',methods=['POST'])
+@token_required
 def update_record_extra_grade():
     
     today = date.today()
@@ -824,6 +838,7 @@ def update_record_extra_grade():
     
    
 @smb_app2.route('/add_record_extra_grade',methods=['POST'])
+@token_required
 def add_record_extra_grade():
      
     query_parameters =json.loads(request.data)
@@ -871,6 +886,7 @@ def add_record_extra_grade():
     
     
 @smb_app2.route('/upload_extra_grade', methods=['GET','POST'])
+@token_required
 def upload_extra_grade():
     
         f=request.files['filename']
@@ -906,6 +922,7 @@ def upload_extra_grade():
             return {"status":"failure"},500
 
 @smb_app2.route('/validate_extra_grade', methods=['GET','POST'])
+@token_required
 def  validate_extra_grade():
     
         
@@ -964,6 +981,7 @@ def  validate_extra_grade():
         return {"status":"failure"},500
          
 @smb_app2.route('/download_extra_grade',methods=['GET'])
+
 def download_extra_grade():
    
         now = datetime.now()
@@ -987,6 +1005,7 @@ def download_extra_grade():
 
 
 @smb_app2.route('/data_extra_grade_minibar',methods=['GET','POST'])
+@token_required
 def  extra_grade_data_minibar():
     # query_paramters 
     search_string=request.args.get("search_string")
@@ -1013,14 +1032,14 @@ def  extra_grade_data_minibar():
         df.columns = df.columns.str.replace(' ', '_')
         
         df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer":"Market_Customer"},inplace=True)  
-                
+        count=db.query('select count(*) from "SMB"."SMB - Extra - Grade - MiniBar" where "active"=1 ')[0][0]
             
         if(search_string!="all" and search_string!=None):
                       df=df[df.eq(search_string).any(1)]
         
         table=json.loads(df.to_json(orient='records'))
         
-        return {"data":table},200         
+        return {"data":table,"totalCount":count},200         
     except:
         return {"statuscode":500,"msg":"failure"},500
         
@@ -1029,6 +1048,7 @@ def  extra_grade_data_minibar():
 
   
 @smb_app2.route('/delete_record_extra_grade_minibar',methods=['POST','GET','DELETE'])
+@token_required
 def delete_record_extra_grade_minibar():  
     id_value=request.args.get('id')
     try:
@@ -1041,7 +1061,8 @@ def delete_record_extra_grade_minibar():
         return {"status":"failure"},500
 
 
-@smb_app2.route('/get_record_extra_grade_minibar',methods=['GET','POST'])       
+@smb_app2.route('/get_record_extra_grade_minibar',methods=['GET','POST'])  
+@token_required     
 def get_record_extra_grade_minibar():
     id_value=request.args.get('id')  
     
@@ -1061,6 +1082,8 @@ def get_record_extra_grade_minibar():
 
 
 @smb_app2.route('/add_record_extra_grade_minibar',methods=['POST'])
+@token_required
+
 def add_record_extra_grade_minibar():
     
     today = date.today()
@@ -1117,6 +1140,7 @@ def add_record_extra_grade_minibar():
     
 
 @smb_app2.route('/update_record_extra_grade_minibar',methods=['POST'])
+@token_required
 def update_record_extra_grade_minibar():
     
     today = date.today()
@@ -1177,6 +1201,7 @@ def update_record_extra_grade_minibar():
     
    
 @smb_app2.route('/upload_extra_grade_minibar', methods=['GET','POST'])
+@token_required
 def upload_extra_grade_minibar():
     
      f=request.files['filename']
@@ -1214,6 +1239,7 @@ def upload_extra_grade_minibar():
 
 
 @smb_app2.route('/validate_extra_grade_minibar', methods=['GET','POST'])
+@token_required
 def  validate_extra_grade_minibar():
     
         
@@ -1271,6 +1297,7 @@ def  validate_extra_grade_minibar():
         
          
 @smb_app2.route('/download_extra_grade_minibar',methods=['GET'])
+
 def download_extra_grade_minibar():
         now = datetime.now()
         try:
@@ -1293,6 +1320,7 @@ def download_extra_grade_minibar():
 # "SMB"."SMB - Extra - Profile"
 
 @smb_app2.route('/data_extra_profile',methods=['GET','POST'])
+@token_required
 def  extra_profile():
     # query_paramters 
     search_string=request.args.get("search_string")
@@ -1312,7 +1340,7 @@ def  extra_profile():
     # fetching the data from database and filtering    
     try:
         df = pd.read_sql('''select * from "SMB"."SMB - Extra - Profile" where "active"='1' order by "id"  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
-        count=db.query('select count(*) from "SMB"."SMB - Extra - Profile"')[0][0]
+        count=db.query('select count(*) from "SMB"."SMB - Extra - Profile" where "active"=1 ')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
         df.rename(columns={"Market_-_Country":"Market_Country"},inplace=True)  
@@ -1332,6 +1360,7 @@ def  extra_profile():
 
   
 @smb_app2.route('/delete_record_extra_profile',methods=['POST','GET','DELETE'])
+@token_required
 def delete_record_extra_profile():  
     id_value=request.args.get('id')
     try:
@@ -1343,7 +1372,8 @@ def delete_record_extra_profile():
         return {"status":"failure"},500
 
 
-@smb_app2.route('/get_record_extra_profile',methods=['GET','POST'])       
+@smb_app2.route('/get_record_extra_profile',methods=['GET','POST'])   
+@token_required    
 def get_record_extra_profile():
     id_value=request.args.get('id')  
     
@@ -1363,6 +1393,7 @@ def get_record_extra_profile():
 
 
 @smb_app2.route('/add_record_extra_profile',methods=['POST'])
+@token_required
 def add_record_extra_profile():
     
     
@@ -1412,6 +1443,7 @@ def add_record_extra_profile():
     
 
 @smb_app2.route('/update_record_extra_profile',methods=['POST'])
+@token_required
 def update_record_extra_profile():
     
     today = date.today()
@@ -1472,6 +1504,7 @@ def update_record_extra_profile():
 
    
 @smb_app2.route('/upload_extra_profile', methods=['GET','POST'])
+@token_required
 def upload_extra_profile():
     
         f=request.files['filename']
@@ -1509,6 +1542,7 @@ def upload_extra_profile():
             return {"status":"failure"},500
 
 @smb_app2.route('/validate_extra_profile', methods=['GET','POST'])
+@token_required
 def  validate_extra_profile():
     
         
@@ -1568,6 +1602,7 @@ def  validate_extra_profile():
         return {"status":"failure"},500
          
 @smb_app2.route('/download_extra_profile',methods=['GET'])
+
 def download_extra_profile():
    
         now = datetime.now()
@@ -1591,6 +1626,7 @@ def download_extra_profile():
 
 
 @smb_app2.route('/data_extra_profile_minibar',methods=['GET','POST'])
+@token_required
 def  extra_profile_minibar():
     # query_paramters 
     search_string=request.args.get("search_string")
@@ -1610,7 +1646,7 @@ def  extra_profile_minibar():
     # fetching the data from database and filtering    
     try:
         df = pd.read_sql('''select * from "SMB"."SMB - Extra - Profile - MiniBar" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
-        count=db.query('select count(*) from "SMB"."SMB - Extra - Profile - MiniBar"')[0][0]
+        count=db.query('select count(*) from "SMB"."SMB - Extra - Profile - MiniBar" where "active"=1 ')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
         df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer_Group":"Market_Customer_Group","Market_-_Customer":"Market_Customer"},inplace=True)  
@@ -1630,6 +1666,7 @@ def  extra_profile_minibar():
 
   
 @smb_app2.route('/delete_record_extra_profile_minibar',methods=['POST','GET','DELETE'])
+@token_required
 def delete_record_extra_profile_minibar():  
     id_value=request.args.get('id')
     try:
@@ -1643,6 +1680,7 @@ def delete_record_extra_profile_minibar():
 
 
 @smb_app2.route('/get_record_extra_profile_minibar',methods=['GET','POST'])       
+@token_required
 def get_record_extra_profile_minibar():
     id_value=request.args.get('id')  
     
@@ -1715,6 +1753,7 @@ def add_record_extra_profile_minibar():
 
 
 @smb_app2.route('/update_record_extra_profile_minibar',methods=['POST'])
+@token_required
 def update_record_extra_profile_minibar():
     
     
@@ -1785,6 +1824,7 @@ def update_record_extra_profile_minibar():
     
    
 @smb_app2.route('/upload_extra_profile_minibar', methods=['GET','POST'])
+@token_required
 def upload_extra_profile_minibar():
     
         f=request.files['filename']
@@ -1823,6 +1863,7 @@ def upload_extra_profile_minibar():
             return {"status":"failure"},500
 
 @smb_app2.route('/validate_extra_profile_minibar', methods=['GET','POST'])
+@token_required
 def  validate_extra_profile_minibar():
     
         
@@ -1884,6 +1925,7 @@ def  validate_extra_profile_minibar():
         return {"status":"failure"},500
          
 @smb_app2.route('/download_extra_profile_minibar',methods=['GET'])
+
 def download_extra_profile_minibar():
     
         now = datetime.now()
@@ -1913,6 +1955,7 @@ def download_extra_profile_minibar():
 
 
 @smb_app2.route('/data_extra_profile_Iberia',methods=['GET','POST'])
+@token_required
 def  extra_profile_minibar_iberia():
     # query_paramters 
     search_string=request.args.get("search_string")
@@ -1933,7 +1976,7 @@ def  extra_profile_minibar_iberia():
     # fetching the data from database and filtering    
     try:
         df = pd.read_sql('''select * from "SMB"."SMB - Extra - Profile Iberia and Italy" where "active"='1' order by "id"  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
-        count=db.query('select count(*) from "SMB"."SMB - Extra - Profile Iberia and Italy"')[0][0]
+        count=db.query('select count(*) from "SMB"."SMB - Extra - Profile Iberia and Italy" where "active"=1 ')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
         df.rename(columns={"Market_-_Country":"Market_Country"},inplace=True)  
@@ -1953,6 +1996,7 @@ def  extra_profile_minibar_iberia():
 
   
 @smb_app2.route('/delete_record_extra_profile_Iberia',methods=['POST','GET','DELETE'])
+@token_required
 def delete_record_extra_profile_Iberia():  
     id_value=request.args.get('id')
     try:
@@ -1985,6 +2029,7 @@ def get_record_extra_profile_Iberia():
 
 
 @smb_app2.route('/add_record_extra_profile_Iberia',methods=['POST'])
+@token_required
 def add_record_extra_profile_Iberia():
     
     today = date.today()
@@ -2039,6 +2084,7 @@ def add_record_extra_profile_Iberia():
 
 
 @smb_app2.route('/update_record_extra_profile_Iberia',methods=['POST'])
+@token_required
 def update_record_extra_profile_Iberia():
     
     today = date.today()
@@ -2097,6 +2143,7 @@ def update_record_extra_profile_Iberia():
     
    
 @smb_app2.route('/upload_extra_profile_Iberia', methods=['GET','POST'])
+@token_required
 def upload_extra_profile_Iberia():
     
         f=request.files['filename']
@@ -2134,6 +2181,7 @@ def upload_extra_profile_Iberia():
 
 
 @smb_app2.route('/validate_extra_profile_Iberia', methods=['GET','POST'])
+@token_required
 def  validate_extra_profile_Iberia():
     
         
@@ -2188,6 +2236,7 @@ def  validate_extra_profile_Iberia():
     except:
         return {"status":"failure"},500
 @smb_app2.route('/download_extra_profile_Iberia',methods=['GET'])
+
 def download_extra_profile_Iberia():
         now = datetime.now()
         try:
@@ -2212,6 +2261,7 @@ def download_extra_profile_Iberia():
 
 
 @smb_app2.route('/data_extra_profile_Iberia_minibar',methods=['GET','POST'])
+@token_required
 def  extra_profile_minibar_iberia_minibar():
     # query_paramters 
     search_string=request.args.get("search_string")
@@ -2232,7 +2282,7 @@ def  extra_profile_minibar_iberia_minibar():
     # fetching the data from database and filtering    
     try:
         df = pd.read_sql('''select * from "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
-        count=db.query('select count(*) from "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar"')[0][0]
+        count=db.query('select count(*) from "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar" where "active"=1 ')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
         df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer_Group":"Market_Customer_Group","Market_-_Customer":"Market_Customer"},inplace=True)  
@@ -2252,6 +2302,8 @@ def  extra_profile_minibar_iberia_minibar():
 
   
 @smb_app2.route('/delete_record_extra_profile_Iberia_minibar',methods=['POST','GET','DELETE'])
+
+@token_required
 def delete_record_extra_profile_Iberia_minibar():  
     id_value=request.args.get('id')
     try:
@@ -2265,6 +2317,7 @@ def delete_record_extra_profile_Iberia_minibar():
 
 
 @smb_app2.route('/get_record_extra_profile_Iberia_minibar',methods=['GET','POST'])       
+@token_required
 def get_record_extra_profile_Iberia_minibar():
     id_value=request.args.get('id')  
     
@@ -2284,6 +2337,7 @@ def get_record_extra_profile_Iberia_minibar():
 
 
 @smb_app2.route('/add_record_extra_profile_Iberia_minibar',methods=['POST'])
+@token_required
 def add_record_extra_profile_Iberia_minibar():
     
     today = date.today()
@@ -2403,6 +2457,7 @@ def update_record_extra_profile_Iberia_minibar():
 
    
 @smb_app2.route('/upload_extra_profile_Iberia_minibar', methods=['GET','POST'])
+@token_required
 def upload_extra_profile_Iberia_minibar():
     
         f=request.files['filename']
@@ -2442,6 +2497,7 @@ def upload_extra_profile_Iberia_minibar():
 
 
 @smb_app2.route('/validate_extra_profile_Iberia_minibar', methods=['GET','POST'])
+@token_required
 def  validate_extra_profile_Iberia_minibar():
     
         
@@ -2499,6 +2555,7 @@ def  validate_extra_profile_Iberia_minibar():
         return {"status":"failure"},500
     
 @smb_app2.route('/download_extra_profile_Iberia_minibar',methods=['GET'])
+
 def download_extra_profile_Iberia_minibar():
         now = datetime.now()
         try:

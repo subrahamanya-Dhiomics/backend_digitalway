@@ -6,7 +6,7 @@ Created on Thu Oct  12 07:33:38 2021
 
 """
 
-from flask import Blueprint
+from flask import Blueprint,current_app
 
 import numpy as np
 import pandas as pd
@@ -29,6 +29,8 @@ import getpass
 from datetime import datetime
 from datetime import date
 import random
+import pysftp
+
 
  
 scrap_app = Blueprint('scrap_app', __name__)
@@ -39,13 +41,13 @@ con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',
 cur = con.cursor()
 
 
-output_directory='C:/Users/Administrator/Documents/Output/'
-Non_processed="C:/Users/Administrator/Documents/Non_processed"
-Processed_directory='C:/Users/Administrator/Documents/Processed_files'
-folder_path="C:/Users/Administrator/Documents/Input_files"
+# folder_path="C:/Users/Administrator/Documents/Input_files"
+
+
+csv_out_path="C:/Users/Administrator/Documents/"
+input_path="C:/Users/Administrator/Documents/"
 
 engine = create_engine('postgresql://postgres:ocpphase01@ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com:5432/offertool')
-      
 
 
 class NumpyArrayEncoder(JSONEncoder):
@@ -61,9 +63,35 @@ def tupleToList(tupleVar):
                 listVar.append(tupleVarEach[0])
             return(listVar)
 
+# Hostname = "3.65.20.36"
+Hostname="3.65.20.36"
+Username = "sftp_user"
+Password = "sftp_user@321"
 
-csv_out_path="/home/ubuntu/SMBDir/Alloy_Out/"
-input_path="/home/ubuntu/SMBDir/Alloy_Input/"
+def funUpload(fileToUpload,filename):
+    with pysftp.Connection(host=Hostname, username=Username, password=Password) as sftp:
+        print("Connection succesfully stablished ... ")
+    
+        # # Switch to a remote directory
+        # sftp.cwd('/sftp_user')
+    
+        localFilePath=fileToUpload
+        # Define the remote path where the file will be uploaded
+        remoteFilePath = '/sftp_user/'+filename
+        
+        sftp.put(localFilePath, remoteFilePath)
+        
+        # Switch to a remote directory
+        sftp.cwd('/sftp_user')
+    
+        # Obtain structure of the remote directory '/var/www/vhosts'
+        directory_structure = sftp.listdir_attr()
+    
+        # Print data
+        for attr in directory_structure:
+            print(attr.filename, attr)
+
+
 
 @scrap_app.route('/Alloy_wire_upload',methods=['GET','POST'])
 def upload_files():
@@ -73,66 +101,68 @@ def upload_files():
         now = datetime.now()
         today = date.today()
        
-        columns=['Month/Year', 'Mill', 'Customer ', 'Customer ID', 'Internal Grade',
-       'Sales Grade (Optional)', 'Monthly Alloy Surcharge',
-       'Monthly Alloy Surcharge BARS', 'Monthly Alloy Surcharge SEMIS ',
-       'Monthly Alloy Surcharge PEELED ', 'Internal Grade Gandrange',
-       'Exception of Gandarange delivering mill (Monthly, Average of last 3 months, or Trimester Caluclation)',
-       'Key', 'Duplicate', 'FakturaVerkettung Du\n']
-        
-        
         f.save(input_path+f.filename)
+        status=''
         
-       
-        stock_df = pd.read_excel(input_path +"/"+f.filename)
-        stock_df=stock_df[stock_df['Mill']=='Duisburg']
-        stock_df_columns=list(stock_df.columns)
-
-        try:
+        stock_df = pd.read_excel(input_path +f.filename)
+        try:   
         
-            print("inside")
+            stock_df=stock_df[stock_df['Mill']=='Duisburg']
+            stock_df_columns=list(stock_df.columns)
+    
             VKORG="0300"
             DST_CH="02"
             DIV="02"
             COND_TYPE="Z133"
             data1=stock_df[['Month/Year', 'Monthly Alloy Surcharge','Customer ID','Internal Grade']]
             
-            data1.rename(columns={'Month/Year': 'Month_year', 'Monthly Alloy Surcharge': 'Amount','Customer ID':'Customer_ID','Internal Grade':'Internal_Grade'}, inplace=True)
-            
+            data1=data1.rename(columns={"Month/Year": "Month_year", "Monthly Alloy Surcharge": "Amount","Customer ID":"Customer_ID","Internal Grade":"Internal_Grade"})
+        
             # data1= data1["Month_year"].dt.strftime("%y%m")
     
             data1.insert(0,'VKORG',str(VKORG))
             data1.insert(1,'COND_TYPE',str(COND_TYPE))
             data1.insert(2,'DST_CH',str(DST_CH))
             data1.insert(3,'DIV',str(DIV))
+            
             data1=data1.dropna()
-            
+                
             data1['Internal_Grade']=data1["Internal_Grade"].astype(str)
-            
+           
             data1['Internal_Grade']=data1['Internal_Grade'].apply(lambda x: x.zfill(4))
-            
+           
             # pending_wire=data1[data1.isna().any(axis=1)]
-            
+           
             # Path("C:/Users/Administrator/Documents/Non_processed").mkdir(parents=True, exist_ok=True)
             # pending_wire.to_csv(Non_processed+'/'+f.filename+'.csv')
-              
-            
+             
+           
             data1=data1.dropna()
             data1['Month_year']=data1['Month_year'].astype(str)
             data1["Month_year"] =data1["Month_year"].str.replace("_", "")
-            
+           
             data1['Month_year'] = data1['Month_year'].str.split('.').str[0]
-    
             data1=data1[(pd.to_datetime(data1['Month_year'], format='%Y%m')) >=today.strftime('%Y-%m') ]
-            
-            
             table_1 = data1.to_json(orient='records')
-            status="success"
-            return  json.dumps({"data":table_1,"filename":f.filename}),200
+           
+            return  {"data":table_1,"filename":f.filename},200
+
         except:
-              return  {"statuscode":"500","message":"incorrect"},500
-   
- 
+            return {"status":"failure"},500
+        
+       
+       
+         
+       
+            
+
+       
+        
+
+
+     
+     
+     
 @scrap_app.route('/Alloy_billet_upload',methods=['GET','POST'])
 def upload_files_billet ():
  
@@ -158,18 +188,15 @@ def upload_files_billet ():
         
         try:
             
-                print("inside")
-                print("*************************************************")
+                
                 VKORG="0200"
                 DST_CH="05"
                 DIV="04"
                 COND_TYPE="ZLEZ"
                 
                 data2=stock_df[['Monat', 'LZ','WARENEMPFAENGER_NR','SEL_NR_MELDUNG','dRUCKSPERRE']]
-                
                 data2.rename(columns={'Monat': 'Month_year', 'LZ': 'Amount'}, inplace=True)
-                # data= data["Month_year"].dt.strftime("%y%m")
-                
+               
                 data2.insert(0,'VKORG',VKORG)
                 data2.insert(1,'COND_TYPE',COND_TYPE)
                 data2.insert(2,'DST_CH',DST_CH)
@@ -182,11 +209,6 @@ def upload_files_billet ():
                 data2=data2[(pd.to_datetime(data2['Month_year'], format='%Y%m')) >=today.strftime('%Y-%m')]
                
                 
-                # pending_billet=data2[data2.isna().any(axis=1)]
-                # Path("C:/Users/Administrator/Documents/Non_processed").mkdir(parents=True, exist_ok=True)
-                # pending_billet.to_csv(Non_processed+'/'+f.filename+'.csv')
-                  
-                
                 data2=data2.dropna()
                 
                 
@@ -196,11 +218,7 @@ def upload_files_billet ():
                 return  json.dumps({"data":table_2,"filename":f.filename})
                 
                 
-            # else:
-            #      status='incorrect file format'
-            #      os.remove('C:/Users/Administrator/Documents/Input_files/'+f.filename)
-            #      os.remove("C:/Users/Administrator/Documents/Non_processed/"+f.filename)
-            #      return  {"statuscode":"500","message":"incorrect"},200
+         
         except:
               return  {"statuscode":"500","message":"incorrect"},500
         
@@ -280,9 +298,6 @@ def validate_files1():
     out_df=wire_df.copy()
     
     
-    
-    
-    
         
     cur.execute('rollback')
     cur.execute('select max("Batch_ID") from alloy_surcharge.alloy_surcharge_wire;')
@@ -303,10 +318,19 @@ def validate_files1():
     cond_type="Z133"
     sales_org="0300"
     
+    filename=date_time+counter+'_'+cond_type+'_'+sales_org+'.csv'
+    file_path=csv_out_path+filename
+    
+    
     # Path("C:\ocpphase1\ftp\Q72").mkdir(parents=True, exist_ok=True)
     # out_df.reset_index(drop=True, inplace=True)
-    out_df.to_csv(csv_out_path+date_time+counter+'_'+cond_type+'_'+sales_org+'.csv', index = False)
+    out_df.to_csv(file_path, index = False)
+    
+    funUpload(file_path,filename)
+    
+    
 
+    
     
     return {"message":"success"},200
    
@@ -351,10 +375,13 @@ def validate_files2():
         cond_type="ZLEZ"
         sales_org="0200"
         
+        filename=date_time+counter+'_'+cond_type+'_'+sales_org+'.csv'
+        file_path=csv_out_path+filename
+        
         # Path("C:\ocpphase1\ftp\Q72").mkdir(parents=True, exist_ok=True)
         # out_df.reset_index(drop=True, inplace=True)
-        out_df.to_csv(csv_out_path+date_time+counter+'_'+cond_type+'_'+sales_org+'.csv', index = False)
-    
+        out_df.to_csv(file_path, index = False)
+        funUpload(file_path, filename)
         
         status='success'
         return {"message":"success"},200
@@ -407,9 +434,12 @@ def validate_files3():
         cond_type="ZSCZ"
         sales_org="0200"
         
+        filename=date_time+counter+'_'+cond_type+'_'+sales_org+'.csv'
+        file_path=csv_out_path+filename
+        
         # Path("C:\ocpphase1\ftp\Q72").mkdir(parents=True, exist_ok=True)
         # out_df.reset_index(drop=True, inplace=True)
-        out_df.to_csv(csv_out_path+date_time+counter+'_'+cond_type+'_'+sales_org+'.csv', index = False)
+        out_df.to_csv(file_path, index = False)
         
         status='success'
         return {"message":"success"},200
@@ -549,8 +579,3 @@ def getfiles():
          return {"statuscode":"500","message":"failed"},500
     
  
-
-
-
-     
-     
