@@ -1,49 +1,29 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Jan  5 10:02:00 2022
 
-@author: Administrator
-"""
-
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Dec 29 11:45:26 2021
-
-@author: Administrator
-"""
-
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Dec 23 11:17:05 2021
-
-@author: Administrator
-"""
-
-
-import pandas as pd
-import time
+from cryptography.fernet import Fernet
 import json
-import jwt
 from flask import Flask, request, send_file, render_template, make_response
-from flask import jsonify
+from flask import jsonify, Blueprint, current_app
 from flask_cors import CORS
 from json import JSONEncoder
 from collections import OrderedDict
 import psycopg2
-import shutil
-from pathlib import Path
-import os
 from sqlalchemy import create_engine
-import getpass
-from datetime import datetime,date,timedelta
-import smtplib
 import re
-from flask import Flask
+import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+
+
+import re
+from flask import Flask
 app= Flask(__name__)
 
-CORS(app)
+
+reset_password = Blueprint('reset_password', __name__)
+
+
+
+CORS(reset_password)
 
 engine = create_engine('postgresql://postgres:ocpphase01@ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com:5432/offertool')
 
@@ -84,20 +64,15 @@ class Database:
         finally:
             self.cursor.close()
             print('Cursor closed')
-               
- 
-
-
+            
 db=Database()
-app=Flask(__name__)
-CORS(app)
+reset_password = Blueprint('reset_password', __name__)
+CORS(reset_password)
 
 con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
 cursor=con.cursor()
-
-
-def send_email(receiver,user):
-    me='''ranjitkumar@digitalway-lu.com'''
+def send_email(receiver,user,encoded_user_id):
+    me='''ymsyathish@gmail.com''' #ranjitkumar@digitalway-lu.com   ymsyathish@gmail.com
     msg = MIMEMultipart('alternative')
     msg['Subject'] = "Reset Password"
     msg['From'] = me
@@ -154,9 +129,8 @@ def send_email(receiver,user):
 
                 <img src="https://drive.google.com/thumbnail?id=1nRZ2KomzjstN68nJL5nMnDv3HIcj2-Mt" alt="logo" />
             </div>
-            <h3 style="text-align: left; font-size: 18px;">Hello '''+ user+''',</h3>
+            <h3 style="text-align: left; font-size: 18px;">Hello '''+user+''',</h3>
             <div>
-
                 <div style="text-align: justify; margin-left: 12%;">
                     <p>We heard that you lost your Password.Sorry about that! But don't worry! We have sent you this
                         email in response to your request to reset your password. You can use the following button
@@ -165,7 +139,7 @@ def send_email(receiver,user):
                 </div>
                 <div style="text-align: center;">
                     <i class="fa fa-lock icon" style="font-size:35px;"></i><br>
-                    <button class="resetButton"><a href="https://smbprice.dcc-am.com/auth/reset-password">Reset Password</a></button>                
+                    <button class="resetButton"><a href="''' + current_app.config["environment_url"] + '''={}">Reset Password</a></button>
                 </div>
                 <div style="text-align: justify; margin-left: 12%;">
                     <p>If you didn't request a password reset,you can ignore this email. We recommend that you keep your
@@ -180,12 +154,12 @@ def send_email(receiver,user):
 
 </body>
 
-</html>'''
+</html> '''.format(encoded_user_id)
     
     
     part = MIMEText(html, 'html')
     msg.attach(part)
-    server = smtplib.SMTP('smtp.gmail.com:587')
+    server = smtplib.SMTP('smtp.gmail.com',587)
     server.ehlo()
     server.starttls()
     server.login(me, 'offertool2w2016.')
@@ -195,84 +169,57 @@ def send_email(receiver,user):
     
     return{'status':"Success"},200
 
-   
-app.config['SECRET_KEY'] = 'reset_password'
+key = Fernet.generate_key()
+fernet = Fernet(key)
 
-
-
-
-'''def token_required(func):
-    # decorator factory which invoks update_wrapper() method and passes decorated function as an argument
-    def decorated(*args, **kwargs):
-        #token = request.args.get('token')
-        #if 'x-access-token' in request.headers:
-        token = request.args.get('x-access-token')           
-        if not token:
-            return jsonify({'Alert!': 'Token is missing!'}), 401
-        try:
-            data = jwt.decode(token, app.config['SECRET_KEY'], algorithms=["HS256"])
-            print(data)
-        except :      
-             return {"msg":"Invalid token;"}
-        return func(*args, **kwargs)
-    return decorated
-'''
-'''@app.route('/forget_password',methods=['POST','GET'])
-def forget_password():
+@reset_password.route('/resetemail',methods=['POST','GET'])
+def resetemail():
     pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
     email = request.args.get('email')
-    try :
-        if(re.fullmatch(pattern, email)):
-            print("hi")
-            
-            query_1=select distinct(1) email from  user_management_ocp.user_details  where  email='{}' .format(email)   
-            status=db.query(query_1)[0][0]
-            receivers=email
-            if(status==1):
-                token = jwt.encode({ 'email':email, 'expiration': str(datetime.utcnow() + timedelta(seconds=2000))})
-                email_sent_status = send_email(receivers, token)
-                if email_sent_status:
-                        return{"status":"Email sent successfully","status_code":200}
-                else :
-                        return{"status":"Error sending email to the user, Please try again later","status_code":500}
-            else:
-                return{"status":"Email does not exist","status_code":200}
-        else :
-            return{"status":"Please send the valid email address","status_code":500}
-        
-
-    except :
-        return{"status":"Not-Exist Email","status_code":500}
     
-'''
-@app.route('/forgot_password',methods=['POST','GET'])
-def forgot_password():
-    pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
-    Request_body=json.loads(request.data)
-    email = Request_body['email']
-                       
-    try :
-        if(re.fullmatch(pattern, email)):
-            query_1='''select distinct(1) email,first_name,middle_name,last_name from  user_management_ocp.user_details  where  email='{}' '''.format(email)   
+
+    if(re.fullmatch(pattern, email)):
+            query_1='''select distinct(1) email,first_name,middle_name,last_name,user_id from  user_management_ocp.user_details  where  email='{}' '''.format(email)   
             status=db.query(query_1)
+            user_id=status[0][4]
+            print(user_id)
+            encoded_user_id = fernet.encrypt(user_id.encode()).decode()
+            
             user=status[0][1]+' '+status[0][2]+' '+status[0][3]
             status=status[0][0]
+            
             receivers=email
             if(status==1):
-#                encoded_jwt = jwt.encode({"exp": datetime.datetime.now() + datetime.timedelta(seconds=5), "user_id":user},  "secret", algorithm="HS256")
-                email_sent_status = send_email(receivers,user)
+                
+                email_sent_status = send_email(receivers,user,encoded_user_id)
                 if email_sent_status:
-                    return{"status":"Email sent successfully","status_code":200}
+                    return{"status":"Email sent successfully"},200
                 else:
-                    return{"status":"Error sending email to the user, Please try again later","status_code":404}
+                    return{"status":"Error sending email to the user, Please try again later"},404
             else:
-                return{"status":"Email does not exist","status_code":404}
-        else :
-            return{"status":"Please Enter Valid Email","status_code":404}        
-    except :
-        return{"status":"Email is Not Exist","status_code":404}
+                return{"status":"Email does not exist"},404
+    else :
+            return{"status":"Please Enter Valid Email"},404        
+    #except :
+        #return{"status":"Email is Not Exist"},404
+        
+
+
+
+
+
+@reset_password.route('/reset',methods=['POST','GET'])
+def resetPassword():
+    new_password=request.args.get('new_passowrd')
+    user_id_encrypt=request.args.get('encrypt_user_id')
+    user_id = fernet.decrypt(user_id_encrypt.encode()).decode()
+    print(user_id)
+    query='''update user_management_ocp.user_details set "password"='{}' where "user_id"={}'''.format(new_password,user_id)
+    print(query)
+    status=db.insert(query)
     
+    
+    return {"status":"success"} 
 
-if __name__ == '__main__':
-   app.run()
-
+   
+   

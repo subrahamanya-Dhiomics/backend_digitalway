@@ -1,23 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Jan  5 09:20:41 2022
-
-@author: Administrator
-"""
-
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Dec 29 11:45:26 2021
-
-@author: Administrator
-"""
-
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Dec 23 11:17:05 2021
-
-@author: Administrator
-"""
 
 from flask import Blueprint
 import pandas as pd
