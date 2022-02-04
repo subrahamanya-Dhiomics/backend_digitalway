@@ -371,12 +371,7 @@ def download_transport():
    
         now = datetime.now()
         try:
-<<<<<<< Updated upstream
-            df = pd.read_sql('''select * from "SMB"."SMB - Extra - Transport Mode" where "active"='1' order by sequence_id ''', con=con)
-            df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
-=======
             df = pd.read_sql('''select sequence_id,"Product Division","Market - Country","Transport Mode","Document Item Currency","Amount","Currency" from "SMB"."SMB - Extra - Transport Mode" where "active"='1' order by "id" ''', con=con)       
->>>>>>> Stashed changes
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'extra_transport_mode.xlsx'
             print(file)
@@ -986,12 +981,7 @@ def download_length_production():
    
         now = datetime.now()
         try:
-<<<<<<< Updated upstream
-            df = pd.read_sql('''select * from "SMB"."SMB - Extra - Length Production" where "active"='1' order by sequence_id ''', con=con)
-            df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
-=======
             df = pd.read_sql('''select sequence_id,"BusinessCode","Market - Country","Delivering Mill","Length","Length From","Length To","Document Item Currency","Country Group","Amount","Currency" from "SMB"."SMB - Extra - Length Production" where "active"='1' order by "id" ''', con=con)
->>>>>>> Stashed changes
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'length_production_minibar.xlsx'
             print(file)
@@ -1629,12 +1619,7 @@ def download_length_logistic():
    
         now = datetime.now()
         try:
-<<<<<<< Updated upstream
-            df = pd.read_sql('''select * from "SMB"."SMB - Extra - Length Logistic" where "active"='1' order by sequence_id ''', con=con)
-            df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
-=======
             df = pd.read_sql('''select sequence_id,"Country Group","Market - Country","Delivering Mill","Length","Length From","Length To","Transport Mode","Document Item Currency","Amount","Currency" from "SMB"."SMB - Extra - Length Logistic" where "active"='1' order by "id" ''', con=con)
->>>>>>> Stashed changes
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'length_logistic.xlsx'
             print(file)
@@ -1957,20 +1942,13 @@ def download_length_logistic_minibar():
     
         now = datetime.now()
         try:
-<<<<<<< Updated upstream
-            df = pd.read_sql('''select * from "SMB"."SMB - Extra - Length Logistic - MiniBar" where "active"='1' order by sequence_id ''', con=con)
-            df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
+            df = pd.read_sql('''select sequence_id,"Customer Group","Market - Country","Delivering Mill","Length","Length From","Length To","Transport Mode","Document Item Currency","Amount","Currency" from "SMB"."SMB - Extra - Length Logistic - MiniBar" where "active"='1' order by sequence_id ''', con=con)
+            df.to_excel('C:/Users/Administrator/Downloads/'+now.strftime("%d-%m-%Y-%H-%M-%S") +'bse_price_extra_length_logistic_minibar.xlsx',index=False)
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'length_logistic_minibar.xlsx'
             print(file)
             df.to_excel(file,index=False)
-            
             return send_file(file, as_attachment=True)
-=======
-            df = pd.read_sql('''select sequence_id,"Customer Group","Market - Country","Delivering Mill","Length","Length From","Length To","Transport Mode","Document Item Currency","Amount","Currency" from "SMB"."SMB - Extra - Length Logistic - MiniBar" where "active"='1' order by sequence_id ''', con=con)
-            df.to_excel('C:/Users/Administrator/Downloads/'+now.strftime("%d-%m-%Y-%H-%M-%S") +'bse_price_extra_length_logistic_minibar.xlsx',index=False)
-            return {"status":"success"},200
->>>>>>> Stashed changes
         except:
             return {"status":"failure"},500
    
