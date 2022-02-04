@@ -10,7 +10,7 @@ from flask import Blueprint
 import pandas as pd
 import time
 import json
-from flask import Flask, request, send_file, render_template, make_response
+from flask import Flask, request, send_file, render_template, make_response,current_app
 from flask import jsonify
 from flask_cors import CORS
 from json import JSONEncoder
@@ -23,8 +23,12 @@ from pathlib import Path
 import os
 from sqlalchemy import create_engine
 import getpass
+import cryptocode
 from datetime import datetime,date
 from smb_phase2 import token_required
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 
 
@@ -79,14 +83,135 @@ CORS(smb_app1)
 db=Database()
 
 
+def tuple_to_string(col_tuple):
+    columnstr=''' '''
+    for i in col_tuple:
+             if(i!=col_tuple[-1]):  columnstr+=''' "{}",'''.format(i)
+             else: columnstr+=''' "{}" '''.format(i)   
+    return columnstr
+    
 
-# download_path='/home/ubuntu/SMBDir/smb_download/'
 
 
-# input_directory='/home/ubuntu/SMBDir/smb_upload/'
 
-download_path='C:/Users/Administrator/Documents/test_path/'
-input_directory='C:/Users/Administrator/Documents/test_path/'
+
+
+def upsert(col_tuple,input_tuple,flag='update',tablename=None,id_value=None):
+        querystr=''' '''
+        columnstr=tuple_to_string(col_tuple)
+        tableid=''
+       
+        
+        if(flag=='update'):
+            check=db.query(''' select exists(select 1  from "SMB"."SMB_Aproval" where id={} and table_name='{}') '''.format(id_value,tablename))[0][0]
+            if check and check!='failed':querystr=''' UPDATE "SMB"."SMB_Aproval" SET ({})= {} where id={} and table_name='{}' '''.format(columnstr,input_tuple,id_value,tablename)
+            else: querystr='''INSERT INTO "SMB"."SMB_Aproval" ({}) VALUES{}; '''.format(columnstr,input_tuple)
+            print(querystr)
+            status=db.insert(querystr)
+            
+           
+        
+           
+            tableid=db.query(''' select tableid from "SMB"."SMB_Aproval" where id={} and table_name='{}' '''.format(id_value,tablename))[0][0]
+          
+            
+            
+        if(flag=='add'):
+            querystr=''' Insert into  "SMB"."SMB_Aproval"  ({}) VALUES{}'''.format(columnstr,input_tuple)
+            print(querystr)
+            status=db.insert(querystr)
+            
+            
+            tableid=db.query(''' select max(tableid) from "SMB"."SMB_Aproval" where table_name='{}' and flag='add' '''.format(tablename) )[0][0]
+            
+               
+        if status!='failed' : status='success'
+        return {"status":status,"tableid":tableid}
+    
+def move_records(tablename,col_tuple,value_tuple,flag,id_value=None):
+    querystr=''' '''
+    columnstr=tuple_to_string(col_tuple)
+   
+    if(flag=='update'):
+        
+        query1=''' INSERT INTO "SMB"."{}_History"({})
+        SELECT 
+        
+        {}
+    
+         FROM "SMB"."{}"
+        WHERE "id" ={} '''.format(tablename,columnstr,columnstr,tablename,id_value)
+        
+        
+        query2= ''' UPDATE "SMB"."{}" SET ({})= {} where id={}  '''.format(tablename,columnstr,value_tuple,id_value)
+        
+        db.insert(query1)
+        status=db.insert(query2)
+        if(status!='failed'):
+            db.insert(''' delete from "SMB"."SMB_Aproval" where id={} '''.format(id_value))
+            status='success'
+        
+
+        
+        return status
+    if(flag=='add'):
+         
+        query='''INSERT INTO "SMB"."{}"(
+             
+            {})
+             VALUES{};'''.format(tablename,columnstr,value_tuple)
+        status=db.insert(query)
+        if(status!='failed'):
+            db.insert(''' delete from "SMB"."SMB_Aproval" where tableid={} '''.format(id_value))
+            status='success'
+        
+        return status
+    
+
+def email(id_value,tablename):  
+      
+        encoded_id = cryptocode.encrypt(str(id_value),current_app.config["mypassword"])
+        ## And then to decode it:
+        
+        approver='subrahamanya.shetty@dhiomics.com'
+        mail_from='''subrahamanya@digitalway-lu.com'''
+       
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = "Approve Records"
+        msg['From'] =mail_from
+        msg['To'] = approver
+        #print(user)
+        html=''
+        with open('email_aproval.html', 'r') as f:
+         html = f.read()
+        print("*********")
+        
+        print(html)
+        
+        
+        print("**")
+        html=html.format(tablename,'admin','TEST3221',encoded_id,tablename)
+       
+        
+        
+        part = MIMEText(html, 'html')
+        msg.attach(part)
+        server = smtplib.SMTP('smtp.gmail.com',587)
+        server.ehlo()
+        server.starttls()
+        server.login(mail_from, '78df@$M80')
+        server.sendmail(mail_from, approver, msg.as_string())     
+        server.close()
+        return 'success'
+   
+        
+        
+download_path="/home/ubuntu/mega_dir/"
+input_directory="/home/ubuntu/mega_dir/"
+
+
+# download_path="C:/Users/Administrator/Documents/"
+# input_directory="C:/Users/Administrator/Documents/"
 
 
 con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
@@ -102,7 +227,6 @@ def Hello():
 
 
 @smb_app1.route('/Base_Price_Data',methods=['GET','POST'])
-
 @token_required
 def SMB_data():
     
@@ -125,7 +249,7 @@ def SMB_data():
     
     # fetching the data from database and filtering    
     try:
-        query='''select * from "SMB"."SMB - Base Price - Category Addition" where "active"='1' order by "id"  OFFSET {} LIMIT {} '''.format(lowerLimit,upperLimit) 
+        query='''select * from "SMB"."SMB - Base Price - Category Addition" where "active"='1' order by sequence_id  OFFSET {} LIMIT {} '''.format(lowerLimit,upperLimit) 
         df = pd.read_sql(query, con=con)
         
         count=db.query('select count(*) from "SMB"."SMB - Base Price - Category Addition" where "active"=1 ')[0][0]
@@ -145,19 +269,23 @@ def SMB_data():
         
 
 @smb_app1.route('/delete_record_baseprice',methods=['POST','GET','DELETE'])
+@token_required
+
 def delete_record():  
-    id_value=request.args.get('id')
-    
+    id_value=json.loads(request.data)['id']
+    id_value.append(0)
+    id_value=tuple(id_value)
     try:
-        query='''UPDATE "SMB"."SMB - Base Price - Category Addition" SET "active"=0 WHERE "id"={} '''.format(id_value)
+        query='''UPDATE "SMB"."SMB - Base Price - Category Addition" SET "active"=0 WHERE "id" in {}'''.format(id_value)
         result=db.insert(query)
+        print(query)
         
         return {"status":"success"},200
     except:
         return {"status":"failure"},500
-
-
-@smb_app1.route('/get_record_baseprice',methods=['GET','POST'])       
+   
+@smb_app1.route('/get_record_baseprice',methods=['GET','POST'])  
+@token_required     
 def get_record():
     id_value=request.args.get('id')  
     
@@ -171,17 +299,19 @@ def get_record():
         return {"record":record},200
     except:
         return {"status":"failure"},500
-  
+
+
 
 @smb_app1.route('/update_record_baseprice',methods=['POST'])
+@token_required
 def update_record1():
         username = getpass.getuser()
         now = datetime.now()
         date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
+        
         query_parameters =json.loads(request.data) 
         
         sequence_id=(query_parameters['sequence_id'])
-    
         BusinessCode=(query_parameters['BusinessCode'])
         Market_Country =( query_parameters["Market_Country"])
         Product_Division =( query_parameters["Product_Division"])
@@ -190,40 +320,90 @@ def update_record1():
         Amount =( query_parameters["Amount"])
         Currency =( query_parameters["Currency"])
         id_value=(query_parameters['id_value'])
+        sequence_id=(query_parameters['sequence_id'])
         
+        flag='update'
+      
+        tablename='SMB - Base Price - Category Addition'        
+        
+        input_tuple=(tablename,id_value,sequence_id,username, BusinessCode,  Market_Country, Product_Division,Product_Level_02,Document_Item_Currency, Amount,Currency)
+        
+        col_tuple=("table_name","id","sequence_id",
+             "Username",
+             "BusinessCode",
+             "Market - Country",
+             "Product Division",
+             "Product Level 02",
+             "Document Item Currency",
+             "Amount",
+             "Currency")
+        email_status=''
+        
+        status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
+        if(status['status']=='success'):email_status=email([status['tableid']],tablename)
+        
+        
+        
+        if(email_status=='success'): return {"status":"success"},200
+        else: return {"status":"failure"},500
+
+
+
+          
+          
+#         query=''' INSERT INTO "SMB"."SMB - Base Price - Category Addition"(
+#              id,
+#              "Username",
+#              "BusinessCode",
+#              "Market - Country",
+#              "Product Division",
+#              "Product Level 02",
+#              "Document Item Currency",
+#              "Amount",
+#              "Currency")
+#              VALUES {}
+# 			 ON CONFLICT (id) 
+# 			 DO 
+#    update set "Username"=excluded."Username" ,"BusinessCode"=exluded."BusinessCode","Market - Country"=excluded."Market - Country","Product Division"=excluded."Product Division", ; '''.format(input_tuple)
         
     
         
-        query1='''INSERT INTO "SMB"."SMB - Base Price - Category Addition_History" 
-        SELECT 
-        "id","Username","BusinessCode","Market - Country",
-      	   "Product Division",
-       "Product Level 02",
-       "Document Item Currency",
-       "Amount",
-       "Currency"  FROM "SMB"."SMB - Base Price - Category Addition"
-        WHERE "id"={} '''.format(id_value)
-        result=db.insert(query1)
-        if result=='failed' :raise ValueError
+        
+        
+        
+#         query1='''INSERT INTO "SMB"."SMB - Base Price - Category Addition_History" 
+#         SELECT 
+#         "id","Username","BusinessCode","Market - Country",
+#       	   "Product Division",
+#        "Product Level 02",
+#        "Document Item Currency",
+#        "Amount",
+#        "Currency"  FROM "SMB"."SMB - Base Price - Category Addition"
+#         WHERE "id"={} '''.format(id_value)
+#         result=db.insert(query1)
+        
+#         if result=='failed' :raise ValueError
     
-        query2='''UPDATE "SMB"."SMB - Base Price - Category Addition"
-        SET 
-       "Username"='{0}',
-       "BusinessCode"='{1}',
-       "Market - Country"='{2}',
-      	   "Product Division"='{3}',
-       "Product Level 02"='{4}',
-       "Document Item Currency"='{5}',
-       "Amount"='{6}',
-       "Currency"=''{7}'',
-       "updated_on"='{8}',
-        WHERE "id"={9} '''.format(username,BusinessCode,Market_Country,Product_Division,Product_Level_02,Document_Item_Currency,Amount,Currency,date_time,id_value)
-        result1=db.insert(query2)
-        if result1=='failed' :raise ValueError
-        return {"status":"success"},200
+#         query2='''UPDATE "SMB"."SMB - Base Price - Category Addition"
+#         SET 
+#        "Username"='{0}',
+#        "BusinessCode"='{1}',
+#        "Market - Country"='{2}',
+#       	   "Product Division"='{3}',
+#        "Product Level 02"='{4}',
+#        "Document Item Currency"='{5}',
+#        "Amount"='{6}',
+#        "Currency"=''{7}'',
+#        "updated_on"='{8}'
+       
+#         WHERE "id"={9} '''.format(username,BusinessCode,Market_Country,Product_Division,Product_Level_02,Document_Item_Currency,Amount,Currency,date_time,id_value)
+#         result1=db.insert(query2)
+#         if result1=='failed' :raise ValueError
+#         return {"status":"success"},200
    
 
 @smb_app1.route('/add_record_baseprice',methods=['POST'])
+@token_required
 def add_record1():
     username = getpass.getuser()
     now = datetime.now()
@@ -235,38 +415,138 @@ def add_record1():
     Market_Country =( query_parameters["Market_Country"])
     Product_Division =( query_parameters["Product_Division"])
     Product_Level_02 =( query_parameters["Product_Level_02"])
-    
     Amount =( query_parameters["Amount"])
     Currency =( query_parameters["Currency"])
     Document_Item_Currency =( query_parameters["Document_Item_Currency"])
+    flag='add'
+   
+    tablename='SMB - Base Price - Category Addition'
+    # id_value=db.query('''select "SMB".get_max_id('"SMB"."SMB - Base Price - Category Addition"')''')[0][0]+1
     
     
-    try:
-        input_tuple=(username, BusinessCode,  Market_Country, Product_Division,Product_Level_02,Document_Item_Currency, Amount,Currency.strip("'"))
-        query='''INSERT INTO "SMB"."SMB - Base Price - Category Addition"(
-             
-             "Username",
-             "BusinessCode",
-             "Market - Country",
-             "Product Division",
-             "Product Level 02",
-             "Document Item Currency",
-             "Amount",
-             "Currency")
-             VALUES{};'''.format(input_tuple)
-        result=db.insert(query)  
-        if result=='failed' :raise ValueError
+    
+    input_tuple=(tablename,flag,username, BusinessCode,  Market_Country, Product_Division,Product_Level_02,Document_Item_Currency, Amount,Currency)
+    col_tuple=("table_name","flag", "Username",
+              "BusinessCode",
+              "Market - Country",
+              "Product Division",
+              "Product Level 02",
+              "Document Item Currency",
+              "Amount",
+              "Currency")
+    
+    status=upsert(col_tuple,input_tuple,flag,tablename)
+    if(status['status']=='success'): email_status=email([status['tableid']],tablename)
+    
+    if(email_status=='success'): return {"status":"success"},200
+    else: return {"status":"failure"},500
         
-        return {"status":"success"},200
-        
-    except:
-        return {"status":"failure"},500
 
+      
+        
+    # try:
+    #     input_tuple=(flag,username, BusinessCode,  Market_Country, Product_Division,Product_Level_02,Document_Item_Currency, Amount,Currency.strip("'"))
+    #     query='''INSERT INTO "SMB"."SMB_Aproval"(
+             
+              
+    #          "Username",
+    #          "BusinessCode",
+    #          "Market - Country",
+    #          "Product Division",
+    #          "Product Level 02",
+    #          "Document Item Currency",
+    #          "Amount",
+    #          "Currency")
+    #          VALUES{};'''.format(input_tuple)
+    #     print(query)
+    #     result=db.insert(query)  
+    #     if result=='failed' :raise ValueError
+        
+    #     return {"status":"success"},200
+        
+    # except:
+    #     return {"status":"failure"},500
+
+@smb_app1.route('/aproval_data',methods=['GET','POST'])
+def aproval_data():
+    id_value=request.args.get('id_value') 
+    id_value=id_value.replace(' ','+')
+    id_value = cryptocode.decrypt(id_value, current_app.config["mypassword"])
+    id_list=eval(id_value)
+    id_list.append(0)
+    id_tuple=tuple(id_list)
+    data=[{}]
+    
+    tablename=request.args.get('tablename')
+    
+    query='''select * from "SMB"."SMB_Aproval" where tableid in {} and table_name='{}' '''.format(id_tuple,tablename)
+    df=pd.read_sql(query,con=con)
+    try:
+        if(len(df)<1):raise ValueError
+          
+        df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer_Group":"Market_Customer_Group","Zip_Code_(Dest)":"Zip_Code_Dest"},inplace=True)
+        df.dropna(axis=1, how='all',inplace=True)
+        data=json.loads(df.to_json(orient='records'))
+        
+        return {"data":data},200
+    except:
+        data=[]
+        return {"data": data},200
+          
+ 
+
+@smb_app1.route('/aprove_records',methods=['GET','POST'])
+def aprove_records():
+    data=json.loads(request.data)
+    df=pd.DataFrame(data["data"])
+    tablename=data['tablename']
+    print(data)
+  
+    for i in range(0,len(df)):
+        flag=df['flag'][i]
+         
+        tableid=df['tableid'][i]
+        try:
+            id_value=df['id'][i]
+            
+        except:pass
+       
+        if(flag=='update'):
+         df2=df.drop(['tableid','flag','updated_on'], axis = 1)
+         col_tuple=tuple(list(df2.columns))
+         value_tuple=tuple(df2.loc[i])
+         status=move_records(tablename,col_tuple,value_tuple,flag,id_value)
+       
+        else:
+           df2=df.drop(['tableid','flag','updated_on'], axis = 1)
+           col_tuple=tuple(list(df2.columns))
+           value_tuple=tuple(df2.loc[i])
+           status=move_records(tablename,col_tuple,value_tuple,flag,tableid)
+        
+    return {"status":"success"},200
+
+@smb_app1.route('/reject_records',methods=['GET','POST'])
+def reject_records():
+    data=json.loads(request.data)
+    tablename=data['tablename']
+    id_value=data['id_value']
+    id_value=id_value.replace(' ','+')
+    id_value = cryptocode.decrypt(id_value, current_app.config["mypassword"])
+    id_list=eval(id_value)
+    id_list.append(0)
+    id_tuple=tuple(id_list) 
+    query=''' delete from "SMB"."SMB_Aproval" where tableid in {} '''.format(id_tuple)
+    db.insert(query)
+    return {"status":"success"},200
+    
+    
+    
 
 
 
    
 @smb_app1.route('/Base_Price_Upload', methods=['GET','POST'])
+
 def  SMB_upload():
     
             f=request.files['filename']
@@ -274,13 +554,14 @@ def  SMB_upload():
                 
             f.save(input_directory+f.filename)
             
-       
+            
             smb_df=pd.read_excel(input_directory+f.filename,dtype=str)
             
-            df=smb_df[['id','BusinessCode','Market - Country','Product Division','Product Level 02','Document Item Currency', 'Amount', 'Currency']]  
+            df=smb_df[['id','BusinessCode','Market - Country','Product Division','Product Level 02','Document Item Currency', 'Amount', 'Currency','sequence_id']]  
             df['id']=df['id'].astype(int)
+            df['sequence_id']=df['sequence_id'].astype(int)
             
-            df_main = pd.read_sql('''select "id","BusinessCode","Market - Country","Product Division","Product Level 02","Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Base Price - Category Addition" where "active"='1' order by "id" ''', con=con)
+            df_main = pd.read_sql('''select "id","BusinessCode","Market - Country","Product Division","Product Level 02","Document Item Currency", "Amount", "Currency" ,sequence_id from "SMB"."SMB - Base Price - Category Addition" where "active"='1' order by "id" ''', con=con)
             
             
             df3 = df.merge(df_main, how='left', indicator=True)
@@ -294,9 +575,11 @@ def  SMB_upload():
             table=json.loads(df3.to_json(orient='records'))
             
             return {"data":table},200
-       
+
+
 
 @smb_app1.route('/Base_Price_validate', methods=['GET','POST'])
+@token_required
 def  SMB_validate():
     json_data=json.loads(request.data)
     username = getpass.getuser() 
@@ -304,56 +587,39 @@ def  SMB_validate():
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     
     df=pd.DataFrame(json_data["billet"]) 
-    
+    email_status=''
     df.insert(0,'Username',username)
-    df.insert(1,'date_time',date_time)
     
-    print(json_data)
+    tablename='SMB - Base Price - Category Addition' 
+    flag='update'  
+    df.insert(1,'table_name',tablename)
+    col_tuple=("table_name","id","sequence_id",
+             "Username",
+             "BusinessCode",
+             "Market - Country",
+             "Product Division",
+             "Product Level 02",
+             "Document Item Currency",
+             "Amount",
+             "Currency")
+    col_list=['table_name','id','sequence_id','Username','BusinessCode','Market_Country','Product_Division','Product_Level_02','Document_Item_Currency', 'Amount', 'Currency']
     
-    try:
-        df=df[ ['Username','BusinessCode','Market_Country','Product_Division','Product_Level_02','Document_Item_Currency', 'Amount', 'Currency','date_time','id']]
-        
-        query1='''INSERT INTO "SMB"."SMB - Base Price - Category Addition_History" 
-        SELECT 
-        "id",
-        "Username",
-        "BusinessCode",
-        "Market - Country",
-    	"Product Division",
-       "Product Level 02",
-       "Document Item Currency",
-       "Amount",
-       "Currency"  FROM "SMB"."SMB - Base Price - Category Addition"
-        WHERE "id" in {} '''
-        
-        id_tuple=tuple(df["id"])
-        if len(id_tuple)==1:id=id_tuple[0] ;id_tuple=(id,id)
-        result=db.insert(query1.format(id_tuple))
-        if result=='failed' :raise ValueError
-        
-        # looping for update query
-        for i in range(0,len(df)):
-           
-            query2='''UPDATE "SMB"."SMB - Base Price - Category Addition"
-        SET 
-       "Username"='%s',
-       "BusinessCode"='%s',
-       "Market - Country"='%s',
-       "Product Division"='%s',
-       "Product Level 02"='%s',
-       "Document Item Currency"='%s',
-       "Amount"='%s',
-       "Currency"=''%s'',
-       "updated_on"='%s'
-        WHERE "id"= '%s' ''' % tuple(df.loc[i])
-            result=db.insert(query2)
-            if result=='failed' :raise ValueError
-            
-        return {"status":"success"},200
-    except:
-        return {"status":"failure"},500
-        
+    
+    id_value=[]
   
+    df=df[ col_list]
+    
+    for i in range(0,len(df)):
+        status=upsert(col_tuple,tuple(df.loc[i]),flag,tablename,df['id'][i])
+        id_value.append(status['tableid'])
+        
+    if(status['status']=='success'):
+        email_status=email(id_value,tablename)
+  
+    return {"status":"success"},200
+   
+     
+
          
 @smb_app1.route('/Base_price_download',methods=['GET'])
 def SMB_baseprice_download1():
@@ -364,23 +630,15 @@ def SMB_baseprice_download1():
         df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
         t=now.strftime("%d-%m-%Y-%H-%M-%S")
         file=download_path+t+'baseprice_category_addition.xlsx'
-        print(file)
+        
+        
         df.to_excel(file,index=False)
         
         return send_file(file, as_attachment=True)
        
         
    
-    
-   
-   
-    
-    
-    
-    
-    
-
-         
+  
        
         
     
@@ -397,10 +655,6 @@ def SMB_data_baseprice_mini():
     offset=request.args.get("offset",type=int)
     
     
-    if(limit==None):
-        limit=500
-    if(offset==None):
-        offset=0
 
     # pagination logic
     lowerLimit=offset*limit 
@@ -429,10 +683,13 @@ def SMB_data_baseprice_mini():
         return {"statuscode":500,"msg":"failure"},500
   
 @smb_app1.route('/delete_record_baseprice_category_minibar',methods=['POST','GET','DELETE'])
+@token_required
 def delete_record_baseprice_mini():  
-    id_value=request.args.get('id')
+    id_value=json.loads(request.data)['id']
+    id_value.append(0)
+    id_value=tuple(id_value)
     try:
-        query='''UPDATE "SMB"."SMB - Base Price - Category Addition - MiniBar" SET "active"=0 WHERE "id"={} '''.format(id_value)
+        query='''UPDATE "SMB"."SMB - Base Price - Category Addition - MiniBar" SET "active"=0 WHERE "id" in {} '''.format(id_value)
         result=db.insert(query)
         
         
@@ -441,7 +698,8 @@ def delete_record_baseprice_mini():
         return {"status":"failure"},500
 
 
-@smb_app1.route('/get_record_baseprice_category_minibar',methods=['GET','POST'])       
+@smb_app1.route('/get_record_baseprice_category_minibar',methods=['GET','POST'])     
+@token_required  
 def get_record_minibar():
     id_value=request.args.get('id')  
     
@@ -458,6 +716,7 @@ def get_record_minibar():
     
 
 @smb_app1.route('/update_record_baseprice_category_minibar',methods=['POST'])
+@token_required
 def update_record_category_minibar():
         username = getpass.getuser()
         now = datetime.now()
@@ -466,7 +725,7 @@ def update_record_category_minibar():
         
         BusinessCode=(query_parameters['BusinessCode'])
         Customer_Group=(query_parameters["Customer_Group"])
-        Market_Customer=(query_parameters["Market_Customer"])
+       
         Market_Country =( query_parameters["Market_Country"])
         Beam_Category=(query_parameters["Beam_Category"])
         
@@ -478,46 +737,41 @@ def update_record_category_minibar():
         sequence_id=(query_parameters['sequence_id'])
         id_value=(query_parameters['id_value'])
     
-        try:
+    
+    
+    
         
-            query1='''INSERT INTO "SMB"."SMB - Base Price - Category Addition - MiniBar_History" 
-            SELECT 
-            "id","Username",now(),"BusinessCode",
+        flag='update'
+      
+        tablename='SMB - Base Price - Category Addition - MiniBar'    
+        
+        input_tuple=(tablename,id_value,sequence_id,username,BusinessCode,Customer_Group,Market_Country,Beam_Category,Document_Item_Currency,Amount,Currency)
+        col_tuple=("table_name","id","sequence_id",
+             "Username",
+             "BusinessCode",
              "Customer Group",
-             "Market - Customer",
+            
              "Market - Country",
         	 "Beam Category",
            "Document Item Currency",
            "Amount",
-           "Currency"  FROM "SMB"."SMB - Base Price - Category Addition - MiniBar"
-            WHERE "id"={} '''.format(id_value)
-            result=db.insert(query1)
-            if result=='failed' :raise ValueError
+           "Currency")
+        email_status=''
         
-            query2='''UPDATE "SMB"."SMB - Base Price - Category Addition - MiniBar"
-            SET 
-           "Username"='{0}',
-           "BusinessCode"='{1}',
-           "Customer Group"='{2}',
-          	   "Market - Customer"='{3}',
-           "Market - Country"='{4}',
-           "Beam Category"='{5}',
-           "Document Item Currency"='{6}',
-           "Amount"='{7}',
-           "Currency"=''{8}'',
-           "updated_on"='{9}',sequence_id= {10}
-            WHERE "id"={11} '''.format(username,BusinessCode,Customer_Group,Market_Customer,Market_Country,Beam_Category,Document_Item_Currency,Amount,Currency,date_time,sequence_id,id_value)
-            print(query2)
-            
-            result1=db.insert(query2)
-            if result1=='failed' :raise ValueError
-            
-            return {"status":"success"},200
-        except: {"status":"failure"},500
+        status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
+        if(status['status']=='success'):email_status=email([status['tableid']],tablename)
+        
+        
+        
+        if(email_status=='success'): return {"status":"success"},200
+        else: return {"status":"failure"},500
+    
+
    
 
 
 @smb_app1.route('/add_record_baseprice_category_minibar',methods=['POST'])
+@token_required
 def add_record_mini():
     
     today = date.today()
@@ -528,7 +782,7 @@ def add_record_mini():
     
     BusinessCode=(query_parameters['BusinessCode'])
     Customer_Group=(query_parameters["Customer_Group"])
-    Market_Customer=(query_parameters["Market_Customer"])
+   
     Market_Country =( query_parameters["Market_Country"])
     Beam_Category=(query_parameters["Beam_Category"])
     
@@ -538,51 +792,58 @@ def add_record_mini():
     Amount =( query_parameters["Amount"])
     Currency =( query_parameters["Currency"])
     
+     
+    # id_value=db.query('''select "SMB".get_max_id('"SMB"."SMB - Base Price - Category Addition"')''')[0][0]+1
     
-  
-    try:
+    flag='add'
+   
+    tablename='SMB - Base Price - Category Addition - MiniBar'    
+       
     
-        input_tuple=( username, BusinessCode, Customer_Group, Market_Customer, Market_Country, Beam_Category,Document_Item_Currency, Amount,Currency.strip("'"))
-        
-        query='''INSERT INTO "SMB"."SMB - Base Price - Category Addition - MiniBar"(
-             
-             "Username",
-             
+    input_tuple=(tablename,flag,username,BusinessCode,Customer_Group,Market_Country,Beam_Category,Document_Item_Currency,Amount,Currency)
+    col_tuple=("table_name","flag","Username",
              "BusinessCode",
              "Customer Group",
-             "Market - Customer",
+         
              "Market - Country",
         	 "Beam Category",
-             "Document Item Currency",
-             "Amount",
-             "Currency")
-             VALUES{};'''.format(input_tuple)
-        print(query)
-             
-       
-        result=db.insert(query)
-        if result=='failed' :raise ValueError
-            
-        return {"status":"success"},200
-    except:
-        return {"status":"failure"},500
+           "Document Item Currency",
+           "Amount",
+           "Currency")
+    
+    status=upsert(col_tuple,input_tuple,flag,tablename)
+    if(status['status']=='success'): email_status=email([status['tableid']],tablename)
+    
+    if(email_status=='success'): return {"status":"success"},200
+    else: return {"status":"failure"},500
+        
 
  
    
 @smb_app1.route('/upload_baseprice_category_minibar', methods=['GET','POST'])
+
 def  SMB_upload_baseprice_minibar():
-    
+            print("step1 : here")
+            request.files['filename']
+            
             f=request.files['filename']
+            print("step2 ",f.filename)
+            
              
+            
+            
             f.save(input_directory+f.filename)
+            
+            print("step3",type(f))
         
         
             smb_df=pd.read_excel(input_directory+f.filename,dtype=str)
             
-            df=smb_df[['id','BusinessCode', 'Customer Group','Market - Customer', 'Market - Country', 'Beam Category','Document Item Currency', 'Amount', 'Currency']]  
+            df=smb_df[['id','BusinessCode', 'Customer Group', 'Market - Country', 'Beam Category','Document Item Currency', 'Amount', 'Currency','sequence_id']]  
             df['id']=df['id'].astype(int)
+            df["sequence_id"]=df["sequence_id"].astype(int)
            
-            df_main = pd.read_sql('''select "id","BusinessCode", "Customer Group","Market - Customer", "Market - Country", "Beam Category","Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Base Price - Category Addition - MiniBar" where "active"='1' order by sequence_id ''', con=con)
+            df_main = pd.read_sql('''select "id","BusinessCode", "Customer Group", "Market - Country", "Beam Category","Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Base Price - Category Addition - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             
             
             df3 = df.merge(df_main, how='left', indicator=True)
@@ -600,6 +861,7 @@ def  SMB_upload_baseprice_minibar():
 
 
 @smb_app1.route('/validate_baseprice_category_minibar', methods=['GET','POST'])
+@token_required
 def  SMB_validate_baseprice_minibar():
     json_data=json.loads(request.data)
     username = getpass.getuser() 
@@ -608,57 +870,64 @@ def  SMB_validate_baseprice_minibar():
     
     df=pd.DataFrame(json_data["billet"]) 
     
+    email_status=''
     df.insert(0,'Username',username)
-    df.insert(1,'date_time',date_time)
     
-    try:
     
-        df=df[ ["Username","BusinessCode", "Customer_Group",
-       "Market_Customer", "Market_Country", "Beam_Category",
-       "Document_Item_Currency", "Amount", "Currency","date_time","id"]]
+    tablename='SMB - Base Price - Category Addition - MiniBar'    
         
-        query1='''INSERT INTO "SMB"."SMB - Base Price - Category Addition - MiniBar_History" 
-        SELECT 
-        "id",
-        "Username",now(),
-        "BusinessCode", "Customer Group","Market - Customer", "Market - Country", "Beam Category","Document Item Currency", "Amount", "Currency" FROM "SMB"."SMB - Base Price - Category Addition - MiniBar"
-        WHERE "id" in {} '''
-        
-        id_tuple=tuple(df["id"])
-        if len(id_tuple)==1:id=id_tuple[0] ;id_tuple=(id,id)
-        result=db.insert(query1.format(id_tuple))
-        print(query1.format(id_tuple))
-        if result=='failed' :raise ValueError
-        
-        
-        # looping for update query
-        for i in range(0,len(df)):
-           
-            query2='''UPDATE "SMB"."SMB - Base Price - Category Addition - MiniBar"
-        SET 
-       "Username"='%s',
-       "BusinessCode"='%s', "Customer Group"='%s',"Market - Customer"='%s', "Market - Country"='%s', "Beam Category"='%s',"Document Item Currency"='%s', "Amount"='%s', "Currency"=''%s'',
-       "updated_on"='%s'
-        WHERE "id"= '%s' ''' % tuple(df.loc[i])
-            result=db.insert(query2)
-            print(query2)
-            if result=='failed' :raise ValueError
+    flag='update'  
+    df.insert(1,'table_name',tablename)
+    col_tuple=("table_name","id","sequence_id",
+             "Username",
+             "BusinessCode",
+             "Customer Group",
+             
+             "Market - Country",
+        	 "Beam Category",
+           "Document Item Currency",
+           "Amount",
+           "Currency")
+    
+    col_list=['table_name','id','sequence_id',"Username",
+             "BusinessCode",
+             "Customer_Group",
             
-        return {"status":"success"},200
-    except: return {"status":"failure"},500
-
+             "Market_Country",
+        	 "Beam_Category",
+           "Document_Item_Currency",
+           "Amount",
+           "Currency"]
+    
+    
+    id_value=[]
+  
+    df=df[ col_list]
+    
+    for i in range(0,len(df)):
+        status=upsert(col_tuple,tuple(df.loc[i]),flag,tablename,df['id'][i])
+        id_value.append(status['tableid'])
+        
+    if(status['status']=='success'):
+        email_status=email(id_value,tablename)
+  
+    return {"status":"success"},200
+   
+   
   
          
 @smb_app1.route('/download_baseprice_category_minibar',methods=['GET'])
+
 def SMB_baseprice_catecory_minibar_download():
    
         now = datetime.now()
         try:
-            print("hi")
+           
             df = pd.read_sql('''select * from "SMB"."SMB - Base Price - Category Addition - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             
             df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
+            
             file=download_path+t+'baseprice_addition_minibar.xlsx'
             print(file)
             df.to_excel(file,index=False)
@@ -674,6 +943,7 @@ def SMB_baseprice_catecory_minibar_download():
 # incoterm exceptions
 
 @smb_app1.route('/data_baseprice_incoterm',methods=['GET','POST'])
+
 def SMB_data_baseprice_incoterm():
     # query_paramters 
     search_string=request.args.get("search_string")
@@ -694,7 +964,7 @@ def SMB_data_baseprice_incoterm():
     
     # fetching the data from database and filtering    
     try:
-        query='''select * from "SMB"."SMB - Base Price - Incoterm Exceptions" where "active"='1' order by "id"  OFFSET {} LIMIT {} '''.format(lowerLimit,upperLimit) 
+        query='''select * from "SMB"."SMB - Base Price - Incoterm Exceptions" where "active"='1' order by sequence_id OFFSET {} LIMIT {} '''.format(lowerLimit,upperLimit) 
         df=pd.read_sql(query,con=con )
         count=db.query('select count(*) from "SMB"."SMB - Base Price - Incoterm Exceptions" where "active"=1 ')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
@@ -711,10 +981,14 @@ def SMB_data_baseprice_incoterm():
         
 
 @smb_app1.route('/delete_record_baseprice_incoterm',methods=['POST','GET','DELETE'])
+@token_required
 def delete_record_baseprice_incoterm():  
-    id_value=request.args.get('id')
+    
+    id_value=json.loads(request.data)['id']
+    id_value.append(0)
+    id_value=tuple(id_value)
     try:
-        query='''UPDATE "SMB"."SMB - Base Price - Incoterm Exceptions" SET "active"=0 WHERE "id"={} '''.format(id_value)
+        query='''UPDATE "SMB"."SMB - Base Price - Incoterm Exceptions" SET "active"=0 WHERE "id" in {} '''.format(id_value)
         result=db.insert(query)
         
         
@@ -723,7 +997,8 @@ def delete_record_baseprice_incoterm():
         return {"status":"failure"},500
 
 
-@smb_app1.route('/get_record_baseprice_incoterm',methods=['GET','POST'])       
+@smb_app1.route('/get_record_baseprice_incoterm',methods=['GET','POST'])     
+@token_required  
 def get_record_incoterm():
     id_value=request.args.get('id')  
     
@@ -742,6 +1017,7 @@ def get_record_incoterm():
 
 
 @smb_app1.route('/update_record_baseprice_incoterm',methods=['POST'])
+@token_required
 def update_record_incoterm():
     
     today = date.today()
@@ -756,55 +1032,45 @@ def update_record_incoterm():
     Product_Division =( query_parameters["Product_Division"])
     Beam_Category=(query_parameters["Beam_Category"])
     Delivering_Mill=(query_parameters["Delivering_Mill"])
+    sequence_id=(query_parameters["sequence_id"])
+    
     
     
     Document_Item_Currency =( query_parameters["Document_Item_Currency"])
     Amount =( query_parameters["Amount"])
     Currency =( query_parameters["Currency"])
-    id_value=request.args.get('id')
-    
-    
-  
-   
-    try:
-         query1='''INSERT INTO "SMB"."SMB - Base Price - Incoterm Exceptions_History" 
-         SELECT 
-         "id","Username",now(),
-         "Market - Country",
+    id_value=(query_parameters['id_value'])
+    flag='update'
+      
+    tablename='SMB - Base Price - Incoterm Exceptions'    
+    input_tuple=(tablename,id_value,sequence_id,username,  Market_Country,Customer_Group,Incoterm1,Product_Division,Beam_Category,Delivering_Mill,Document_Item_Currency,Amount,Currency)
+    col_tuple=("table_name","id","sequence_id",
+         "Username",
+             "Market - Country",
          "Customer Group",
          "Incoterm1", "Product Division", "Beam Category", "Delivering Mill",
-         "Document Item Currency", "Amount", "Currency" FROM "SMB"."SMB - Base Price - Incoterm Exceptions"
-         WHERE "id"={} '''.format(id_value)
-         result=db.insert(query1)
-         if result=='failed' :raise ValueError
-     
-         query2='''UPDATE "SMB"."SMB - Base Price - Incoterm Exceptions"
-         SET 
-        "Username"='{0}',
-        "Market - Country"='{1}', 
-        "Customer Group"='{2}',
-        "Incoterm1"='{3}',
-        "Product Division"='{4}',
-        "Beam Category"='{5}', 
-        "Delivering Mill"='{6}',
-        "Document Item Currency"='{7}',
-        "Amount"='{8}', 
-        "Currency"=''{9}'',
-        "updated_on"='{10}'
-         WHERE "id"={11} '''.format(username,Market_Country,Customer_Group,Incoterm1,Product_Division,Beam_Category,Delivering_Mill,Document_Item_Currency,Amount,Currency,date_time,id_value)
-         
-         result1=db.insert(query2)
-         if result1=='failed' :raise ValueError
-         
-         return {"status":"success"},200
-    except:
-         return {"status":"failure"},500
-     
+         "Document Item Currency", "Amount", "Currency")
+    email_status=''
+    
+    status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
+    if(status['status']=='success'):email_status=email([status['tableid']],tablename)
+    
+    
+    
+    if(email_status=='success'): return {"status":"success"},200
+    else: return {"status":"failure"},500
+
+
+
+    
+    
+    
         
-       
+        
        
 
 @smb_app1.route('/add_record_baseprice_incoterm',methods=['POST'])
+@token_required
 def add_record_incoterm():
     
     today = date.today()
@@ -825,32 +1091,28 @@ def add_record_incoterm():
     Amount =( query_parameters["Amount"])
     Currency =( query_parameters["Currency"])
     
-    print(Currency)
+    flag='add'
+   
+    tablename='SMB - Base Price - Category Addition - MiniBar'    
+       
     
-    
-    try:
-        input_tuple=(username,  Market_Country,Customer_Group,Incoterm1,Product_Division,Beam_Category,Delivering_Mill,Document_Item_Currency,Amount,Currency.strip("'"))
-        query='''INSERT INTO "SMB"."SMB - Base Price - Incoterm Exceptions"(
-             
-             "Username",
+    input_tuple=(tablename,flag,username,  Market_Country,Customer_Group,Incoterm1,Product_Division,Beam_Category,Delivering_Mill,Document_Item_Currency,Amount,Currency)
+    col_tuple=("table_name","flag", "Username",
              "Market - Country",
          "Customer Group",
          "Incoterm1", "Product Division", "Beam Category", "Delivering Mill",
          "Document Item Currency", "Amount", "Currency")
-             VALUES{};'''.format(input_tuple)
-        result=db.insert(query) 
-        print(query)
-        if result=='failed' :raise ValueError
-        
-        return {"status":"success"},200
-    except:
-        return {"status":"failure"},500
-        
     
+    status=upsert(col_tuple,input_tuple,flag,tablename)
+    if(status['status']=='success'): email_status=email([status['tableid']],tablename)
+    
+    if(email_status=='success'): return {"status":"success"},200
+    else: return {"status":"failure"},500
 
 
    
 @smb_app1.route('/upload_baseprice_incoterm', methods=['GET','POST'])
+@token_required
 def  SMB_upload_baseprice_incoterm():
     
         f=request.files['filename']
@@ -863,12 +1125,13 @@ def  SMB_upload_baseprice_incoterm():
             
             df=smb_df[["id","Market - Country", "Customer Group",
        "Incoterm1", "Product Division", "Beam Category", "Delivering Mill",
-       "Document Item Currency", "Amount", "Currency"]]  
+       "Document Item Currency", "Amount", "Currency","sequence_id"]]  
             df["id"]=df["id"].astype(int)
+            df["sequence_id"].astype(int)
             
             df_main = pd.read_sql('''select "id","Market - Country", "Customer Group",
        "Incoterm1", "Product Division", "Beam Category", "Delivering Mill",
-       "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Base Price - Incoterm Exceptions" where "active"='1' order by "id" ''', con=con)
+       "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Base Price - Incoterm Exceptions" where "active"='1' order by sequence_id ''', con=con)
             
             
             df3 = df.merge(df_main, how='left', indicator=True)
@@ -888,77 +1151,72 @@ def  SMB_upload_baseprice_incoterm():
    
 
 @smb_app1.route('/validate_baseprice_incoterm', methods=['GET','POST'])
+@token_required
 def  SMB_validate_baseprice_incoterm():
-        json_data=json.loads(request.data)
-        username = getpass.getuser() 
-        now = datetime.now()
-        date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
-        
-        df=pd.DataFrame(json_data["billet"]) 
-        
-        df.insert(0,'Username',username)
-        df.insert(1,'date_time',date_time)
+    json_data=json.loads(request.data)
+    username = getpass.getuser() 
+    now = datetime.now()
+    date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     
-        print(json_data)
+    df=pd.DataFrame(json_data["billet"]) 
+    email_status=''
+    df.insert(0,'Username',username)
     
-        df=df[ ["Username","Market_Country", "Customer_Group",
-       "Incoterm1", "Product_Division", "Beam_Category", "Delivering_Mill",
-       "Document_Item_Currency", "Amount", "Currency","date_time","id"]]
-        
-        query1='''INSERT INTO "SMB"."SMB - Base Price - Incoterm Exceptions_History" 
-        SELECT 
-        "id",
-        "Username",now(),
-        "Market - Country", "Customer Group",
-       "Incoterm1", "Product Division", "Beam Category", "Delivering Mill",
-       "Document Item Currency", "Amount", "Currency" FROM "SMB"."SMB - Base Price - Incoterm Exceptions"
-        WHERE "id" in {} '''
-        
-        id_tuple=tuple(df["id"])
-        if len(id_tuple)==1:id=id_tuple[0] ;id_tuple=(id,id)
-        result=db.insert(query1.format(id_tuple))
-        print(query1.format(id_tuple))
-        if result=='failed' :raise ValueError
-        
-        
-        # looping for update query
-        for i in range(0,len(df)):
-           
-            query2='''UPDATE "SMB"."SMB - Base Price - Incoterm Exceptions"
-        SET 
-       "Username"='%s',
-       "Market - Country"='%s', "Customer Group"='%s',
-       "Incoterm1"='%s', "Product Division"='%s', "Beam Category"='%s', "Delivering Mill"='%s',
-       "Document Item Currency"='%s', "Amount"='%s', "Currency"=''%s'',
-       "updated_on"='%s'
-        WHERE "id"= '%s' ''' % tuple(df.loc[i])
-            result=db.insert(query2)
-            print(query2)
-            if result=='failed' :raise ValueError
-            
-        return {"status":"success"},200
+    tablename='SMB - Base Price - Category Addition' 
+    flag='update'  
+    df.insert(1,'table_name',tablename)
+    col_tuple=("table_name","id","sequence_id",
+         "Username",
+             "Market - Country",
+         "Customer Group",
+         "Incoterm1", "Product Division", "Beam Category", "Delivering Mill",
+         "Document Item Currency", "Amount", "Currency")
    
+    col_list=["table_name","id","sequence_id",
+         "Username",
+             "Market - Country",
+         "Customer Group",
+         "Incoterm1", "Product Division", "Beam Category", "Delivering Mill",
+         "Document Item Currency", "Amount", "Currency"]
+    
+    
+    id_value=[]
   
+    df=df[ col_list]
+    
+    for i in range(0,len(df)):
+        status=upsert(col_tuple,tuple(df.loc[i]),flag,tablename,df['id'][i])
+        id_value.append(status['tableid'])
+        
+    if(status['status']=='success'):
+        email_status=email(id_value,tablename)
+  
+    return {"status":"success"},200
         
 @smb_app1.route('/download_baseprice_incoterm',methods=['GET'])
+
 def SMB_baseprice_download_incoterm():
    
         now = datetime.now()
         try:
-            df = pd.read_sql('''select * from "SMB"."SMB - Base Price - Incoterm Exceptions" where "active"='1' order by "id" ''', con=con)
+            df = pd.read_sql('''select * from "SMB"."SMB - Base Price - Incoterm Exceptions" where "active"='1' order by sequence_id ''', con=con)
             df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
-            df.to_excel('C:/Users/Administrator/Downloads/'+now.strftime("%d-%m-%Y-%H-%M-%S") +'baseprice_incoterm_exceptions.xlsx',index=False)
-            return {"status":"success"},200
+            t=now.strftime("%d-%m-%Y-%H-%M-%S")
+            file=download_path+t+'extra_certificate.xlsx'
+            print(file)
+            df.to_excel(file,index=False)
+            
+            return send_file(file, as_attachment=True)
+           
         except:
             return {"status":"failure"},500
-
-
 
 # *****************************************************************************************************************************************
 # smb extra certificate
 
 
 @smb_app1.route('/data_extra_certificate',methods=['GET','POST'])
+@token_required
 def extra_certificate_data():
     # query_paramters 
     search_string=request.args.get("search_string")
@@ -979,8 +1237,8 @@ def extra_certificate_data():
     
     # fetching the data from database and filtering    
     try:
-        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Certificate" where "active"='1' order by "id"  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
-        count=db.query('select count(*) from "SMB"."SMB - Extra - Certificate"')[0][0]
+        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Certificate" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        count=db.query('select count(*) from "SMB"."SMB - Extra - Certificate" where "active"=1 ')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         df.rename(columns={"Market_-_Country":"Market_Country"},inplace=True)
         
@@ -998,10 +1256,13 @@ def extra_certificate_data():
 
   
 @smb_app1.route('/delete__record_extra_certificate',methods=['POST','GET','DELETE'])
+@token_required
 def delete_extra_certificate():  
-    id_value=request.args.get('id')
+    id_value=json.loads(request.data)['id']
+    id_value.append(0)
+    id_value=tuple(id_value)
     try:
-        query='''UPDATE "SMB"."SMB - Extra - Certificate" SET "active"=0 WHERE "id"={} '''.format(id_value)
+        query='''UPDATE "SMB"."SMB - Extra - Certificate" SET "active"=0 WHERE "id" in {} '''.format(id_value)
         result=db.insert(query)
         
         return {"status":"success"},200
@@ -1009,7 +1270,8 @@ def delete_extra_certificate():
         return {"status":"failure"},500
 
 
-@smb_app1.route('/get_record_extra_certificate',methods=['GET','POST'])       
+@smb_app1.route('/get_record_extra_certificate',methods=['GET','POST']) 
+@token_required      
 def get_record_extra_certificate():
     id_value=request.args.get('id')  
     
@@ -1028,6 +1290,7 @@ def get_record_extra_certificate():
 
 
 @smb_app1.route('/update_record_extra_certificate',methods=['POST'])
+@token_required
 def add_record_extra_certificate():
     
     today = date.today()
@@ -1041,6 +1304,7 @@ def add_record_extra_certificate():
     Grade_Category =( query_parameters["Grade_Category"])
     Market_Country =( query_parameters["Market_Country"])
     Delivering_Mill=(query_parameters["Delivering_Mill"])
+    sequence_id=(query_parameters["sequence_id"])
     
     
     Document_Item_Currency =( query_parameters["Document_Item_Currency"])
@@ -1071,8 +1335,9 @@ def add_record_extra_certificate():
        "Document Item Currency"='{6}',
        "Amount"='{7}',
        "Currency"=''{8}'',
-       "updated_on"='{9}'
-        WHERE "id"={10} '''.format(username,BusinessCode,Certificate,Grade_Category,Market_Country,Delivering_Mill,Document_Item_Currency,Amount,Currency,date_time,id_value)
+       "updated_on"='{9}',
+       sequence_id={10}
+        WHERE "id"={11} '''.format(username,BusinessCode,Certificate,Grade_Category,Market_Country,Delivering_Mill,Document_Item_Currency,Amount,Currency,date_time,sequence_id,id_value)
         result1=db.insert(query2)
         print(query2)
         if result1=='failed' :raise ValueError
@@ -1085,6 +1350,7 @@ def add_record_extra_certificate():
      
         
 @smb_app1.route('/add_record_extra_certificate',methods=['GET','POST'])
+@token_required
 def smb_add_certificate():
     today = date.today()
     username = getpass.getuser()
@@ -1128,6 +1394,7 @@ def smb_add_certificate():
 
    
 @smb_app1.route('/upload_extra_certificate', methods=['GET','POST'])
+@token_required
 def  Upload_extra_certificate():
     
         f=request.files['filename']
@@ -1140,12 +1407,14 @@ def  Upload_extra_certificate():
             
             df=smb_df[['id',"BusinessCode", "Certificate",
        "Grade Category", "Market - Country", "Delivering Mill",
-       "Document Item Currency", "Amount", "Currency"]]  
+       "Document Item Currency", "Amount", "Currency","sequence_id"]]  
             df["id"]=df["id"].astype(int)
+            df["sequence_id"]=df["sequence_id"].astype(int)
+            
             
             df_main = pd.read_sql('''select "id","BusinessCode", "Certificate",
        "Grade Category", "Market - Country", "Delivering Mill",
-       "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Certificate" where "active"='1' order by "id" ''', con=con)
+       "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Certificate" where "active"='1' order by sequence_id ''', con=con)
             
             
             df3 = df.merge(df_main, how='left', indicator=True)
@@ -1164,6 +1433,7 @@ def  Upload_extra_certificate():
 
 
 @smb_app1.route('/validate_extra_certificate', methods=['GET','POST'])
+@token_required
 def  validate_extra_certificate():
     
         
@@ -1181,7 +1451,7 @@ def  validate_extra_certificate():
    
             df=df[ ["Username","BusinessCode", "Certificate",
            "Grade_Category", "Market_Country", "Delivering_Mill",
-           "Document_Item_Currency", "Amount", "Currency","date_time","id"]]
+           "Document_Item_Currency", "Amount", "Currency","date_time","sequence_id","id"]]
             
             query1='''INSERT INTO "SMB"."SMB - Extra - Certificate_History" 
             SELECT 
@@ -1209,7 +1479,7 @@ def  validate_extra_certificate():
            "Document Item Currency"='%s',
            "Amount"='%s',
            "Currency"=''%s'',
-           "updated_on"='%s'
+           "updated_on"='%s',sequence_id='%s'
             WHERE "id"= '%s' ''' % tuple(df.loc[i])
                 result=db.insert(query2)
                 if result=='failed' :raise ValueError
@@ -1221,11 +1491,12 @@ def  validate_extra_certificate():
             
          
 @smb_app1.route('/download_extra_certificate',methods=['GET'])
+
 def download_extra_certificate():
    
         now = datetime.now()
         try:
-            df = pd.read_sql('''select * from "SMB"."SMB - Extra - Certificate" where "active"='1' order by "id" ''', con=con)
+            df = pd.read_sql('''select * from "SMB"."SMB - Extra - Certificate" where "active"='1' order by sequence_id ''', con=con)
             df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'extra_certificate.xlsx'
@@ -1244,6 +1515,7 @@ def download_extra_certificate():
 
 
 @smb_app1.route('/data_extra_certificate_minibar',methods=['GET','POST'])
+@token_required
 def extra_certificate_data_minibar():
     # query_paramters 
     search_string=request.args.get("search_string")
@@ -1263,7 +1535,7 @@ def extra_certificate_data_minibar():
     # fetching the data from database and filtering    
     try:
         df = pd.read_sql('''select * from "SMB"."SMB - Extra - Certificate - MiniBar" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
-        count=db.query('select count(*) from "SMB"."SMB - Extra - Certificate - MiniBar"')[0][0]
+        count=db.query('select count(*) from "SMB"."SMB - Extra - Certificate - MiniBar" where "active"=1 ')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer":"Market_Customer"},inplace=True)
         
@@ -1281,10 +1553,13 @@ def extra_certificate_data_minibar():
 
   
 @smb_app1.route('/delete_record_extra_certificate_minibar',methods=['POST','GET','DELETE'])
+@token_required
 def delete_extra_certificate_minibar():  
-    id_value=request.args.get('id')
+    id_value=json.loads(request.data)['id']
+    id_value.append(0)
+    id_value=tuple(id_value)
     try:
-        query='''UPDATE "SMB"."SMB - Extra - Certificate - MiniBar" SET "active"=0 WHERE "id"={} '''.format(id_value)
+        query='''UPDATE "SMB"."SMB - Extra - Certificate - MiniBar" SET "active"=0 WHERE "id" in {} '''.format(id_value)
         result=db.insert(query)
         
 
@@ -1314,7 +1589,9 @@ def get_record_extra_certificate_minibar():
 
 
 @smb_app1.route('/update_record_extra_certificate_minibar',methods=['POST'])
+@token_required
 def update_record_extra_certificate_minibar():
+    
     
     today = date.today()
     username = getpass.getuser()
@@ -1324,7 +1601,7 @@ def update_record_extra_certificate_minibar():
     
     BusinessCode=(query_parameters['BusinessCode'])
     Customer_Group=(query_parameters['Customer_Group'])
-    Market_Customer=(query_parameters['Market_Customer'])
+   
     Market_Country =( query_parameters["Market_Country"])
     Certificate=(query_parameters['Certificate'])
     Grade_Category =( query_parameters["Grade_Category"])
@@ -1352,13 +1629,13 @@ def update_record_extra_certificate_minibar():
         SET 
        "Username"='{0}',
        "BusinessCode"='{1}', "Customer Group"='{2}',
-       "Market - Customer"='{3}', "Market - Country"='{4}', "Certificate"='{5}',
-       "Grade Category"='{6}',
-       "Document Item Currency"='{7}',
-       "Amount"='{8}',
-       "Currency"=''{9}'',
-       "updated_on"='{10}' , sequence_id={11}
-        WHERE "id"={12} '''.format(username,BusinessCode,Customer_Group,Market_Customer,Market_Country,Certificate,Grade_Category,Document_Item_Currency,Amount,Currency,date_time,sequence_id,id_value)
+       "Market - Country"='{3}', "Certificate"='{4}',
+       "Grade Category"='{5}',
+       "Document Item Currency"='{6}',
+       "Amount"='{7}',
+       "Currency"=''{8}'',
+       "updated_on"='{9}' , sequence_id={10}
+        WHERE "id"={11} '''.format(username,BusinessCode,Customer_Group,Market_Country,Certificate,Grade_Category,Document_Item_Currency,Amount,Currency,date_time,sequence_id,id_value)
         result1=db.insert(query2)
         if result1=='failed' :raise ValueError
         print(query1)
@@ -1370,6 +1647,7 @@ def update_record_extra_certificate_minibar():
      
 
 @smb_app1.route('/add_record_extra_certificate_minibar',methods=['GET','POST'])
+@token_required
 def add_record_extra_certificate_minibar():
     
     
@@ -1379,7 +1657,7 @@ def add_record_extra_certificate_minibar():
     
     BusinessCode=(query_parameters['BusinessCode'])
     Customer_Group=(query_parameters['Customer_Group'])
-    Market_Customer=(query_parameters['Market_Customer'])
+   
     Market_Country =( query_parameters["Market_Country"])
     Certificate=(query_parameters['Certificate'])
     Grade_Category =( query_parameters["Grade_Category"])
@@ -1390,12 +1668,12 @@ def add_record_extra_certificate_minibar():
     Currency =( query_parameters["Currency"])
     
     try:
-        input_tuple=(username, BusinessCode, Customer_Group,Market_Customer,Market_Country,Certificate,Grade_Category, Document_Item_Currency, Amount,Currency.strip("'"))
+        input_tuple=(username, BusinessCode, Customer_Group,Market_Customer,Market_Country,Certificate,Grade_Category, Document_Item_Currency, Amount,Currency)
         query='''INSERT INTO "SMB"."SMB - Extra - Certificate - MiniBar"(
              
              "Username",
              "BusinessCode", "Customer Group",
-       "Market - Customer", "Market - Country", "Certificate",
+        "Market - Country", "Certificate",
        "Grade Category",
              "Document Item Currency",
              "Amount",
@@ -1412,6 +1690,7 @@ def add_record_extra_certificate_minibar():
 
    
 @smb_app1.route('/upload_extra_certificate_minibar', methods=['GET','POST'])
+@token_required
 def  Upload_extra_certificate_minibar():
     
         f=request.files['filename']
@@ -1423,13 +1702,13 @@ def  Upload_extra_certificate_minibar():
             smb_df=pd.read_excel(input_directory+f.filename,dtype=str)
             
             df=smb_df[["id","BusinessCode", "Customer Group",
-       "Market - Customer", "Market - Country", "Certificate",
+        "Market - Country", "Certificate",
        "Grade Category", "Document Item Currency", "Amount", "Currency","sequence_id"]]  
             df["id"]=df["id"].astype(int)
             df["sequence_id"]=df["sequence_id"].astype(int)
             
             df_main = pd.read_sql('''select "id","BusinessCode", "Customer Group",
-       "Market - Customer", "Market - Country", "Certificate",
+       "Market - Country", "Certificate",
        "Grade Category", "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Certificate - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             
             
@@ -1450,6 +1729,7 @@ def  Upload_extra_certificate_minibar():
 
 
 @smb_app1.route('/validate_extra_certificate_minibar', methods=['GET','POST'])
+@token_required
 def  validate_extra_certificate_minibar():
          json_data=json.loads(request.data)
          username = getpass.getuser() 
@@ -1463,7 +1743,7 @@ def  validate_extra_certificate_minibar():
          try:
 
              df=df[ ["Username","BusinessCode", "Customer_Group",
-        "Market_Customer", "Market_Country", "Certificate",
+       "Market_Country", "Certificate",
         "Grade_Category", "Document_Item_Currency", "Amount", "Currency","date_time","sequence_id","id"]]
              
              query1='''INSERT INTO "SMB"."SMB - Extra - Certificate - MiniBar_History" 
@@ -1471,7 +1751,7 @@ def  validate_extra_certificate_minibar():
              "id",
              "Username",now(),
              "BusinessCode", "Customer Group",
-        "Market - Customer", "Market - Country", "Certificate",
+        "Market - Country", "Certificate",
         "Grade Category", "Document Item Currency", "Amount", "Currency"  FROM "SMB"."SMB - Extra - Certificate - MiniBar"
              WHERE "id" in {} '''
              
@@ -1487,7 +1767,7 @@ def  validate_extra_certificate_minibar():
              SET 
             "Username"='%s',
             "BusinessCode"='%s', "Customer Group"='%s',
-        "Market - Customer"='%s', "Market - Country"='%s', "Certificate"='%s',
+        "Market - Country"='%s', "Certificate"='%s',
         "Grade Category"='%s', 
             "Document Item Currency"='%s',
             "Amount"='%s',
@@ -1504,6 +1784,7 @@ def  validate_extra_certificate_minibar():
         
          
 @smb_app1.route('/download_extra_certificate_minibar',methods=['GET'])
+
 def  download_extra_certificate_minibar():
    
         now = datetime.now()
@@ -1549,8 +1830,8 @@ def data_delivery_mill():
     
     # fetching the data from database and filtering    
     try:
-        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Delivery Mill" where "active"='1' order by "id"  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
-        count=db.query('select count(*) from "SMB"."SMB - Extra - Delivery Mill"')[0][0]
+        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Delivery Mill" where "active"='1' order by sequence_id OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        count=db.query('select count(*) from "SMB"."SMB - Extra - Delivery Mill" where "active"=1 ')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         df.rename(columns={"Market_-_Country":"Market_Country"},inplace=True)
         
@@ -1568,10 +1849,13 @@ def data_delivery_mill():
 
   
 @smb_app1.route('/delete_record_delivery_mill',methods=['POST','GET','DELETE'])
+@token_required
 def delete_record_delivery_mill():  
-    id_value=request.args.get('id')
+    id_value=json.loads(request.data)['id']
+    id_value.append(0)
+    id_value=tuple(id_value)
     try:
-        query='''UPDATE "SMB"."SMB - Extra - Delivery Mill" SET "active"=0 WHERE "id"={} '''.format(id_value)
+        query='''UPDATE "SMB"."SMB - Extra - Delivery Mill" SET "active"=0 WHERE "id" in {} '''.format(id_value)
         result=db.insert(query)
         
 
@@ -1581,7 +1865,8 @@ def delete_record_delivery_mill():
         return {"status":"failure"},500
 
 
-@smb_app1.route('/get_record_delivery_mill',methods=['GET','POST'])       
+@smb_app1.route('/get_record_delivery_mill',methods=['GET','POST']) 
+@token_required      
 def get_record_delivery_mill():
     id_value=request.args.get('id')  
     
@@ -1600,6 +1885,7 @@ def get_record_delivery_mill():
 
 
 @smb_app1.route('/update_record_delivery_mill',methods=['POST'])
+@token_required
 def update_record_delivery_mill():
     
     today = date.today()
@@ -1618,7 +1904,7 @@ def update_record_delivery_mill():
     Amount =( query_parameters["Amount"])
     Currency =( query_parameters["Currency"])
     id_value=(query_parameters['id'])
-    
+    sequence_id=(query_parameters['sequence_id'])
     try:
         
         query1='''INSERT INTO "SMB"."SMB - Extra - Delivery Mill_History"
@@ -1641,8 +1927,8 @@ def update_record_delivery_mill():
        "Document Item Currency"='{6}',
        "Amount"='{7}',
        "Currency"=''{8}'',
-       "updated_on"='{9}'
-        WHERE "id"={10} '''.format(username,BusinessCode,Market_Country,Delivering_Mill,Product_Division,Beam_Category,Document_Item_Currency,Amount,Currency,date_time,id_value)
+       "updated_on"='{9}',sequence_id={10}
+        WHERE "id"={11} '''.format(username,BusinessCode,Market_Country,Delivering_Mill,Product_Division,Beam_Category,Document_Item_Currency,Amount,Currency,date_time,sequence_id,id_value)
         result1=db.insert(query2)
         print(query2)
         if result1=='failed' :raise ValueError
@@ -1654,6 +1940,7 @@ def update_record_delivery_mill():
         return {"status":"failure"},500
 
 @smb_app1.route('/add_record_delivery_mill',methods=['POST'])
+@token_required
 def add_record_delivery_mill():
     
     
@@ -1695,6 +1982,7 @@ def add_record_delivery_mill():
 
    
 @smb_app1.route('/upload_delivery_mill', methods=['GET','POST'])
+@token_required
 def upload_delivery_mill():
         f=request.files['filename']
   
@@ -1706,12 +1994,13 @@ def upload_delivery_mill():
             
             df=smb_df[["id","BusinessCode", "Market - Country",
        "Delivering Mill", "Product Division", "Beam Category",
-       "Document Item Currency", "Amount", "Currency"]]  
+       "Document Item Currency", "Amount", "Currency","sequence_id"]]  
             df["id"]=df["id"].astype(int)
+            df["sequence_id"]=df["sequence_id"].astype(int)
             
             df_main = pd.read_sql('''select "id","BusinessCode", "Market - Country",
        "Delivering Mill", "Product Division", "Beam Category",
-       "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Delivery Mill" where "active"='1' order by "id" ''', con=con)
+       "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Delivery Mill" where "active"='1' order by sequence_id ''', con=con)
             
             
             df3 = df.merge(df_main, how='left', indicator=True)
@@ -1734,6 +2023,7 @@ def upload_delivery_mill():
 
 
 @smb_app1.route('/validate_delivery_mill', methods=['GET','POST'])
+@token_required
 def  validate_delivery_mill():
     
         
@@ -1750,7 +2040,7 @@ def  validate_delivery_mill():
        
         df=df[ ["Username","BusinessCode", "Market_Country",
        "Delivering_Mill", "Product_Division", "Beam_Category",
-       "Document_Item_Currency", "Amount", "Currency","date_time","id"]]
+       "Document_Item_Currency", "Amount", "Currency","date_time","sequence_id","id"]]
         
         query1='''INSERT INTO "SMB"."SMB - Extra - Delivery Mill_History"
         SELECT 
@@ -1778,7 +2068,7 @@ def  validate_delivery_mill():
        "Document Item Currency"='%s',
        "Amount"='%s',
        "Currency"=''%s'',
-       "updated_on"='%s'
+       "updated_on"='%s',sequence_id='%s'
         WHERE "id"= '%s' ''' % tuple(df.loc[i])
             result=db.insert(query2)
             if result=='failed' :raise ValueError
@@ -1792,7 +2082,7 @@ def  download_delivery_mill():
    
         now = datetime.now()
         try:
-            df = pd.read_sql('''select * from "SMB"."SMB - Extra - Delivery Mill" where "active"='1' order by "id" ''', con=con)
+            df = pd.read_sql('''select * from "SMB"."SMB - Extra - Delivery Mill" where "active"='1' order by sequence_id ''', con=con)
             df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'delivery_mill.xlsx'
@@ -1813,6 +2103,7 @@ def  download_delivery_mill():
 
 
 @smb_app1.route('/data_delivery_mill_minibar',methods=['GET','POST'])
+@token_required
 def data_delivery_mill_minibar():
     # query_paramters 
     search_string=request.args.get("search_string")
@@ -1834,7 +2125,7 @@ def data_delivery_mill_minibar():
     # fetching the data from database and filtering    
     try:
         df = pd.read_sql('''select * from "SMB"."SMB - Extra - Delivery Mill - MiniBar" where "active"='1' order by sequence_id OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
-        count=db.query('select count(*) from "SMB"."SMB - Extra - Delivery Mill - MiniBar"')[0][0]
+        count=db.query('select count(*) from "SMB"."SMB - Extra - Delivery Mill - MiniBar" where "active"=1 ')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
         df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer_Group":"Market_Customer_Group","Market_-_Customer":"Market_Customer"},inplace=True)
@@ -1853,10 +2144,13 @@ def data_delivery_mill_minibar():
 
   
 @smb_app1.route('/delete_record_delivery_mill_minibar',methods=['POST','GET','DELETE'])
+@token_required
 def delete_record_delivery_mill_minibar():  
-    id_value=request.args.get('id')
+    id_value=json.loads(request.data)['id']
+    id_value.append(0)
+    id_value=tuple(id_value)
     try:
-        query='''UPDATE "SMB"."SMB - Extra - Delivery Mill - MiniBar" SET "active"=0 WHERE "id"={} '''.format(id_value)
+        query='''UPDATE "SMB"."SMB - Extra - Delivery Mill - MiniBar" SET "active"=0 WHERE "id" in {} '''.format(id_value)
         result=db.insert(query)
         
         return {"status":"success"},200
@@ -1883,6 +2177,7 @@ def get_record_delivery_mill_minibar():
 
 
 @smb_app1.route('/update_record_delivery_mill_minibar',methods=['POST'])
+@token_required
 def update_record_delivery_mill_minibar():
     
         today = date.today()
@@ -1894,7 +2189,7 @@ def update_record_delivery_mill_minibar():
         
         Market_Country=(query_parameters['Market_Country'])
         Market_Customer_Group=(query_parameters['Market_Customer_Group'])
-        Market_Customer=(query_parameters['Market_Customer'])
+       
         Delivering_Mill=(query_parameters["Delivering_Mill"])
         Product_Division =( query_parameters["Product_Division"])
         id_value=(query_parameters['id'])
@@ -1920,13 +2215,13 @@ def update_record_delivery_mill_minibar():
             SET 
            "Username"='{0}',
            "Market - Country"='{1}',
-           "Market - Customer Group"='{2}', "Market - Customer"='{3}', "Delivering Mill"='{4}',
-           "Product Division"='{5}', 
-           "Document Item Currency"='{6}',
-           "Amount"='{7}',
-           "Currency"=''{8}'',
-           "updated_on"='{9}', sequence_id={10}
-            WHERE "id"={11} '''.format(username,Market_Country,Market_Customer_Group,Market_Customer,Delivering_Mill,Product_Division,Document_Item_Currency,Amount,Currency,date_time,sequence_id,id_value)
+           "Market - Customer Group"='{2}',"Delivering Mill"='{3}',
+           "Product Division"='{4}', 
+           "Document Item Currency"='{5}',
+           "Amount"='{6}',
+           "Currency"=''{7}'',
+           "updated_on"='{8}', sequence_id={9}
+            WHERE "id"={10} '''.format(username,Market_Country,Market_Customer_Group,Delivering_Mill,Product_Division,Document_Item_Currency,Amount,Currency,date_time,sequence_id,id_value)
             result1=db.insert(query2)
             print(query2)
             if result1=='failed' :raise ValueError
@@ -1936,6 +2231,7 @@ def update_record_delivery_mill_minibar():
             return {"status":"failure"}
     
 @smb_app1.route('/add_record_delivery_mill_minibar',methods=['POST'])
+@token_required
 def add_record_delivery_mill_minibar():
     
     username = getpass.getuser()
@@ -1945,7 +2241,7 @@ def add_record_delivery_mill_minibar():
     
     Market_Country=(query_parameters['Market_Country'])
     Market_Customer_Group=(query_parameters['Market_Customer_Group'])
-    Market_Customer=(query_parameters['Market_Customer'])
+  
     Delivering_Mill=(query_parameters["Delivering_Mill"])
     Product_Division =( query_parameters["Product_Division"])
     Document_Item_Currency =( query_parameters["Document_Item_Currency"])
@@ -1953,12 +2249,12 @@ def add_record_delivery_mill_minibar():
     Currency =( query_parameters["Currency"])
     
     try:
-        input_tuple=(username,   Market_Country,Market_Customer_Group,Market_Customer,Delivering_Mill, Product_Division,Document_Item_Currency, Amount,Currency.strip("'"))
+        input_tuple=(username,   Market_Country,Market_Customer_Group,Delivering_Mill, Product_Division,Document_Item_Currency, Amount,Currency)
         query='''INSERT INTO "SMB"."SMB - Extra - Delivery Mill - MiniBar"(
              
              "Username",
              "Market - Country",
-       "Market - Customer Group", "Market - Customer", "Delivering Mill",
+       "Market - Customer Group",  "Delivering Mill",
        "Product Division", "Document Item Currency", "Amount", "Currency")
              VALUES{};'''.format(input_tuple)
              
@@ -1975,6 +2271,7 @@ def add_record_delivery_mill_minibar():
     
    
 @smb_app1.route('/upload_delivery_mill_minibar', methods=['GET','POST'])
+@token_required
 def upload_delivery_mill_minibar():
     
         f=request.files['filename']
@@ -1986,13 +2283,13 @@ def upload_delivery_mill_minibar():
             smb_df=pd.read_excel(input_directory+f.filename,dtype=str)
             
             df=smb_df[["id","Market - Country",
-       "Market - Customer Group", "Market - Customer", "Delivering Mill",
+       "Market - Customer Group",  "Delivering Mill",
        "Product Division", "Document Item Currency", "Amount", "Currency","sequence_id"]]  
             df["id"]=df["id"].astype(int)
             df["sequence_id"]=df["sequence_id"].astype(int)
             
             df_main = pd.read_sql('''select "id","Market - Country",
-       "Market - Customer Group", "Market - Customer", "Delivering Mill",
+       "Market - Customer Group", "Delivering Mill",
        "Product Division", "Document Item Currency", "Amount", "Currency","sequence_id" from "SMB"."SMB - Extra - Delivery Mill - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             
             
@@ -2013,6 +2310,7 @@ def upload_delivery_mill_minibar():
 
 
 @smb_app1.route('/validate_delivery_mill_minibar', methods=['GET','POST'])
+@token_required
 def  validate_delivery_mill_minibar():
     
         
@@ -2030,7 +2328,7 @@ def  validate_delivery_mill_minibar():
     
        
                 df=df[ ["Username","Market_Country",
-               "Market_Customer_Group", "Market_Customer", "Delivering_Mill",
+               "Market_Customer_Group", "Delivering_Mill",
                "Product_Division", "Document_Item_Currency", "Amount", "Currency","date_time","sequence_id","id"]]
                 
                 query1='''INSERT INTO "SMB"."SMB - Extra - Delivery Mill - MiniBar_History"
@@ -2038,7 +2336,7 @@ def  validate_delivery_mill_minibar():
                 "id",
                 "Username",now(),
                 "Market - Country",
-               "Market - Customer Group", "Market - Customer", "Delivering Mill",
+               "Market - Customer Group", "Delivering Mill",
                "Product Division", "Document Item Currency", "Amount", "Currency"  FROM "SMB"."SMB - Extra - Delivery Mill - MiniBar"
                 WHERE "id" in {} '''
                 
@@ -2070,6 +2368,7 @@ def  validate_delivery_mill_minibar():
                 return {"status":"failure"},500        
            
 @smb_app1.route('/download_delivery_mill_minibar',methods=['GET'])
+
 def  download_delivery_mill_minibar():
    
         now = datetime.now()
@@ -2089,6 +2388,7 @@ def  download_delivery_mill_minibar():
         
     
 @smb_app1.route('/history_delivering_mill',methods=['GET'])
+
 def  download_delivery_mill_minibar_history():
     search_string=request.args.get("search_string")
     

@@ -26,6 +26,8 @@ import os
 from sqlalchemy import create_engine
 import getpass
 from datetime import datetime,date
+from smb_phase2 import token_required
+
 
 
 
@@ -78,15 +80,14 @@ CORS(smb_app3)
 
 db=Database()
 
-download_path='C:/Users/Administrator/Documents/test_path/'
-input_directory='C:/Users/Administrator/Documents/test_path/'
+download_path="/home/ubuntu/mega_dir/"
+input_directory="/home/ubuntu/mega_dir/"
 
 
+# download_path="C:/Users/Administrator/Documents/"
+# input_directory="C:/Users/Administrator/Documents/"
 
-# download_path='/home/ubuntu/SMBDir/smb_download/'
 
-
-# input_directory='/home/ubuntu/SMBDir/smb_upload/'
 
 con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
 
@@ -96,6 +97,7 @@ con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',
 # transport mode
 
 @smb_app3.route('/data_transport',methods=['GET','POST'])
+@token_required
 def  data_transport():
     # query_paramters 
     search_string=request.args.get("search_string")
@@ -118,8 +120,8 @@ def  data_transport():
     
     # fetching the data from database and filtering    
     try:
-        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Transport Mode" where "active"='1' order by "id"  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
-        count=db.query('select count(*) from "SMB"."SMB - Extra - Transport Mode"')[0][0]
+        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Transport Mode" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        count=db.query('select count(*) from "SMB"."SMB - Extra - Transport Mode" where "active"=1 ')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
         df.rename(columns={"Market_-_Country":"Market_Country"},inplace=True)
@@ -138,10 +140,13 @@ def  data_transport():
 
   
 @smb_app3.route('/delete_record_transport',methods=['POST','GET','DELETE'])
+@token_required
 def delete_record_transport():  
-    id_value=request.args.get('id')
+    id_value=json.loads(request.data)['id']
+    id_value.append(0)
+    id_value=tuple(id_value)
     try:
-        query='''UPDATE "SMB"."SMB - Extra - Transport Mode" SET "active"=0 WHERE "id"={} '''.format(id_value)
+        query='''UPDATE "SMB"."SMB - Extra - Transport Mode" SET "active"=0 WHERE "id" in {} '''.format(id_value)
         result=db.insert(query)
         
         return {"status":"success"},200
@@ -149,7 +154,8 @@ def delete_record_transport():
         return {"status":"failure"},500
 
 
-@smb_app3.route('/get_record_transport',methods=['GET','POST'])       
+@smb_app3.route('/get_record_transport',methods=['GET','POST'])      
+@token_required 
 def get_record_transport():
     id_value=request.args.get('id')  
     
@@ -168,6 +174,7 @@ def get_record_transport():
 
 
 @smb_app3.route('/add_record_transport',methods=['POST'])
+@token_required
 def add_record_transport():
     
     today = date.today()
@@ -212,6 +219,7 @@ def add_record_transport():
     
 
 @smb_app3.route('/update_record_transport',methods=['POST'])
+@token_required
 def update_record_transport():
     
     today = date.today()
@@ -227,6 +235,7 @@ def update_record_transport():
     Document_Item_Currency =( query_parameters["Document_Item_Currency"])
     Amount =( query_parameters["Amount"])
     Currency =( query_parameters["Currency"])
+    sequence_id=(query_parameters["sequence_id"])
     
     try:
         
@@ -248,8 +257,9 @@ def update_record_transport():
        "Document Item Currency"='{4}',
        "Amount"='{5}',
        "Currency"=''{6}'',
-       "updated_on"='{7}'
-        WHERE "id"={8} '''.format(username,Product_Division,Market_Country,Transport_Mode,Document_Item_Currency,Amount,Currency,date_time,id_value)
+       "updated_on"='{7}',
+       sequence_id={8}
+        WHERE "id"={9} '''.format(username,Product_Division,Market_Country,Transport_Mode,Document_Item_Currency,Amount,Currency,date_time,sequence_id,id_value)
         result1=db.insert(query2)
         if result1=='failed' :raise ValueError
         print(query1)
@@ -263,6 +273,7 @@ def update_record_transport():
 
    
 @smb_app3.route('/upload_transport', methods=['GET','POST'])
+@token_required
 def upload_transport():
     
         f=request.files['filename']
@@ -274,11 +285,12 @@ def upload_transport():
             smb_df=pd.read_excel(input_directory+f.filename,dtype=str)
             
             df=smb_df[["id","Product Division", "Market - Country",
-       "Transport Mode", "Document Item Currency", "Amount", "Currency"]]  
+       "Transport Mode", "Document Item Currency", "Amount", "Currency","sequence_id"]]  
             df["id"]=df["id"].astype(int)
+            df["sequence_id"]=df["sequence_id"].astype(int)
             
             df_main = pd.read_sql('''select "id","Product Division", "Market - Country",
-       "Transport Mode", "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Transport Mode" where "active"='1' order by "id" ''', con=con)
+       "Transport Mode", "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Transport Mode" where "active"='1' order by sequence_id ''', con=con)
             
             
             df3 = df.merge(df_main, how='left', indicator=True)
@@ -297,6 +309,7 @@ def upload_transport():
 
 
 @smb_app3.route('/validate_transport', methods=['GET','POST'])
+@token_required
 def  validate_transport():
     
         
@@ -312,7 +325,7 @@ def  validate_transport():
     try:
        
         df=df[ ["Username","Product_Division", "Market_Country",
-       "Transport_Mode", "Document_Item_Currency", "Amount", "Currency","date_time","id"]]
+       "Transport_Mode", "Document_Item_Currency", "Amount", "Currency","date_time","sequence_id","id"]]
         
         query1='''INSERT INTO "SMB"."SMB - Extra - Transport Mode_History"
         SELECT 
@@ -341,7 +354,8 @@ def  validate_transport():
        "Document Item Currency"='%s',
        "Amount"='%s',
        "Currency"=''%s'',
-       "updated_on"='%s'
+       "updated_on"='%s',
+       sequence_id='%s'
         WHERE "id"= '%s' ''' % tuple(df.loc[i])
             print(query2)
             result=db.insert(query2)
@@ -352,11 +366,12 @@ def  validate_transport():
         return {"status":"failure"},500
          
 @smb_app3.route('/download_transport',methods=['GET'])
+
 def download_transport():
    
         now = datetime.now()
         try:
-            df = pd.read_sql('''select * from "SMB"."SMB - Extra - Transport Mode" where "active"='1' order by "id" ''', con=con)
+            df = pd.read_sql('''select * from "SMB"."SMB - Extra - Transport Mode" where "active"='1' order by sequence_id ''', con=con)
             df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'extra_transport_mode.xlsx'
@@ -373,6 +388,7 @@ def download_transport():
 # transport mode Minibar
 
 @smb_app3.route('/data_transport_minibar',methods=['GET','POST'])
+@token_required
 def  data_transport_minibar():
     # query_paramters 
     search_string=request.args.get("search_string")
@@ -394,7 +410,7 @@ def  data_transport_minibar():
     # fetching the data from database and filtering    
     try:
         df = pd.read_sql('''select * from "SMB"."SMB - Extra - Transport Mode - MiniBar" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
-        count=db.query('select count(*) from "SMB"."SMB - Extra - Transport Mode - MiniBar"')[0][0]
+        count=db.query('select count(*) from "SMB"."SMB - Extra - Transport Mode - MiniBar" where "active"=1 ')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
         df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer_Group":"Market_Customer_Group","Market_-_Customer":"Market_Customer"},inplace=True)  
@@ -413,10 +429,13 @@ def  data_transport_minibar():
 
   
 @smb_app3.route('/delete_record_transport_minibar',methods=['POST','GET','DELETE'])
+@token_required
 def delete_record_transport_minibar():  
-    id_value=request.args.get('id')
+    id_value=json.loads(request.data)['id']
+    id_value.append(0)
+    id_value=tuple(id_value)
     try:
-        query='''UPDATE "SMB"."SMB - Extra - Transport Mode - MiniBar" SET "active"=0 WHERE "id"={} '''.format(id_value)
+        query='''UPDATE "SMB"."SMB - Extra - Transport Mode - MiniBar" SET "active"=0 WHERE "id" in {} '''.format(id_value)
         result=db.insert(query)
         
         return {"status":"success"},200
@@ -424,7 +443,8 @@ def delete_record_transport_minibar():
         return {"status":"failure"},500
 
 
-@smb_app3.route('/get_record_transport_minibar',methods=['GET','POST'])       
+@smb_app3.route('/get_record_transport_minibar',methods=['GET','POST'])   
+@token_required    
 def get_record_transport_minibar():
     id_value=request.args.get('id')  
     
@@ -443,6 +463,7 @@ def get_record_transport_minibar():
 
 
 @smb_app3.route('/add_record_transport_minibar',methods=['POST'])
+@token_required
 def add_record_transport_minibar():
     
     today = date.today()
@@ -454,7 +475,7 @@ def add_record_transport_minibar():
     Product_Division =( query_parameters["Product_Division"])
     Market_Country=(query_parameters['Market_Country'])
     Market_Customer_Group=(query_parameters['Market_Customer_Group'])
-    Market_Customer=(query_parameters['Market_Customer'])
+   
     
     Transport_Mode=(query_parameters["Transport_Mode"])
     
@@ -472,7 +493,7 @@ def add_record_transport_minibar():
              "Product Division", 
              "Market - Country",
              "Market - Customer Group",
-             "Market - Customer",
+           
            "Transport Mode",
            
           
@@ -492,6 +513,7 @@ def add_record_transport_minibar():
 
 
 @smb_app3.route('/update_record_transport_minibar',methods=['POST'])
+@token_required
 def update_record_transport_minibar():
     
         today = date.today()
@@ -503,7 +525,7 @@ def update_record_transport_minibar():
         Product_Division =( query_parameters["Product_Division"])
         Market_Country=(query_parameters['Market_Country'])
         Market_Customer_Group=(query_parameters['Market_Customer_Group'])
-        Market_Customer=(query_parameters['Market_Customer'])
+        
         
         Transport_Mode=(query_parameters["Transport_Mode"])
         id_value=(query_parameters['id'])
@@ -529,14 +551,14 @@ def update_record_transport_minibar():
           "Product Division"='{1}',
            "Market - Country"='{2}',
            "Market - Customer Group"='{3}',
-           "Market - Customer"='{4}',
-           "Transport Mode"='{5}',
+         
+           "Transport Mode"='{4}',
           	   
-           "Document Item Currency"='{6}',
-           "Amount"='{7}',
-           "Currency"=''{8}'',
-           "updated_on"='{9}', sequence_id={10}
-            WHERE "id"={11} '''.format(username,Product_Division,Market_Country,Market_Customer_Group,Market_Customer,Transport_Mode,Document_Item_Currency,Amount,Currency,date_time,sequence_id,id_value)
+           "Document Item Currency"='{5}',
+           "Amount"='{6}',
+           "Currency"=''{7}'',
+           "updated_on"='{8}', sequence_id={9}
+            WHERE "id"={10} '''.format(username,Product_Division,Market_Country,Market_Customer_Group,Transport_Mode,Document_Item_Currency,Amount,Currency,date_time,sequence_id,id_value)
             result1=db.insert(query2)
             if result1=='failed' :raise ValueError
             print(query1)
@@ -551,6 +573,7 @@ def update_record_transport_minibar():
 
    
 @smb_app3.route('/upload_transport_minibar', methods=['GET','POST'])
+@token_required
 def upload_transport_minibar():
     
         f=request.files['filename']
@@ -562,13 +585,13 @@ def upload_transport_minibar():
             smb_df=pd.read_excel(input_directory+f.filename,dtype=str)
             
             df=smb_df[["id","Product Division", "Market - Country",
-       "Market - Customer Group", "Market - Customer", "Transport Mode",
+       "Market - Customer Group",  "Transport Mode",
        "Document Item Currency", "Amount", "Currency","sequence_id"]]  
             df["id"]=df["id"].astype(int)
             df["sequence_id"]=df["sequence_id"].astype(int)
             
             df_main = pd.read_sql('''select "id","Product Division", "Market - Country",
-       "Market - Customer Group", "Market - Customer", "Transport Mode",
+       "Market - Customer Group",  "Transport Mode",
        "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Transport Mode - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             
             
@@ -588,6 +611,7 @@ def upload_transport_minibar():
 
 
 @smb_app3.route('/validate_transport_minibar', methods=['GET','POST'])
+@token_required
 def  validate_transport_minibar():
     
         
@@ -603,7 +627,7 @@ def  validate_transport_minibar():
     try:
        
         df=df[ ["Username","Product_Division", "Market_Country",
-       "Market_Customer_Group", "Market_Customer", "Transport_Mode",
+       "Market_Customer_Group",  "Transport_Mode",
        "Document_Item_Currency", "Amount", "Currency","date_time","sequence_id","id"]]
         
         query1='''INSERT INTO "SMB"."SMB - Extra - Transport Mode - MiniBar_History"
@@ -611,7 +635,7 @@ def  validate_transport_minibar():
         "id",
         "Username",now(),
         "Product Division", "Market - Country",
-       "Market - Customer Group", "Market - Customer", "Transport Mode",
+       "Market - Customer Group",  "Transport Mode",
        "Document Item Currency", "Amount", "Currency"  FROM "SMB"."SMB - Extra - Transport Mode - MiniBar"
         WHERE "id" in {} '''
         
@@ -629,7 +653,7 @@ def  validate_transport_minibar():
        "Product Division"='%s', "Market - Country"='%s',
        "Market - Customer Group"='%s',
        
-      "Market - Customer"='%s', "Transport Mode"='%s',
+       "Transport Mode"='%s',
        
        "Document Item Currency"='%s',
        "Amount"='%s',
@@ -645,6 +669,7 @@ def  validate_transport_minibar():
         
          
 @smb_app3.route('/download_transport_minibar',methods=['GET'])
+
 def download_transport_minibar():
         now = datetime.now()
         try:
@@ -666,6 +691,7 @@ def download_transport_minibar():
 
 
 @smb_app3.route('/data_length_production',methods=['GET','POST'])
+@token_required
 def  data_length_production():
     # query_paramters 
     search_string=request.args.get("search_string")
@@ -685,8 +711,8 @@ def  data_length_production():
    
     # fetching the data from database and filtering    
     try:
-        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Length Production" where "active"='1' order by "id"  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
-        count=db.query('select count(*) from "SMB"."SMB - Extra - Length Production"')[0][0]
+        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Length Production" where "active"='1' order by sequence_id OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        count=db.query('select count(*) from "SMB"."SMB - Extra - Length Production" where "active"=1 ')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
         df.rename(columns={"Market_-_Country":"Market_Country"},inplace=True)
@@ -705,17 +731,21 @@ def  data_length_production():
 
   
 @smb_app3.route('/delete_record_length_production',methods=['POST','GET','DELETE'])
+@token_required
 def delete_record_length_production():  
-    id_value=request.args.get('id')
+    id_value=json.loads(request.data)['id']
+    id_value.append(0)
+    id_value=tuple(id_value)
     try:
-        query='''UPDATE "SMB"."SMB - Extra - Length Production" SET "active"=0 WHERE "id"={} '''.format(id_value)
+        query='''UPDATE "SMB"."SMB - Extra - Length Production" SET "active"=0 WHERE "id" in {} '''.format(id_value)
         result=db.insert(query)
         return {"status":"success"},200
     except:
         return {"status":"failure"},500
 
 
-@smb_app3.route('/get_record_length_production',methods=['GET','POST'])       
+@smb_app3.route('/get_record_length_production',methods=['GET','POST'])   
+@token_required    
 def get_record_length_production():
     id_value=request.args.get('id')  
     
@@ -734,6 +764,7 @@ def get_record_length_production():
 
 
 @smb_app3.route('/add_record_length_production',methods=['POST'])
+@token_required
 def add_record_length_production():
     
     today = date.today()
@@ -788,6 +819,7 @@ def add_record_length_production():
 
 
 @smb_app3.route('/update_record_length_production',methods=['POST'])
+@token_required
 def update_record_length_production():
     
     today = date.today()
@@ -805,6 +837,7 @@ def update_record_length_production():
     Length_From=(query_parameters['Length_From'])
     Length_To=(query_parameters['Length_From'])
     id_value=(query_parameters['id'])
+    sequence_id=(query_parameters["sequence_id"])
     
     Document_Item_Currency =( query_parameters["Document_Item_Currency"])
     Amount =( query_parameters["Amount"])
@@ -835,8 +868,9 @@ def update_record_length_production():
        "Document Item Currency"='{8}',
        "Amount"='{9}',
        "Currency"=''{10}'',
-       "updated_on"='{11}'
-        WHERE "id"={12} '''.format(username,BusinessCode,Country_Group,Market_Country,Delivering_Mill,Length,Length_From ,Length_To,Document_Item_Currency,Amount,Currency,date_time,id_value)
+       "updated_on"='{11}',
+       sequence_id={12}
+        WHERE "id"={13} '''.format(username,BusinessCode,Country_Group,Market_Country,Delivering_Mill,Length,Length_From ,Length_To,Document_Item_Currency,Amount,Currency,date_time,sequence_id,id_value)
         result1=db.insert(query2)
         print(query2)
         if result1=='failed' :raise ValueError
@@ -848,6 +882,7 @@ def update_record_length_production():
 
    
 @smb_app3.route('/upload_length_production', methods=['GET','POST'])
+@token_required
 def upload_length_production():
     
         f=request.files['filename']
@@ -860,12 +895,13 @@ def upload_length_production():
             
             df=smb_df[["id","BusinessCode", "Country Group",
        "Market - Country", "Delivering Mill", "Length", "Length From",
-       "Length To", "Document Item Currency", "Amount", "Currency"]]  
+       "Length To", "Document Item Currency", "Amount", "Currency","sequence_id"]]  
             df["id"]=df["id"].astype(int)
+            df["sequence_id"]=df["sequence_id"].astype(int)
             
             df_main = pd.read_sql('''select "id","BusinessCode", "Country Group",
        "Market - Country", "Delivering Mill", "Length", "Length From",
-       "Length To", "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Length Production" where "active"='1' order by "id" ''', con=con)
+       "Length To", "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Length Production" where "active"='1' order by sequence_id ''', con=con)
             
             
             df3 = df.merge(df_main, how='left', indicator=True)
@@ -883,6 +919,7 @@ def upload_length_production():
             return {"status":"failure"},500
 
 @smb_app3.route('/validate_length_production', methods=['GET','POST'])
+@token_required
 def  validate_length_production():
     
         
@@ -899,7 +936,7 @@ def  validate_length_production():
        
         df=df[ ["Username","BusinessCode", "Country_Group",
        "Market_Country", "Delivering_Mill", "Length", "Length_From",
-       "Length_To", "Document_Item_Currency", "Amount", "Currency","date_time","id"]]
+       "Length_To", "Document_Item_Currency", "Amount", "Currency","date_time","sequence_id","id"]]
         
         query1='''INSERT INTO "SMB"."SMB - Extra - Length Production_History"
         SELECT 
@@ -928,7 +965,8 @@ def  validate_length_production():
        "Document Item Currency"='%s',
        "Amount"='%s',
        "Currency"=''%s'',
-       "updated_on"='%s'
+       "updated_on"='%s',
+       sequence_id='%s'
         WHERE "id"= '%s' ''' % tuple(df.loc[i])
             print(query2)
             result=db.insert(query2)
@@ -940,11 +978,12 @@ def  validate_length_production():
         
          
 @smb_app3.route('/download_length_production',methods=['GET'])
+
 def download_length_production():
    
         now = datetime.now()
         try:
-            df = pd.read_sql('''select * from "SMB"."SMB - Extra - Length Production" where "active"='1' order by "id" ''', con=con)
+            df = pd.read_sql('''select * from "SMB"."SMB - Extra - Length Production" where "active"='1' order by sequence_id ''', con=con)
             df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'length_production_minibar.xlsx'
@@ -963,6 +1002,7 @@ def download_length_production():
 
 
 @smb_app3.route('/data_length_production_minibar',methods=['GET','POST'])
+@token_required
 def  data_length_production_minibar():
     # query_paramters 
     search_string=request.args.get("search_string")
@@ -984,7 +1024,7 @@ def  data_length_production_minibar():
     # fetching the data from database and filtering    
     try:
         df = pd.read_sql('''select * from "SMB"."SMB - Extra - Length Production - MiniBar" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
-        count=db.query('select count(*) from "SMB"."SMB - Extra - Length Production - MiniBar"')[0][0]
+        count=db.query('select count(*) from "SMB"."SMB - Extra - Length Production - MiniBar" where "active"=1 ')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
         df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer":"Market_Customer"},inplace=True)
@@ -1003,10 +1043,13 @@ def  data_length_production_minibar():
 
   
 @smb_app3.route('/delete_record_length_production_minibar',methods=['POST','GET','DELETE'])
+@token_required
 def delete_record_length_production_minibar():  
-    id_value=request.args.get('id')
+    id_value=json.loads(request.data)['id']
+    id_value.append(0)
+    id_value=tuple(id_value)
     try:
-        query='''UPDATE "SMB"."SMB - Extra - Length Production - MiniBar" SET "active"=0 WHERE "id"={} '''.format(id_value)
+        query='''UPDATE "SMB"."SMB - Extra - Length Production - MiniBar" SET "active"=0 WHERE "id" in {} '''.format(id_value)
         result=db.insert(query)
         
         return {"status":"success"},200
@@ -1014,7 +1057,8 @@ def delete_record_length_production_minibar():
         return {"status":"failure"},500
 
 
-@smb_app3.route('/get_record_length_production_minibar',methods=['GET','POST'])       
+@smb_app3.route('/get_record_length_production_minibar',methods=['GET','POST'])   
+@token_required    
 def get_record_length_production_minibar():
     id_value=request.args.get('id')  
     
@@ -1034,6 +1078,7 @@ def get_record_length_production_minibar():
 
 
 @smb_app3.route('/add_record_length_production_minibar',methods=['POST'])
+@token_required
 def add_record_length_production_minibar():
     
     today = date.today()
@@ -1045,7 +1090,7 @@ def add_record_length_production_minibar():
     BusinessCode=(query_parameters['BusinessCode'])
     Customer_Group=(query_parameters['Customer_Group'])
     
-    Market_Customer=(query_parameters['Market_Customer'])
+    
     Market_Country=(query_parameters['Market_Country'])
     
     Delivering_Mill=(query_parameters['Delivering_Mill'])
@@ -1058,7 +1103,7 @@ def add_record_length_production_minibar():
     Currency =( query_parameters["Currency"])
     
     try:
-        input_tuple=( username,BusinessCode,Customer_Group,Market_Customer,Market_Country,Delivering_Mill,Length,Length_From,Length_To,Document_Item_Currency, Amount, Currency.strip("'"))
+        input_tuple=( username,BusinessCode,Customer_Group,Market_Country,Delivering_Mill,Length,Length_From,Length_To,Document_Item_Currency, Amount, Currency.strip("'"))
         
         query='''INSERT INTO "SMB"."SMB - Extra - Length Production - MiniBar"(
              
@@ -1066,7 +1111,7 @@ def add_record_length_production_minibar():
             
              "BusinessCode",
              "Customer Group",
-           "Market - Customer",
+         
              
            "Market - Country", 
            "Delivering Mill", 
@@ -1089,6 +1134,7 @@ def add_record_length_production_minibar():
 
 
 @smb_app3.route('/update_record_length_production_minibar',methods=['POST'])
+@token_required
 def update_record_length_production_minibar():
     
     today = date.today()
@@ -1100,7 +1146,7 @@ def update_record_length_production_minibar():
     BusinessCode=(query_parameters['BusinessCode'])
     Customer_Group=(query_parameters['Customer_Group'])
     
-    Market_Customer=(query_parameters['Market_Customer'])
+    
     Market_Country=(query_parameters['Market_Country'])
     
     Delivering_Mill=(query_parameters['Delivering_Mill'])
@@ -1132,16 +1178,16 @@ def update_record_length_production_minibar():
        "Username"='{0}',
        "BusinessCode"='{1}',
        "Customer Group"='{2}',
-       "Market - Customer"='{3}',
-       "Market - Country"='{4}',
-      	  "Delivering Mill"='{5}',
-       "Length"='{6}',
-       "Length From"='{7}', "Length To"='{8}',
-       "Document Item Currency"='{9}',
-       "Amount"='{10}',
-       "Currency"=''{11}'',
-       "updated_on"='{12}',sequence_id={13}
-        WHERE "id"={14} '''.format(username,BusinessCode,Customer_Group,Market_Customer,Market_Country,Delivering_Mill,Length,Length_From,Length_To,Document_Item_Currency,Amount,Currency,date_time,id_value)
+       
+       "Market - Country"='{3}',
+      	  "Delivering Mill"='{4}',
+       "Length"='{5}',
+       "Length From"='{6}', "Length To"='{7}',
+       "Document Item Currency"='{8}',
+       "Amount"='{9}',
+       "Currency"=''{10}'',
+       "updated_on"='{11}',sequence_id={12}
+        WHERE "id"={13} '''.format(username,BusinessCode,Customer_Group,Market_Country,Delivering_Mill,Length,Length_From,Length_To,Document_Item_Currency,Amount,Currency,date_time,sequence_id,id_value)
         result1=db.insert(query2)
         print(query2)
         if result1=='failed' :raise ValueError
@@ -1155,6 +1201,7 @@ def update_record_length_production_minibar():
     
 
 @smb_app3.route('/upload_length_production_minibar', methods=['GET','POST'])
+@token_required
 def upload_length_production_minibar():
     
         f=request.files['filename']
@@ -1166,7 +1213,7 @@ def upload_length_production_minibar():
             smb_df=pd.read_excel(input_directory+f.filename,dtype=str)
             
             df=smb_df[["id","BusinessCode", "Customer Group",
-       "Market - Customer", "Market - Country", "Delivering Mill", "Length",
+       "Market - Country", "Delivering Mill", "Length",
        "Length From", "Length To", "Document Item Currency", "Amount",
        "Currency","sequence_id"]]  
             df["id"]=df["id"].astype(int)
@@ -1174,7 +1221,7 @@ def upload_length_production_minibar():
             print(df.columns)
             
             df_main = pd.read_sql('''select "id","BusinessCode", "Customer Group",
-       "Market - Customer", "Market - Country", "Delivering Mill", "Length",
+      "Market - Country", "Delivering Mill", "Length",
        "Length From", "Length To", "Document Item Currency", "Amount",
        "Currency",sequence_id from "SMB"."SMB - Extra - Length Production - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             
@@ -1197,6 +1244,7 @@ def upload_length_production_minibar():
 
 
 @smb_app3.route('/validate_length_production_minibar', methods=['GET','POST'])
+@token_required
 def  validate_length_production_minibar():
     
         
@@ -1212,7 +1260,7 @@ def  validate_length_production_minibar():
     try:
        
         df=df[ ["Username","BusinessCode", "Customer_Group",
-       "Market_Customer", "Market_Country", "Delivering_Mill", "Length",
+        "Market_Country", "Delivering_Mill", "Length",
        "Length_From", "Length_To", "Document_Item_Currency", "Amount",
        "Currency","date_time","sequence_id","id"]]
         
@@ -1239,7 +1287,7 @@ def  validate_length_production_minibar():
             query2='''UPDATE "SMB"."SMB - Extra - Length Production - MiniBar"
         SET 
        "Username"='%s',
-       "BusinessCode"='%s',  "Customer Group"='%s',"Market - Customer"='%s',"Market - Country"='%s',
+       "BusinessCode"='%s',  "Customer Group"='%s',"Market - Country"='%s',
        "Delivering Mill"='%s',"Length"='%s',"Length From"='%s',"Length To"='%s',
        
        "Document Item Currency"='%s',
@@ -1256,6 +1304,7 @@ def  validate_length_production_minibar():
         return {"status":"failure"},500
          
 @smb_app3.route('/download_length_production_minibar',methods=['GET'])
+
 def download_length_production_minibar():
    
         now = datetime.now()
@@ -1280,6 +1329,7 @@ def download_length_production_minibar():
 
 
 @smb_app3.route('/data_length_logistic',methods=['GET','POST'])
+@token_required
 def  data_length_logistic():
     # query_paramters 
     search_string=request.args.get("search_string")
@@ -1299,8 +1349,8 @@ def  data_length_logistic():
     
     # fetching the data from database and filtering    
     try:
-        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Length Logistic" where "active"='1' order by "id"  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
-        count=db.query('select count(*) from "SMB"."SMB - Extra - Length Logistic"')[0][0]
+        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Length Logistic" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        count=db.query('select count(*) from "SMB"."SMB - Extra - Length Logistic" where "active"=1 ')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
         df.rename(columns={"Market_-_Country":"Market_Country"},inplace=True)
@@ -1319,10 +1369,13 @@ def  data_length_logistic():
 
   
 @smb_app3.route('/delete_record_length_logistic',methods=['POST','GET','DELETE'])
+@token_required
 def delete_record_length_logistic():  
-    id_value=request.args.get('id')
+    id_value=json.loads(request.data)['id']
+    id_value.append(0)
+    id_value=tuple(id_value)
     try:
-        query='''UPDATE "SMB"."SMB - Extra - Length Logistic" SET "active"=0 WHERE "id"={} '''.format(id_value)
+        query='''UPDATE "SMB"."SMB - Extra - Length Logistic" SET "active"=0 WHERE "id" in {} '''.format(id_value)
         result=db.insert(query)
         
         return {"status":"success"},200
@@ -1330,7 +1383,8 @@ def delete_record_length_logistic():
         return {"status":"failure"},500
 
 
-@smb_app3.route('/get_record_length_logistic',methods=['GET','POST'])       
+@smb_app3.route('/get_record_length_logistic',methods=['GET','POST']) 
+@token_required      
 def get_record_length_logistic():
     id_value=request.args.get('id')  
     
@@ -1350,6 +1404,7 @@ def get_record_length_logistic():
 
 
 @smb_app3.route('/add_record_length_logistic',methods=['POST'])
+@token_required
 def add_record_length_logistic():
     
     today = date.today()
@@ -1406,6 +1461,7 @@ def add_record_length_logistic():
 
 
 @smb_app3.route('/update_record_length_logistic',methods=['POST'])
+@token_required
 def update_record_length_logistic():
     
     today = date.today()
@@ -1424,7 +1480,7 @@ def update_record_length_logistic():
     Transport_Mode=(query_parameters['Transport_Mode'])
     
     id_value=(query_parameters['id'])
-    
+    sequence_id=(query_parameters["sequence_id"])
     Document_Item_Currency =( query_parameters["Document_Item_Currency"])
     Amount =( query_parameters["Amount"])
     Currency =( query_parameters["Currency"])
@@ -1454,8 +1510,9 @@ def update_record_length_logistic():
        "Document Item Currency"='{8}',
        "Amount"='{9}',
        "Currency"=''{10}'',
-       "updated_on"='{11}'
-        WHERE "id"={12} '''.format(username,Country_Group,Market_Country,Delivering_Mill,Length,Length_From,Length_To,Transport_Mode,Document_Item_Currency,Amount,Currency,date_time,id_value)
+       "updated_on"='{11}',
+       sequence_id={12}
+        WHERE "id"={13} '''.format(username,Country_Group,Market_Country,Delivering_Mill,Length,Length_From,Length_To,Transport_Mode,Document_Item_Currency,Amount,Currency,date_time,sequence_id,id_value)
         result1=db.insert(query2)
         if result1=='failed' :raise ValueError
         print(query1)
@@ -1469,6 +1526,7 @@ def update_record_length_logistic():
     
    
 @smb_app3.route('/upload_length_logistic', methods=['GET','POST'])
+@token_required
 def upload_length_logistic():
     
         f=request.files['filename']
@@ -1481,12 +1539,13 @@ def upload_length_logistic():
             
             df=smb_df[["id","Country Group", "Market - Country",
        "Delivering Mill", "Length", "Length From", "Length To",
-       "Transport Mode", "Document Item Currency", "Amount", "Currency"]]  
+       "Transport Mode", "Document Item Currency", "Amount", "Currency","sequence_id"]]  
             df["id"]=df["id"].astype(int)
+            df["sequence_id"]=df["sequence_id"].astype(int)
             
             df_main = pd.read_sql('''select "id","Country Group", "Market - Country",
        "Delivering Mill", "Length", "Length From", "Length To",
-       "Transport Mode", "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Length Logistic" where "active"='1' order by "id" ''', con=con)
+       "Transport Mode", "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Length Logistic" where "active"='1' order by sequence_id ''', con=con)
             
             
             df3 = df.merge(df_main, how='left', indicator=True)
@@ -1505,6 +1564,7 @@ def upload_length_logistic():
 
 
 @smb_app3.route('/validate_length_logistic', methods=['GET','POST'])
+@token_required
 def  validate_length_logistic():
     
          json_data=json.loads(request.data)
@@ -1520,7 +1580,7 @@ def  validate_length_logistic():
        
          df=df[ ["Username","Country_Group", "Market_Country",
         "Delivering_Mill", "Length", "Length_From", "Length_To",
-        "Transport_Mode", "Document_Item_Currency", "Amount", "Currency","date_time","id"]]
+        "Transport_Mode", "Document_Item_Currency", "Amount", "Currency","date_time","sequence_id","id"]]
          
          query1='''INSERT INTO "SMB"."SMB - Extra - Length Logistic_History" 
          SELECT 
@@ -1548,7 +1608,8 @@ def  validate_length_logistic():
         "Document Item Currency"='%s',
         "Amount"='%s',
         "Currency"=''%s'',
-        "updated_on"='%s'
+        "updated_on"='%s',
+        sequence_id='%s'
          WHERE "id"= '%s' ''' % tuple(df.loc[i])
              result=db.insert(query2)
              if result=='failed' :raise ValueError
@@ -1557,14 +1618,15 @@ def  validate_length_logistic():
           
           
 @smb_app3.route('/download_length_logistic',methods=['GET'])
+
 def download_length_logistic():
    
         now = datetime.now()
         try:
-            df = pd.read_sql('''select * from "SMB"."SMB - Extra - Length Logistic" where "active"='1' order by "id" ''', con=con)
+            df = pd.read_sql('''select * from "SMB"."SMB - Extra - Length Logistic" where "active"='1' order by sequence_id ''', con=con)
             df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
-            file=download_path+t+'length_logistic_minibar.xlsx'
+            file=download_path+t+'length_logistic.xlsx'
             print(file)
             df.to_excel(file,index=False)
             
@@ -1581,6 +1643,7 @@ def download_length_logistic():
 
 
 @smb_app3.route('/data_length_logistic_minibar',methods=['GET','POST'])
+@token_required
 def  data_length_logistic_minibar():
     # query_paramters 
     search_string=request.args.get("search_string")
@@ -1601,7 +1664,7 @@ def  data_length_logistic_minibar():
     # fetching the data from database and filtering    
     try:
         df = pd.read_sql('''select * from "SMB"."SMB - Extra - Length Logistic - MiniBar" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
-        count=db.query('select count(*) from "SMB"."SMB - Extra - Length Logistic - MiniBar"')[0][0]
+        count=db.query('select count(*) from "SMB"."SMB - Extra - Length Logistic - MiniBar" where "active"=1 ')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
         df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer":"Market_Customer"},inplace=True)  
@@ -1620,10 +1683,13 @@ def  data_length_logistic_minibar():
 
   
 @smb_app3.route('/delete_record_length_logistic_minibar',methods=['POST','GET','DELETE'])
+@token_required
 def delete_record_length_logistic_minibar():  
-    id_value=request.args.get('id')
+    id_value=json.loads(request.data)['id']
+    id_value.append(0)
+    id_value=tuple(id_value)
     try:
-        query='''UPDATE "SMB"."SMB - Extra - Length Logistic - MiniBar" SET "active"=0 WHERE "id"={} '''.format(id_value)
+        query='''UPDATE "SMB"."SMB - Extra - Length Logistic - MiniBar" SET "active"=0 WHERE "id" in {} '''.format(id_value)
         result=db.insert(query)
         
         return {"status":"success"},200
@@ -1631,7 +1697,8 @@ def delete_record_length_logistic_minibar():
         return {"status":"failure"},500
 
 
-@smb_app3.route('/get_record_length_logistic_minibar',methods=['GET','POST'])       
+@smb_app3.route('/get_record_length_logistic_minibar',methods=['GET','POST'])  
+@token_required     
 def get_record_length_logistic_minibar():
     id_value=request.args.get('id')  
     
@@ -1651,6 +1718,7 @@ def get_record_length_logistic_minibar():
 
 
 @smb_app3.route('/add_record_length_logistic_minibar',methods=['POST'])
+@token_required
 def add_record_length_logistic_minibar():
     
     today = date.today()
@@ -1660,7 +1728,6 @@ def add_record_length_logistic_minibar():
     query_parameters =json.loads(request.data)
     
     
-    Market_Customer=(query_parameters['Market_Customer'])
     
     Market_Country=(query_parameters['Market_Country'])
     Delivering_Mill=(query_parameters['Delivering_Mill'])
@@ -1677,14 +1744,14 @@ def add_record_length_logistic_minibar():
     
     try:
         
-        input_tuple=( username,Market_Customer,Market_Country,Delivering_Mill,Length,Length_From,Length_To,Transport_Mode,Document_Item_Currency, Amount, Currency.strip("'"))
+        input_tuple=( username,Market_Country,Delivering_Mill,Length,Length_From,Length_To,Transport_Mode,Document_Item_Currency, Amount, Currency.strip("'"))
         
         query='''INSERT INTO "SMB"."SMB - Extra - Length Logistic - MiniBar"(
              
              "Username",
              
              
-             "Market - Customer",
+            
            "Market - Country", 
            "Delivering Mill",
            "Length",
@@ -1707,6 +1774,7 @@ def add_record_length_logistic_minibar():
 
 
 @smb_app3.route('/update_record_length_logistic_minibar',methods=['POST'])
+@token_required
 def update_record_length_logistic_minibar():
     
     today = date.today()
@@ -1716,7 +1784,7 @@ def update_record_length_logistic_minibar():
     query_parameters =json.loads(request.data)
     
     
-    Market_Customer=(query_parameters['Market_Customer'])
+   
     
     Market_Country=(query_parameters['Market_Country'])
     Delivering_Mill=(query_parameters['Delivering_Mill'])
@@ -1749,18 +1817,18 @@ def update_record_length_logistic_minibar():
         SET 
        "Username"='{0}',
        "Customer Group"='{1}',
-       "Market - Customer"='{2}',
-       "Market - Country"='{3}',
-      	   "Delivering Mill"='{4}',
-             "Length"='{5}', "Length From"='{6}',
-       "Length To"='{7}',
-        "Transport Mode"='{8}',
+       
+       "Market - Country"='{2}',
+      	   "Delivering Mill"='{3}',
+             "Length"='{4}', "Length From"='{5}',
+       "Length To"='{6}',
+        "Transport Mode"='{7}',
       
-       "Document Item Currency"='{9}',
-       "Amount"='{10}',
-       "Currency"=''{11}'',
-       "updated_on"='{12}',sequence_id={13}
-        WHERE "id"={14} '''.format(username,Customer_Group,Market_Customer,Market_Country,Delivering_Mill,Length,Length_From,Length_To,Transport_Mode,Document_Item_Currency,Amount,Currency,date_time,sequence_id,id_value)
+       "Document Item Currency"='{8}',
+       "Amount"='{9}',
+       "Currency"=''{10}'',
+       "updated_on"='{11}',sequence_id={12}
+        WHERE "id"={13} '''.format(username,Customer_Group,Market_Country,Delivering_Mill,Length,Length_From,Length_To,Transport_Mode,Document_Item_Currency,Amount,Currency,date_time,sequence_id,id_value)
         result1=db.insert(query2)
         if result1=='failed' :raise ValueError
         print(query1)
@@ -1774,6 +1842,7 @@ def update_record_length_logistic_minibar():
     
    
 @smb_app3.route('/upload_length_logistic_minibar', methods=['GET','POST'])
+@token_required
 def upload_length_logistic_minibar():
     
         f=request.files['filename']
@@ -1784,13 +1853,13 @@ def upload_length_logistic_minibar():
         try:
             smb_df=pd.read_excel(input_directory+f.filename,dtype=str)
             
-            df=smb_df[["id","Customer Group", "Market - Customer",
+            df=smb_df[["id","Customer Group", 
        "Market - Country", "Delivering Mill", "Length", "Length From",
        "Length To", "Transport Mode", "Document Item Currency", "Amount",
        "Currency","sequence_id"]]  
             df["id"]=df["id"].astype(int)
-            
-            df_main = pd.read_sql('''select "id","Customer Group", "Market - Customer",
+            df["sequence_id"]=df["sequence_id"].astype(int)            
+            df_main = pd.read_sql('''select "id","Customer Group",
        "Market - Country", "Delivering Mill", "Length", "Length From",
        "Length To", "Transport Mode", "Document Item Currency", "Amount",
        "Currency",sequence_id from "SMB"."SMB - Extra - Length Logistic - MiniBar" where "active"='1' order by sequence_id ''', con=con)
@@ -1814,6 +1883,7 @@ def upload_length_logistic_minibar():
 
 
 @smb_app3.route('/validate_length_logistic_minibar', methods=['GET','POST'])
+@token_required
 def  validate_length_logistic_minibar():
     
         
@@ -1828,7 +1898,7 @@ def  validate_length_logistic_minibar():
     df.insert(1,'date_time',date_time)
     try:
        
-        df=df[ ["Username","Customer_Group", "Market_Customer",
+        df=df[ ["Username","Customer_Group", 
        "Market_Country", "Delivering_Mill", "Length", "Length_From",
        "Length_To", "Transport_Mode", "Document_Item_Currency", "Amount",
        "Currency","date_time","sequence_id","id"]]
@@ -1855,7 +1925,7 @@ def  validate_length_logistic_minibar():
             query2='''UPDATE "SMB"."SMB - Extra - Length Logistic - MiniBar"
         SET 
        "Username"='%s',
-       "Customer Group"='%s',"Market - Customer"='%s', "Market - Country"='%s',
+       "Customer Group"='%s', "Market - Country"='%s',
        "Delivering Mill"='%s', "Length"='%s', "Length From"='%s',
        "Length To"='%s', "Transport Mode"='%s',
        "Document Item Currency"='%s',
@@ -1872,18 +1942,23 @@ def  validate_length_logistic_minibar():
         
          
 @smb_app3.route('/download_length_logistic_minibar',methods=['GET'])
+
 def download_length_logistic_minibar():
-   
+    
         now = datetime.now()
         try:
             df = pd.read_sql('''select * from "SMB"."SMB - Extra - Length Logistic - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
-            df.to_excel('C:/Users/Administrator/Downloads/'+now.strftime("%d-%m-%Y-%H-%M-%S") +'bse_price_extra_length_logistic_minibar.xlsx',index=False)
-            return {"status":"success"},200
+            t=now.strftime("%d-%m-%Y-%H-%M-%S")
+            file=download_path+t+'length_logistic_minibar.xlsx'
+            print(file)
+            df.to_excel(file,index=False)
+            
+            return send_file(file, as_attachment=True)
         except:
             return {"status":"failure"},500
-
-
+   
+       
 
 
 

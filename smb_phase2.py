@@ -5,11 +5,7 @@ Created on Wed Oct 20 10:07:00 2021
 @author: Administrator
 """
 
-
-
 from flask import Blueprint,current_app
-
-
 import pandas as pd
 import time
 import json
@@ -80,13 +76,14 @@ CORS(smb_app2)
 
 db=Database()
 
-# download_path='/home/ubuntu/SMBDir/smb_download/'
+download_path="/home/ubuntu/mega_dir/"
+input_directory="/home/ubuntu/mega_dir/"
 
 
-# input_directory='/home/ubuntu/SMBDir/smb_upload/'
+# download_path="C:/Users/Administrator/Documents/"
+# input_directory="C:/Users/Administrator/Documents/"
 
-download_path='C:/Users/Administrator/Documents/test_path/'
-input_directory='C:/Users/Administrator/Documents/test_path/'
+
 
 
 
@@ -99,9 +96,8 @@ def token_required(func):
     def decorated(*args, **kwargs):
         #token = request.args.get('token')
         #if 'x-access-token' in request.headers:
-        token = request.args.get('x-access-token')           
-        if not token:
-            return jsonify({'Alert!': 'Token is missing!'}), 401
+        token = request.headers['x-access-token']        
+       
         try:
             data = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=["HS256"])
             print(data)
@@ -138,8 +134,8 @@ def  freight_parity():
     
     # fetching the data from database and filtering    
     try:
-        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Freight Parity" where "active"='1' order by "id"  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
-        count=db.query('select count(*) from "SMB"."SMB - Extra - Freight Parity"')[0][0]
+        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Freight Parity" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        count=db.query('select count(*) from "SMB"."SMB - Extra - Freight Parity" where "active"=1 ')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
         df.rename(columns={"Market_-_Country":"Market_Country","Zip_Code_(Dest)":"Zip_Code_Dest"},inplace=True)
@@ -158,10 +154,15 @@ def  freight_parity():
 
   
 @smb_app2.route('/delete_record_freight_parity',methods=['POST','GET','DELETE'])
+@token_required
 def delete_record_delivery_mill_minibar():  
-    id_value=request.args.get('id')
+    
+    id_value=json.loads(request.data)['id']
+    id_value.append(0)
+    id_value=tuple(id_value)
+    
     try:
-        query='''UPDATE "SMB"."SMB - Extra - Freight Parity" SET "active"=0 WHERE "id"={} '''.format(id_value)
+        query='''UPDATE "SMB"."SMB - Extra - Freight Parity" SET "active"=0 WHERE "id" in {} '''.format(id_value)
         result=db.insert(query)
         
         
@@ -170,7 +171,8 @@ def delete_record_delivery_mill_minibar():
         return {"status":"failure"},500
 
 
-@smb_app2.route('/get_record_freight_parity',methods=['GET','POST'])       
+@smb_app2.route('/get_record_freight_parity',methods=['GET','POST'])    
+@token_required   
 def get_record_freight_parity():
     id_value=request.args.get('id')  
     
@@ -190,6 +192,7 @@ def get_record_freight_parity():
 
 
 @smb_app2.route('/update_record_freight_parity',methods=['POST'])
+@token_required
 def update_record_frieght_parity():
     
     today = date.today()
@@ -208,6 +211,7 @@ def update_record_frieght_parity():
     Amount =( query_parameters["Amount"])
     Currency =( query_parameters["Currency"])
     id_value=(query_parameters['id'])
+    sequence_id=(query_parameters['sequence_id'])
     
     
   
@@ -231,10 +235,12 @@ def update_record_frieght_parity():
        
        "Document Item Currency"='{5}',
        "Amount"='{6}',
-       "Currency"=''{7}'',
-       "updated_on"='{8}'
-        WHERE "id"={9} '''.format(username,Delivering_Mill,Market_Country,Zip_Code_Dest,Product_Division,Document_Item_Currency,Amount,Currency,date_time,id_value)
+       "Currency"='{7}',
+       "updated_on"='{8}',
+       sequence_id={9}
+        WHERE "id"={10} '''.format(username,Delivering_Mill,Market_Country,Zip_Code_Dest,Product_Division,Document_Item_Currency,Amount,Currency,date_time,sequence_id,id_value)
         result1=db.insert(query2)
+        print(query2)
         if result1=='failed' :raise ValueError
         
         return {"status":"success"},200
@@ -243,6 +249,7 @@ def update_record_frieght_parity():
 
      
 @smb_app2.route('/add_record_freight_parity',methods=['POST'])
+@token_required
 def add_record_frieght_parity():
     
     
@@ -280,6 +287,7 @@ def add_record_frieght_parity():
     
    
 @smb_app2.route('/upload_freight_parity', methods=['GET','POST'])
+@token_required
 def upload_freight_parity():
     
         f=request.files['filename']
@@ -292,12 +300,13 @@ def upload_freight_parity():
             
             df=smb_df[["id","Delivering Mill", "Market - Country",
        "Zip Code (Dest)", "Product Division", "Document Item Currency",
-       "Amount", "Currency"]]  
+       "Amount", "Currency","sequence_id"]]  
             df["id"]=df["id"].astype(int)
+            df["sequence_id"]=df["sequence_id"].astype(int)
             
             df_main = pd.read_sql('''select "id","Delivering Mill", "Market - Country",
        "Zip Code (Dest)", "Product Division", "Document Item Currency",
-       "Amount", "Currency" from "SMB"."SMB - Extra - Freight Parity" where "active"='1' order by "id" ''', con=con)
+       "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Freight Parity" where "active"='1' order by sequence_id ''', con=con)
             
             
             df3 = df.merge(df_main, how='left', indicator=True)
@@ -316,6 +325,7 @@ def upload_freight_parity():
 
 
 @smb_app2.route('/validate_freight_parity', methods=['GET','POST'])
+@token_required
 def  validate_freight_parity():
     
         
@@ -332,7 +342,7 @@ def  validate_freight_parity():
        
         df=df[ ["Username","Delivering_Mill", "Market_Country",
        "Zip_Code_Dest", "Product_Division", "Document_Item_Currency",
-       "Amount", "Currency","date_time","id"]]
+       "Amount", "Currency","date_time","sequence_id","id"]]
         
         query1='''INSERT INTO "SMB"."SMB - Extra - Freight Parity_History" 
         SELECT 
@@ -360,7 +370,8 @@ def  validate_freight_parity():
        "Document Item Currency"='%s',
        "Amount"='%s',
        "Currency"=''%s'',
-       "updated_on"='%s'
+       "updated_on"='%s',
+       sequence_id ='%s'
         WHERE "id"= '%s' ''' % tuple(df.loc[i])
             result=db.insert(query2)
             if result=='failed' :raise ValueError
@@ -370,11 +381,12 @@ def  validate_freight_parity():
         return {"status":"failure"},500
     
 @smb_app2.route('/download_freight_parity',methods=['GET'])
+
 def download_freight_parity():
    
         now = datetime.now()
         try:
-            df = pd.read_sql('''select * from "SMB"."SMB - Extra - Freight Parity" where "active"='1' order by "id" ''', con=con)
+            df = pd.read_sql('''select * from "SMB"."SMB - Extra - Freight Parity" where "active"='1' order by sequence_id ''', con=con)
             df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'freight_parity.xlsx'
@@ -392,6 +404,7 @@ def download_freight_parity():
 
 
 @smb_app2.route('/data_freight_parity_minibar',methods=['GET','POST'])
+@token_required
 def  freight_parity_minibar():
     # query_paramters 
     search_string=request.args.get("search_string")
@@ -418,7 +431,7 @@ def  freight_parity_minibar():
     # fetching the data from database and filtering    
     try:
         df = pd.read_sql('''select * from "SMB"."SMB - Extra - Freight Parity - MiniBar" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
-        count=db.query('select count(*) from "SMB"."SMB - Extra - Freight Parity - MiniBar"')[0][0]
+        count=db.query('select count(*) from "SMB"."SMB - Extra - Freight Parity - MiniBar" where "active"=1 ')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
         df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer_Group":"Market_Customer_Group","Market_-_Customer":"Market_Customer","Zip_Code_(Dest)":"Zip_Code_Dest"},inplace=True)  
@@ -438,10 +451,14 @@ def  freight_parity_minibar():
 
   
 @smb_app2.route('/delete_record_freight_parity_minibar',methods=['POST','GET','DELETE'])
+@token_required
 def delete_record_freight_parity_minibar():  
-    id_value=request.args.get('id')
+    id_value=json.loads(request.data)['id']
+    id_value.append(0)
+    id_value=tuple(id_value)
+    
     try:
-        query='''UPDATE "SMB"."SMB - Extra - Freight Parity - MiniBar" SET "active"=0 WHERE "id"={} '''.format(id_value)
+        query='''UPDATE "SMB"."SMB - Extra - Freight Parity - MiniBar" SET "active"=0 WHERE "id" in {} '''.format(id_value)
         result=db.insert(query)
         return {"status":"success"},200
     except:
@@ -468,6 +485,7 @@ def get_record_freight_parity_minibar():
 
 
 @smb_app2.route('/update_record_freight_parity_minibar',methods=['POST'])
+@token_required
 def update_record_frieght_parity_minibar():
     
     today = date.today()
@@ -482,7 +500,7 @@ def update_record_frieght_parity_minibar():
     Delivering_Mill=(query_parameters["Delivering_Mill"])
     Market_Country=(query_parameters['Market_Country'])
     Market_Customer_Group=(query_parameters['Market_Customer_Group'])
-    Market_Customer=(query_parameters['Market_Customer'])
+   
    
     Zip_Code_Dest=(query_parameters['Zip_Code_Dest'])
     
@@ -509,14 +527,14 @@ def update_record_frieght_parity_minibar():
         SET 
        "Username"='{0}',
        "Delivering Mill"='{1}', "Market - Country"='{2}',
-       "Market - Customer Group"='{3}', "Market - Customer"='{4}', "Zip Code (Dest)"='{5}',
-       "Product Division"='{6}',
+       "Market - Customer Group"='{3}',  "Zip Code (Dest)"='{4}',
+       "Product Division"='{5}',
        
-       "Document Item Currency"='{7}',
-       "Amount"='{8}',
-       "Currency"=''{9}'',
-       "updated_on"='{10}',sequence_id= {11}
-        WHERE "id"={12} '''.format(username,Delivering_Mill,Market_Country,Market_Customer_Group,Market_Customer,Zip_Code_Dest,Product_Division,Document_Item_Currency,Amount,Currency,date_time,sequence_id,id_value)
+       "Document Item Currency"='{6}',
+       "Amount"='{7}',
+       "Currency"=''{8}'',
+       "updated_on"='{9}',sequence_id= {10}
+        WHERE "id"={11} '''.format(username,Delivering_Mill,Market_Country,Market_Customer_Group,Zip_Code_Dest,Product_Division,Document_Item_Currency,Amount,Currency,date_time,sequence_id,id_value)
         result1=db.insert(query2)
         if result1=='failed' :raise ValueError
         print(query1)
@@ -529,6 +547,7 @@ def update_record_frieght_parity_minibar():
     
 
 @smb_app2.route('/add_record_freight_parity_minibar',methods=['POST'])
+@token_required
 def add_record_frieght_parity_minibar():
     username = getpass.getuser()
     query_parameters =json.loads(request.data)
@@ -536,7 +555,7 @@ def add_record_frieght_parity_minibar():
     Delivering_Mill=(query_parameters["Delivering_Mill"])
     Market_Country=(query_parameters['Market_Country'])
     Market_Customer_Group=(query_parameters['Market_Customer_Group'])
-    Market_Customer=(query_parameters['Market_Customer'])
+    
    
     Zip_Code_Dest=(query_parameters['Zip_Code_Dest'])
     
@@ -548,7 +567,7 @@ def add_record_frieght_parity_minibar():
         
     
     try:
-        input_tuple=( username,Delivering_Mill,Market_Country,Market_Customer_Group,Market_Customer,Zip_Code_Dest, Product_Division,Document_Item_Currency, Amount, Currency.strip("'"))
+        input_tuple=( username,Delivering_Mill,Market_Country,Market_Customer_Group,Zip_Code_Dest, Product_Division,Document_Item_Currency, Amount, Currency.strip("'"))
         
         query='''INSERT INTO "SMB"."SMB - Extra - Freight Parity - MiniBar"(
              
@@ -557,7 +576,7 @@ def add_record_frieght_parity_minibar():
              "Delivering Mill",
              "Market - Country",
              "Market - Customer Group",
-             "Market - Customer",
+            
            "Zip Code (Dest)", 
            "Product Division",
            
@@ -583,6 +602,7 @@ def add_record_frieght_parity_minibar():
 
    
 @smb_app2.route('/upload_freight_parity_minibar', methods=['GET','POST'])
+@token_required
 def upload_freight_parity_minibar():
     
         f=request.files['filename']
@@ -594,13 +614,13 @@ def upload_freight_parity_minibar():
             smb_df=pd.read_excel(input_directory+f.filename,dtype=str)
             
             df=smb_df[["id","Delivering Mill", "Market - Country",
-       "Market - Customer Group", "Market - Customer", "Zip Code (Dest)",
+       "Market - Customer Group", "Zip Code (Dest)",
        "Product Division", "Document Item Currency", "Amount", "Currency","sequence_id"]]  
             df["id"]=df["id"].astype(int)
             df["sequence_id"]=df["sequence_id"].astype(int)
             
             df_main = pd.read_sql('''select "id","Delivering Mill", "Market - Country",
-       "Market - Customer Group", "Market - Customer", "Zip Code (Dest)",
+       "Market - Customer Group","Zip Code (Dest)",
        "Product Division", "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Freight Parity - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             
             
@@ -620,6 +640,7 @@ def upload_freight_parity_minibar():
 
 
 @smb_app2.route('/validate_freight_parity_minibar', methods=['GET','POST'])
+@token_required
 def  validate_freight_parity_minibar():
     
         
@@ -635,7 +656,7 @@ def  validate_freight_parity_minibar():
    
        
         df=df[ ["Username","Delivering_Mill", "Market_Country",
-       "Market_Customer_Group", "Market_Customer", "Zip_Code_Dest",
+       "Market_Customer_Group", "Zip_Code_Dest",
        "Product_Division", "Document_Item_Currency", "Amount", "Currency","date_time","sequence_id","id"]]
         
         query1='''INSERT INTO "SMB"."SMB - Extra - Freight Parity - MiniBar_History" 
@@ -661,7 +682,7 @@ def  validate_freight_parity_minibar():
         SET 
        "Username"='%s',
        "Delivering Mill"='%s', "Market - Country"='%s',
-       "Market - Customer Group"='%s', "Market - Customer"='%s', "Zip Code (Dest)"='%s',
+       "Market - Customer Group"='%s',  "Zip Code (Dest)"='%s',
        "Product Division"='%s',
        "Document Item Currency"='%s',
        "Amount"='%s',
@@ -676,6 +697,7 @@ def  validate_freight_parity_minibar():
    
          
 @smb_app2.route('/download_freight_parity_minibar',methods=['GET'])
+
 def download_freight_parity_minibar():
    
         now = datetime.now()
@@ -699,6 +721,7 @@ def download_freight_parity_minibar():
 
 
 @smb_app2.route('/data_extra_grade',methods=['GET','POST'])
+
 def  extra_grade_data():
     # query_paramters 
     search_string=request.args.get("search_string")
@@ -714,8 +737,8 @@ def  extra_grade_data():
     
     # fetching the data from database and filtering    
     try:
-        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Grade" where "active"='1' order by "id"  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
-        count=db.query('select count(*) from "SMB"."SMB - Extra - Grade"')[0][0]
+        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Grade" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        count=db.query('select count(*) from "SMB"."SMB - Extra - Grade" where "active"=1 ')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
         df.rename(columns={"Market_-_Country":"Market_Country"},inplace=True)  
@@ -735,10 +758,14 @@ def  extra_grade_data():
 
   
 @smb_app2.route('/delete_record_extra_grade',methods=['POST','GET','DELETE'])
+@token_required
 def delete_record_extra_grade():  
-    id_value=request.args.get('id')
+    id_value=json.loads(request.data)['id']
+    id_value.append(0)
+    id_value=tuple(id_value)
+    
     try:
-        query='''UPDATE "SMB"."SMB - Extra - Grade" SET "active"=0 WHERE "id"={} '''.format(id_value)
+        query='''UPDATE "SMB"."SMB - Extra - Grade" SET "active"=0 WHERE "id" in {} '''.format(id_value)
         result=db.insert(query)
         
         return {"status":"success"},200
@@ -746,7 +773,8 @@ def delete_record_extra_grade():
         return {"status":"failure"},500
 
 
-@smb_app2.route('/get_record_extra_grade',methods=['GET','POST'])       
+@smb_app2.route('/get_record_extra_grade',methods=['GET','POST'])  
+@token_required     
 def get_record_extra_grade():
     id_value=request.args.get('id')  
     
@@ -766,6 +794,7 @@ def get_record_extra_grade():
 
 
 @smb_app2.route('/update_record_extra_grade',methods=['POST'])
+@token_required
 def update_record_extra_grade():
     
     today = date.today()
@@ -780,6 +809,7 @@ def update_record_extra_grade():
     Grade_Category=(query_parameters["Grade_Category"])
     Country_Group=(query_parameters['Country_Group'])
     Market_Country=(query_parameters['Market_Country'])
+    sequence_id=(query_parameters['sequence_id'])
     
     id_value=(query_parameters['id'])
     Product_Division =( query_parameters["Product_Division"])
@@ -809,8 +839,9 @@ def update_record_extra_grade():
        "Document Item Currency"='{6}',
        "Amount"='{7}',
        "Currency"=''{8}'',
-       "updated_on"='{9}'
-        WHERE "id"={10} '''.format(username,BusinessCode,Grade_Category,Country_Group,Market_Country,Product_Division,Document_Item_Currency,Amount,Currency,date_time,id_value)
+       "updated_on"='{9}',
+       sequence_id={10}
+        WHERE "id"={11} '''.format(username,BusinessCode,Grade_Category,Country_Group,Market_Country,Product_Division,Document_Item_Currency,Amount,Currency,date_time,sequence_id,id_value)
         result1=db.insert(query2)
         if result1=='failed' :raise ValueError
         print(query1)
@@ -824,6 +855,7 @@ def update_record_extra_grade():
     
    
 @smb_app2.route('/add_record_extra_grade',methods=['POST'])
+@token_required
 def add_record_extra_grade():
      
     query_parameters =json.loads(request.data)
@@ -871,6 +903,7 @@ def add_record_extra_grade():
     
     
 @smb_app2.route('/upload_extra_grade', methods=['GET','POST'])
+@token_required
 def upload_extra_grade():
     
         f=request.files['filename']
@@ -883,12 +916,14 @@ def upload_extra_grade():
             
             df=smb_df[["id","BusinessCode", "Grade Category",
        "Country Group", "Market - Country", "Product Division",
-       "Document Item Currency", "Amount", "Currency"]]  
+       "Document Item Currency", "Amount", "Currency","sequence_id"]]  
             df["id"]=df["id"].astype(int)
+            df["sequence_id"]=df["sequence_id"].astype(int)
+            
             
             df_main = pd.read_sql('''select "id","BusinessCode", "Grade Category",
        "Country Group", "Market - Country", "Product Division",
-       "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Grade" where "active"='1' order by "id" ''', con=con)
+       "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Grade" where "active"='1' order by sequence_id ''', con=con)
             
             
             df3 = df.merge(df_main, how='left', indicator=True)
@@ -906,6 +941,7 @@ def upload_extra_grade():
             return {"status":"failure"},500
 
 @smb_app2.route('/validate_extra_grade', methods=['GET','POST'])
+@token_required
 def  validate_extra_grade():
     
         
@@ -923,7 +959,7 @@ def  validate_extra_grade():
        
         df=df[ ["Username","BusinessCode", "Grade_Category",
        "Country_Group", "Market_Country", "Product_Division",
-       "Document_Item_Currency", "Amount", "Currency","date_time","id"]]
+       "Document_Item_Currency", "Amount", "Currency","date_time","sequence_id","id"]]
         
         query1='''INSERT INTO "SMB"."SMB - Extra - Grade_History" 
         SELECT 
@@ -953,7 +989,8 @@ def  validate_extra_grade():
        "Document Item Currency"='%s',
        "Amount"='%s',
        "Currency"=''%s'',
-       "updated_on"='%s'
+       "updated_on"='%s',
+       sequence_id='%s'
         WHERE "id"= '%s' ''' % tuple(df.loc[i])
             result=db.insert(query2)
             print(query2)
@@ -964,11 +1001,12 @@ def  validate_extra_grade():
         return {"status":"failure"},500
          
 @smb_app2.route('/download_extra_grade',methods=['GET'])
+
 def download_extra_grade():
    
         now = datetime.now()
         try:
-            df = pd.read_sql('''select * from "SMB"."SMB - Extra - Grade" where "active"='1' order by "id" ''', con=con)
+            df = pd.read_sql('''select * from "SMB"."SMB - Extra - Grade" where "active"='1' order by sequence_id ''', con=con)
             df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'extra_grade.xlsx'
@@ -987,6 +1025,7 @@ def download_extra_grade():
 
 
 @smb_app2.route('/data_extra_grade_minibar',methods=['GET','POST'])
+@token_required
 def  extra_grade_data_minibar():
     # query_paramters 
     search_string=request.args.get("search_string")
@@ -1013,14 +1052,14 @@ def  extra_grade_data_minibar():
         df.columns = df.columns.str.replace(' ', '_')
         
         df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer":"Market_Customer"},inplace=True)  
-                
+        count=db.query('select count(*) from "SMB"."SMB - Extra - Grade - MiniBar" where "active"=1 ')[0][0]
             
         if(search_string!="all" and search_string!=None):
                       df=df[df.eq(search_string).any(1)]
         
         table=json.loads(df.to_json(orient='records'))
         
-        return {"data":table},200         
+        return {"data":table,"totalCount":count},200         
     except:
         return {"statuscode":500,"msg":"failure"},500
         
@@ -1029,10 +1068,14 @@ def  extra_grade_data_minibar():
 
   
 @smb_app2.route('/delete_record_extra_grade_minibar',methods=['POST','GET','DELETE'])
+@token_required
 def delete_record_extra_grade_minibar():  
-    id_value=request.args.get('id')
+    id_value=json.loads(request.data)['id']
+    id_value.append(0)
+    id_value=tuple(id_value)
+    
     try:
-        query='''UPDATE "SMB"."SMB - Extra - Grade - MiniBar" SET "active"=0 WHERE "id"={} '''.format(id_value)
+        query='''UPDATE "SMB"."SMB - Extra - Grade - MiniBar" SET "active"=0 WHERE "id" in {} '''.format(id_value)
         result=db.insert(query)
         if result=='failed': raise ValueError
         
@@ -1041,7 +1084,8 @@ def delete_record_extra_grade_minibar():
         return {"status":"failure"},500
 
 
-@smb_app2.route('/get_record_extra_grade_minibar',methods=['GET','POST'])       
+@smb_app2.route('/get_record_extra_grade_minibar',methods=['GET','POST'])  
+@token_required     
 def get_record_extra_grade_minibar():
     id_value=request.args.get('id')  
     
@@ -1061,6 +1105,8 @@ def get_record_extra_grade_minibar():
 
 
 @smb_app2.route('/add_record_extra_grade_minibar',methods=['POST'])
+@token_required
+
 def add_record_extra_grade_minibar():
     
     today = date.today()
@@ -1074,7 +1120,7 @@ def add_record_extra_grade_minibar():
     BusinessCode=(query_parameters["BusinessCode"])
     Customer_Group=(query_parameters["Customer_Group"])
     
-    Market_Customer=(query_parameters['Market_Customer'])
+   
     
     Market_Country=(query_parameters['Market_Country'])
     
@@ -1091,7 +1137,7 @@ def add_record_extra_grade_minibar():
    
         
        
-        input_tuple=( username,BusinessCode,Customer_Group,Market_Customer,Market_Country,Grade_Category ,Document_Item_Currency, Amount, Currency.strip("'"))
+        input_tuple=( username,BusinessCode,Customer_Group,Market_Country,Grade_Category ,Document_Item_Currency, Amount, Currency.strip("'"))
         
         query='''INSERT INTO "SMB"."SMB - Extra - Grade - MiniBar"(
              
@@ -1099,7 +1145,7 @@ def add_record_extra_grade_minibar():
              
              "BusinessCode",
              "Customer Group",
-           "Market - Customer",
+          
            "Market - Country",
            "Grade Category",
              "Document Item Currency",
@@ -1117,6 +1163,7 @@ def add_record_extra_grade_minibar():
     
 
 @smb_app2.route('/update_record_extra_grade_minibar',methods=['POST'])
+@token_required
 def update_record_extra_grade_minibar():
     
     today = date.today()
@@ -1131,7 +1178,6 @@ def update_record_extra_grade_minibar():
     BusinessCode=(query_parameters["BusinessCode"])
     Customer_Group=(query_parameters["Customer_Group"])
     
-    Market_Customer=(query_parameters['Market_Customer'])
     
     Market_Country=(query_parameters['Market_Country'])
     
@@ -1157,14 +1203,14 @@ def update_record_extra_grade_minibar():
         SET 
        "Username"='{0}',
        "BusinessCode"='{1}', "Customer Group"='{2}',
-       "Market - Customer"='{3}', "Market - Country"='{4}', "Grade Category"='{5}',
+       "Market - Country"='{3}', "Grade Category"='{4}',
        
        
-       "Document Item Currency"='{6}',
-       "Amount"='{7}',
-       "Currency"=''{8}'',
-       "updated_on"='{9}',sequence_id= {10}
-        WHERE "id"={11} '''.format(username,BusinessCode,Customer_Group,Market_Customer,Market_Country,Grade_Category,Document_Item_Currency,Amount,Currency,date_time,sequence_id,id_value)
+       "Document Item Currency"='{5}',
+       "Amount"='{6}',
+       "Currency"=''{7}'',
+       "updated_on"='{8}',sequence_id= {9}
+        WHERE "id"={10} '''.format(username,BusinessCode,Customer_Group,Market_Country,Grade_Category,Document_Item_Currency,Amount,Currency,date_time,sequence_id,id_value)
         result1=db.insert(query2)
         if result1=='failed' :raise ValueError
         print(query1)
@@ -1177,6 +1223,7 @@ def update_record_extra_grade_minibar():
     
    
 @smb_app2.route('/upload_extra_grade_minibar', methods=['GET','POST'])
+@token_required
 def upload_extra_grade_minibar():
     
      f=request.files['filename']
@@ -1188,13 +1235,13 @@ def upload_extra_grade_minibar():
          smb_df=pd.read_excel(input_directory+f.filename,dtype=str)
          
          df=smb_df[["id","BusinessCode", "Customer Group",
-       "Market - Customer", "Market - Country", "Grade Category",
+      "Market - Country", "Grade Category",
        "Document Item Currency", "Amount", "Currency","sequence_id"]]  
          df["id"]=df["id"].astype(int)
          df["sequence_id"]=df["sequence_id"].astype(int)
          
          df_main = pd.read_sql('''select "id","BusinessCode", "Customer Group",
-       "Market - Customer", "Market - Country", "Grade Category",
+       "Market - Country", "Grade Category",
        "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Grade - MiniBar" where "active"='1' order by sequence_id ''', con=con)
          
          
@@ -1214,6 +1261,7 @@ def upload_extra_grade_minibar():
 
 
 @smb_app2.route('/validate_extra_grade_minibar', methods=['GET','POST'])
+@token_required
 def  validate_extra_grade_minibar():
     
         
@@ -1229,7 +1277,7 @@ def  validate_extra_grade_minibar():
     try:
        
         df=df[ ["Username","BusinessCode", "Customer_Group",
-       "Market_Customer", "Market_Country", "Grade_Category",
+      "Market_Country", "Grade_Category",
        "Document_Item_Currency", "Amount", "Currency","date_time","sequence_id","id"]]
         
         query1='''INSERT INTO "SMB"."SMB - Extra - Grade - MiniBar_History" 
@@ -1255,7 +1303,7 @@ def  validate_extra_grade_minibar():
         SET 
        "Username"='%s',
        "BusinessCode"='%s', "Customer Group"='%s',
-       "Market - Customer"='%s', "Market - Country"='%s', "Grade Category"='%s',
+        "Market - Country"='%s', "Grade Category"='%s',
        
        "Document Item Currency"='%s',
        "Amount"='%s',
@@ -1271,6 +1319,7 @@ def  validate_extra_grade_minibar():
         
          
 @smb_app2.route('/download_extra_grade_minibar',methods=['GET'])
+
 def download_extra_grade_minibar():
         now = datetime.now()
         try:
@@ -1293,6 +1342,7 @@ def download_extra_grade_minibar():
 # "SMB"."SMB - Extra - Profile"
 
 @smb_app2.route('/data_extra_profile',methods=['GET','POST'])
+@token_required
 def  extra_profile():
     # query_paramters 
     search_string=request.args.get("search_string")
@@ -1311,8 +1361,8 @@ def  extra_profile():
     
     # fetching the data from database and filtering    
     try:
-        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Profile" where "active"='1' order by "id"  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
-        count=db.query('select count(*) from "SMB"."SMB - Extra - Profile"')[0][0]
+        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Profile" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        count=db.query('select count(*) from "SMB"."SMB - Extra - Profile" where "active"=1 ')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
         df.rename(columns={"Market_-_Country":"Market_Country"},inplace=True)  
@@ -1332,10 +1382,14 @@ def  extra_profile():
 
   
 @smb_app2.route('/delete_record_extra_profile',methods=['POST','GET','DELETE'])
+@token_required
 def delete_record_extra_profile():  
-    id_value=request.args.get('id')
+    id_value=json.loads(request.data)['id']
+    id_value.append(0)
+    id_value=tuple(id_value)
+    
     try:
-        query='''UPDATE "SMB"."SMB - Extra - Profile" SET "active"=0 WHERE "id"={} '''.format(id_value)
+        query='''UPDATE "SMB"."SMB - Extra - Profile" SET "active"=0 WHERE "id" in {} '''.format(id_value)
         result=db.insert(query)
         if result=='failed' : raise ValueError
         return {"status":"success"},200
@@ -1343,7 +1397,8 @@ def delete_record_extra_profile():
         return {"status":"failure"},500
 
 
-@smb_app2.route('/get_record_extra_profile',methods=['GET','POST'])       
+@smb_app2.route('/get_record_extra_profile',methods=['GET','POST'])   
+@token_required    
 def get_record_extra_profile():
     id_value=request.args.get('id')  
     
@@ -1363,6 +1418,7 @@ def get_record_extra_profile():
 
 
 @smb_app2.route('/add_record_extra_profile',methods=['POST'])
+@token_required
 def add_record_extra_profile():
     
     
@@ -1412,6 +1468,7 @@ def add_record_extra_profile():
     
 
 @smb_app2.route('/update_record_extra_profile',methods=['POST'])
+@token_required
 def update_record_extra_profile():
     
     today = date.today()
@@ -1432,6 +1489,7 @@ def update_record_extra_profile():
     Document_Item_Currency =( query_parameters["Document_Item_Currency"])
     Amount =( query_parameters["Amount"])
     Currency =( query_parameters["Currency"])
+    sequence_id=(query_parameters["sequence_id"])
     
     try:
         
@@ -1458,8 +1516,9 @@ def update_record_extra_profile():
        "Document Item Currency"='{8}',
        "Amount"='{9}',
        "Currency"=''{10}'',
-       "updated_on"='{11}'
-        WHERE "id"={12} '''.format(username,BusinessCode,Market_Country,Product_Division,Product_Level_04,Product_Level_05,Product_Level_02,Delivering_Mill,Document_Item_Currency,Amount,Currency,date_time,id_value)
+       "updated_on"='{11}',
+       sequence_id={12}
+        WHERE "id"={13} '''.format(username,BusinessCode,Market_Country,Product_Division,Product_Level_04,Product_Level_05,Product_Level_02,Delivering_Mill,Document_Item_Currency,Amount,Currency,date_time,sequence_id,id_value)
         result1=db.insert(query2)
         if result1=='failed' :raise ValueError
         print(query1)
@@ -1472,26 +1531,29 @@ def update_record_extra_profile():
 
    
 @smb_app2.route('/upload_extra_profile', methods=['GET','POST'])
+@token_required
 def upload_extra_profile():
     
-        f=request.files['filename']
-  
-            
-        f.save(input_directory+f.filename)
+            f=request.files['filename']
+      
+                
+            f.save(input_directory+f.filename)
         
-        try:
+        
             smb_df=pd.read_excel(input_directory+f.filename,dtype=str)
             
             df=smb_df[["id","BusinessCode", "Market - Country",
        "Product Division", "Product Level 04", "Product Level 05",
        "Product Level 02", "Delivering Mill", "Document Item Currency",
-       "Amount", "Currency"]]  
+       "Amount", "Currency","sequence_id"]]  
             df["id"]=df["id"].astype(int)
+            df["sequence_id"]=df["sequence_id"].astype(int)
+            
             
             df_main = pd.read_sql('''select "id","BusinessCode", "Market - Country",
        "Product Division", "Product Level 04", "Product Level 05",
        "Product Level 02", "Delivering Mill", "Document Item Currency",
-       "Amount", "Currency" from "SMB"."SMB - Extra - Profile" where "active"='1' order by "id" ''', con=con)
+       "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Profile" where "active"='1' order by sequence_id ''', con=con)
             
             
             df3 = df.merge(df_main, how='left', indicator=True)
@@ -1505,10 +1567,9 @@ def upload_extra_profile():
             table=json.loads(df3.to_json(orient='records'))
             
             return {"data":table},200
-        except:
-            return {"status":"failure"},500
-
+       
 @smb_app2.route('/validate_extra_profile', methods=['GET','POST'])
+@token_required
 def  validate_extra_profile():
     
         
@@ -1526,7 +1587,7 @@ def  validate_extra_profile():
         df=df[ ["Username","BusinessCode", "Market_Country",
        "Product_Division", "Product_Level_04", "Product_Level_05",
        "Product_Level_02", "Delivering_Mill", "Document_Item_Currency",
-       "Amount", "Currency","date_time","id"]]
+       "Amount", "Currency","date_time","sequence_id","id"]]
         
         query1='''INSERT INTO "SMB"."SMB - Extra - Profile_History"
         SELECT 
@@ -1558,7 +1619,8 @@ def  validate_extra_profile():
        "Document Item Currency"='%s',
        "Amount"='%s',
        "Currency"=''%s'',
-       "updated_on"='%s'
+       "updated_on"='%s',
+       sequence_id='%s'
         WHERE "id"= '%s' ''' % tuple(df.loc[i])
             result=db.insert(query2)
             if result=='failed' :raise ValueError
@@ -1568,11 +1630,12 @@ def  validate_extra_profile():
         return {"status":"failure"},500
          
 @smb_app2.route('/download_extra_profile',methods=['GET'])
+
 def download_extra_profile():
    
         now = datetime.now()
         try:
-            df = pd.read_sql('''select * from "SMB"."SMB - Extra - Profile" where "active"='1' order by "id" ''', con=con)
+            df = pd.read_sql('''select * from "SMB"."SMB - Extra - Profile" where "active"='1' order by sequence_id ''', con=con)
             df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'extra_profile.xlsx'
@@ -1591,6 +1654,7 @@ def download_extra_profile():
 
 
 @smb_app2.route('/data_extra_profile_minibar',methods=['GET','POST'])
+@token_required
 def  extra_profile_minibar():
     # query_paramters 
     search_string=request.args.get("search_string")
@@ -1610,7 +1674,7 @@ def  extra_profile_minibar():
     # fetching the data from database and filtering    
     try:
         df = pd.read_sql('''select * from "SMB"."SMB - Extra - Profile - MiniBar" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
-        count=db.query('select count(*) from "SMB"."SMB - Extra - Profile - MiniBar"')[0][0]
+        count=db.query('select count(*) from "SMB"."SMB - Extra - Profile - MiniBar" where "active"=1 ')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
         df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer_Group":"Market_Customer_Group","Market_-_Customer":"Market_Customer"},inplace=True)  
@@ -1630,10 +1694,13 @@ def  extra_profile_minibar():
 
   
 @smb_app2.route('/delete_record_extra_profile_minibar',methods=['POST','GET','DELETE'])
+@token_required
 def delete_record_extra_profile_minibar():  
-    id_value=request.args.get('id')
+    id_value=json.loads(request.data)['id']
+    id_value.append(0)
+    id_value=tuple(id_value)
     try:
-        query='''UPDATE "SMB"."SMB - Extra - Profile - MiniBar" SET "active"=0 WHERE "id"={} '''.format(id_value)
+        query='''UPDATE "SMB"."SMB - Extra - Profile - MiniBar" SET "active"=0 WHERE "id" in {} '''.format(id_value)
         result=db.insert(query)
         if result=='failed':raise ValueError
         
@@ -1643,6 +1710,7 @@ def delete_record_extra_profile_minibar():
 
 
 @smb_app2.route('/get_record_extra_profile_minibar',methods=['GET','POST'])       
+@token_required
 def get_record_extra_profile_minibar():
     id_value=request.args.get('id')  
     
@@ -1670,7 +1738,7 @@ def add_record_extra_profile_minibar():
     
     BusinessCode=(query_parameters["BusinessCode"])
     Customer_Group=(query_parameters['Customer_Group'])
-    Market_Customer=(query_parameters['Market_Customer'])
+   
     Market_Country=(query_parameters['Market_Country'])
     
     Product_Level_04=(query_parameters['Product_Level_04'])
@@ -1686,7 +1754,7 @@ def add_record_extra_profile_minibar():
         
   
    
-        input_tuple=( username,BusinessCode,Customer_Group,Market_Customer,Market_Country,Product_Level_04,Product_Level_05,Product_Level_02,Delivering_Mill,Document_Item_Currency, Amount, Currency.strip("'"))
+        input_tuple=( username,BusinessCode,Customer_Group,Market_Country,Product_Level_04,Product_Level_05,Product_Level_02,Delivering_Mill,Document_Item_Currency, Amount, Currency.strip("'"))
         
         query='''INSERT INTO "SMB"."SMB - Extra - Profile - MiniBar"(
              
@@ -1694,7 +1762,7 @@ def add_record_extra_profile_minibar():
              
              "BusinessCode",
              "Customer Group",
-       "Market - Customer",
+     
        "Market - Country", 
        
        "Product Level 04", 
@@ -1715,6 +1783,7 @@ def add_record_extra_profile_minibar():
 
 
 @smb_app2.route('/update_record_extra_profile_minibar',methods=['POST'])
+@token_required
 def update_record_extra_profile_minibar():
     
     
@@ -1728,7 +1797,7 @@ def update_record_extra_profile_minibar():
     sequence_id=(query_parameters['sequence_id'])
     BusinessCode=(query_parameters["BusinessCode"])
     Customer_Group=(query_parameters['Customer_Group'])
-    Market_Customer=(query_parameters['Market_Customer'])
+    
     Market_Country=(query_parameters['Market_Country'])
     
     Product_Level_04=(query_parameters['Product_Level_04'])
@@ -1759,18 +1828,17 @@ def update_record_extra_profile_minibar():
        "Username"='{0}',
        "BusinessCode"='{1}',
        "Customer Group"='{2}',
-       "Market - Customer"='{3}',
        
-       "Market - Country"='{4}',
-      	   "Product Level 04"='{5}',
-       "Product Level 05"='{6}',
-       "Product Level 02"='{7}',
-       "Delivering Mill"='{8}',
-       "Document Item Currency"='{9}',
-       "Amount"='{10}',
-       "Currency"=''{11}'',
-       "updated_on"='{12}',sequence_id={13}
-        WHERE "id"={14} '''.format(username,BusinessCode,Customer_Group,Market_Customer,Market_Country,Product_Level_04,Product_Level_05,Product_Level_02,Delivering_Mill,Document_Item_Currency,Amount,Currency,date_time,sequence_id,id_value)
+       "Market - Country"='{3}',
+      	   "Product Level 04"='{4}',
+       "Product Level 05"='{5}',
+       "Product Level 02"='{6}',
+       "Delivering Mill"='{7}',
+       "Document Item Currency"='{8}',
+       "Amount"='{9}',
+       "Currency"=''{10}'',
+       "updated_on"='{11}',sequence_id={12}
+        WHERE "id"={13} '''.format(username,BusinessCode,Customer_Group,Market_Country,Product_Level_04,Product_Level_05,Product_Level_02,Delivering_Mill,Document_Item_Currency,Amount,Currency,date_time,sequence_id,id_value)
         result1=db.insert(query2)
         print(query1)
         if result1=='failed' :raise ValueError
@@ -1785,6 +1853,7 @@ def update_record_extra_profile_minibar():
     
    
 @smb_app2.route('/upload_extra_profile_minibar', methods=['GET','POST'])
+@token_required
 def upload_extra_profile_minibar():
     
         f=request.files['filename']
@@ -1796,14 +1865,14 @@ def upload_extra_profile_minibar():
             smb_df=pd.read_excel(input_directory+f.filename,dtype=str)
             
             df=smb_df[["id","BusinessCode", "Customer Group",
-       "Market - Customer", "Market - Country", "Product Level 04",
+       "Market - Country", "Product Level 04",
        "Product Level 05", "Product Level 02", "Delivering Mill",
        "Document Item Currency", "Amount", "Currency","sequence_id"]]  
             df["id"]=df["id"].astype(int)
             df["sequence_id"]=df["sequence_id"].astype(int)
             
             df_main = pd.read_sql('''select "id","BusinessCode", "Customer Group",
-       "Market - Customer", "Market - Country", "Product Level 04",
+     "Market - Country", "Product Level 04",
        "Product Level 05", "Product Level 02", "Delivering Mill",
        "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Profile - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             
@@ -1823,6 +1892,7 @@ def upload_extra_profile_minibar():
             return {"status":"failure"},500
 
 @smb_app2.route('/validate_extra_profile_minibar', methods=['GET','POST'])
+@token_required
 def  validate_extra_profile_minibar():
     
         
@@ -1838,7 +1908,7 @@ def  validate_extra_profile_minibar():
     try:
        
         df=df[ ["Username","BusinessCode", "Customer_Group",
-       "Market_Customer", "Market_Country", "Product_Level_04",
+       "Market_Country", "Product_Level_04",
        "Product_Level_05", "Product_Level_02", "Delivering_Mill",
        "Document_Item_Currency", "Amount", "Currency","date_time","sequence_id","id"]]
         
@@ -1867,7 +1937,7 @@ def  validate_extra_profile_minibar():
             query2='''UPDATE "SMB"."SMB - Extra - Profile - MiniBar"
         SET 
        "Username"='%s',
-       "BusinessCode"='%s',"Customer Group"='%s',"Market - Customer"='%s', "Market - Country"='%s',
+       "BusinessCode"='%s',"Customer Group"='%s', "Market - Country"='%s',
        "Product Level 04"='%s',"Product Level 05"='%s' ,"Product Level 02"='%s',"Delivering Mill"='%s', 
        
        "Document Item Currency"='%s',
@@ -1884,6 +1954,7 @@ def  validate_extra_profile_minibar():
         return {"status":"failure"},500
          
 @smb_app2.route('/download_extra_profile_minibar',methods=['GET'])
+
 def download_extra_profile_minibar():
     
         now = datetime.now()
@@ -1913,6 +1984,7 @@ def download_extra_profile_minibar():
 
 
 @smb_app2.route('/data_extra_profile_Iberia',methods=['GET','POST'])
+@token_required
 def  extra_profile_minibar_iberia():
     # query_paramters 
     search_string=request.args.get("search_string")
@@ -1932,8 +2004,8 @@ def  extra_profile_minibar_iberia():
     
     # fetching the data from database and filtering    
     try:
-        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Profile Iberia and Italy" where "active"='1' order by "id"  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
-        count=db.query('select count(*) from "SMB"."SMB - Extra - Profile Iberia and Italy"')[0][0]
+        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Profile Iberia and Italy" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        count=db.query('select count(*) from "SMB"."SMB - Extra - Profile Iberia and Italy" where "active"=1 ')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
         df.rename(columns={"Market_-_Country":"Market_Country"},inplace=True)  
@@ -1953,10 +2025,13 @@ def  extra_profile_minibar_iberia():
 
   
 @smb_app2.route('/delete_record_extra_profile_Iberia',methods=['POST','GET','DELETE'])
+@token_required
 def delete_record_extra_profile_Iberia():  
-    id_value=request.args.get('id')
+    id_value=json.loads(request.data)['id']
+    id_value.append(0)
+    id_value=tuple(id_value)
     try:
-        query='''UPDATE "SMB"."SMB - Extra - Profile Iberia and Italy" SET "active"=0 WHERE "id"={} '''.format(id_value)
+        query='''UPDATE "SMB"."SMB - Extra - Profile Iberia and Italy" SET "active"=0 WHERE "id" in {} '''.format(id_value)
         result=db.insert(query)
         if result=='failed':raise ValueError
         
@@ -1985,6 +2060,7 @@ def get_record_extra_profile_Iberia():
 
 
 @smb_app2.route('/add_record_extra_profile_Iberia',methods=['POST'])
+@token_required
 def add_record_extra_profile_Iberia():
     
     today = date.today()
@@ -2039,6 +2115,7 @@ def add_record_extra_profile_Iberia():
 
 
 @smb_app2.route('/update_record_extra_profile_Iberia',methods=['POST'])
+@token_required
 def update_record_extra_profile_Iberia():
     
     today = date.today()
@@ -2057,6 +2134,7 @@ def update_record_extra_profile_Iberia():
     Document_Item_Currency =( query_parameters["Document_Item_Currency"])
     Amount =( query_parameters["Amount"])
     Currency =( query_parameters["Currency"])
+    sequence_id=(query_parameters["sequence_id"])
     
     try:
         
@@ -2081,8 +2159,9 @@ def update_record_extra_profile_Iberia():
        "Document Item Currency"='{6}',
        "Amount"='{7}',
        "Currency"=''{8}'',
-       "updated_on"='{9}'
-        WHERE "id"={10} '''.format(username,BusinessCode,Market_Country,Delivering_Mill,Product_Level_02,Product_Level_05,Document_Item_Currency,Amount,Currency,date_time,id_value)
+       "updated_on"='{9}',
+       sequence_id={10}
+        WHERE "id"={11} '''.format(username,BusinessCode,Market_Country,Delivering_Mill,Product_Level_02,Product_Level_05,Document_Item_Currency,Amount,Currency,date_time,sequence_id,id_value)
         result1=db.insert(query2)
         if result1=='failed' :raise ValueError
         
@@ -2097,6 +2176,7 @@ def update_record_extra_profile_Iberia():
     
    
 @smb_app2.route('/upload_extra_profile_Iberia', methods=['GET','POST'])
+@token_required
 def upload_extra_profile_Iberia():
     
         f=request.files['filename']
@@ -2109,12 +2189,14 @@ def upload_extra_profile_Iberia():
             
             df=smb_df[["id","BusinessCode", "Market - Country",
        "Delivering Mill", "Product Level 02", "Product Level 05",
-       "Document Item Currency", "Amount", "Currency"]]  
+       "Document Item Currency", "Amount", "Currency","sequence_id"]]  
             df["id"]=df["id"].astype(int)
+            df["sequence_id"]=df["sequence_id"].astype(int)
+            
             
             df_main = pd.read_sql('''select "id","BusinessCode", "Market - Country",
        "Delivering Mill", "Product Level 02", "Product Level 05",
-       "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Profile Iberia and Italy" where "active"='1' order by "id" ''', con=con)
+       "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Profile Iberia and Italy" where "active"='1' order by sequence_id ''', con=con)
             
             
             df3 = df.merge(df_main, how='left', indicator=True)
@@ -2134,6 +2216,7 @@ def upload_extra_profile_Iberia():
 
 
 @smb_app2.route('/validate_extra_profile_Iberia', methods=['GET','POST'])
+@token_required
 def  validate_extra_profile_Iberia():
     
         
@@ -2150,7 +2233,7 @@ def  validate_extra_profile_Iberia():
        
         df=df[ ["Username","BusinessCode", "Market_Country",
        "Delivering_Mill", "Product_Level_02", "Product_Level_05",
-       "Document_Item_Currency", "Amount", "Currency","date_time","id"]]
+       "Document_Item_Currency", "Amount", "Currency","date_time","sequence_id","id"]]
         
         query1='''INSERT INTO "SMB"."SMB - Extra - Profile Iberia and Italy_History"
         SELECT 
@@ -2179,7 +2262,8 @@ def  validate_extra_profile_Iberia():
        "Document Item Currency"='%s',
        "Amount"='%s',
        "Currency"=''%s'',
-       "updated_on"='%s'
+       "updated_on"='%s',
+       sequence_id='%s'
         WHERE "id"= '%s' ''' % tuple(df.loc[i])
             result=db.insert(query2)
             if result=='failed' :raise ValueError
@@ -2188,10 +2272,11 @@ def  validate_extra_profile_Iberia():
     except:
         return {"status":"failure"},500
 @smb_app2.route('/download_extra_profile_Iberia',methods=['GET'])
+
 def download_extra_profile_Iberia():
         now = datetime.now()
         try:
-            df = pd.read_sql('''select * from "SMB"."SMB - Extra - Profile Iberia and Italy" where "active"='1' order by "id" ''', con=con)
+            df = pd.read_sql('''select * from "SMB"."SMB - Extra - Profile Iberia and Italy" where "active"='1' order by sequence_id ''', con=con)
             df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'extra_profile_Iberia.xlsx'
@@ -2212,6 +2297,7 @@ def download_extra_profile_Iberia():
 
 
 @smb_app2.route('/data_extra_profile_Iberia_minibar',methods=['GET','POST'])
+@token_required
 def  extra_profile_minibar_iberia_minibar():
     # query_paramters 
     search_string=request.args.get("search_string")
@@ -2232,7 +2318,7 @@ def  extra_profile_minibar_iberia_minibar():
     # fetching the data from database and filtering    
     try:
         df = pd.read_sql('''select * from "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
-        count=db.query('select count(*) from "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar"')[0][0]
+        count=db.query('select count(*) from "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar" where "active"=1 ')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
         df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer_Group":"Market_Customer_Group","Market_-_Customer":"Market_Customer"},inplace=True)  
@@ -2252,10 +2338,14 @@ def  extra_profile_minibar_iberia_minibar():
 
   
 @smb_app2.route('/delete_record_extra_profile_Iberia_minibar',methods=['POST','GET','DELETE'])
+
+@token_required
 def delete_record_extra_profile_Iberia_minibar():  
-    id_value=request.args.get('id')
+    id_value=json.loads(request.data)['id']
+    id_value.append(0)
+    id_value=tuple(id_value)
     try:
-        query='''UPDATE "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar" SET "active"=0 WHERE "id"={} '''.format(id_value)
+        query='''UPDATE "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar" SET "active"=0 WHERE "id" in {} '''.format(id_value)
         result=db.insert(query)
         
         
@@ -2265,6 +2355,7 @@ def delete_record_extra_profile_Iberia_minibar():
 
 
 @smb_app2.route('/get_record_extra_profile_Iberia_minibar',methods=['GET','POST'])       
+@token_required
 def get_record_extra_profile_Iberia_minibar():
     id_value=request.args.get('id')  
     
@@ -2284,6 +2375,7 @@ def get_record_extra_profile_Iberia_minibar():
 
 
 @smb_app2.route('/add_record_extra_profile_Iberia_minibar',methods=['POST'])
+@token_required
 def add_record_extra_profile_Iberia_minibar():
     
     today = date.today()
@@ -2295,7 +2387,7 @@ def add_record_extra_profile_Iberia_minibar():
     BusinessCode=(query_parameters["BusinessCode"])
     Market_Country=(query_parameters['Market_Country'])
     Market_Customer_Group=(query_parameters['Market_Customer_Group'])
-    Market_Customer=(query_parameters['Market_Customer'])
+   
     Delivering_Mill=(query_parameters['Delivering_Mill'])
     Product_Level_02=(query_parameters['Product_Level_02'])
     Product_Level_05=(query_parameters['Product_Level_05'])
@@ -2307,7 +2399,7 @@ def add_record_extra_profile_Iberia_minibar():
     try:
         
         
-        input_tuple=( username,BusinessCode,Market_Country,Market_Customer_Group,Market_Customer,Delivering_Mill,Product_Level_02,Product_Level_05,Document_Item_Currency, Amount, Currency.strip("'"))
+        input_tuple=( username,BusinessCode,Market_Country,Market_Customer_Group,Delivering_Mill,Product_Level_02,Product_Level_05,Document_Item_Currency, Amount, Currency.strip("'"))
         
         query='''INSERT INTO "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar"(
              
@@ -2317,7 +2409,7 @@ def add_record_extra_profile_Iberia_minibar():
              
        "Market - Country",
        "Market - Customer Group",
-       "Market - Customer", 
+
         "Delivering Mill",
        "Product Level 02", 
        
@@ -2350,7 +2442,7 @@ def update_record_extra_profile_Iberia_minibar():
     BusinessCode=(query_parameters["BusinessCode"])
     Market_Country=(query_parameters['Market_Country'])
     Market_Customer_Group=(query_parameters['Market_Customer_Group'])
-    Market_Customer=(query_parameters['Market_Customer'])
+   
     Delivering_Mill=(query_parameters['Delivering_Mill'])
     Product_Level_02=(query_parameters['Product_Level_02'])
     Product_Level_05=(query_parameters['Product_Level_05'])
@@ -2378,17 +2470,17 @@ def update_record_extra_profile_Iberia_minibar():
        "BusinessCode"='{1}',
        "Market - Country"='{2}',
        "Market - Customer Group"='{3}',
-       "Market - Customer"='{4}',
-       "Delivering Mill"='{5}',
+      
+       "Delivering Mill"='{4}',
        
       	   
-       "Product Level 02"='{6}',
-       "Product Level 05"='{7}',
-       "Document Item Currency"='{8}',
-       "Amount"='{9}',
-       "Currency"=''{10}'',
-       "updated_on"='{11}',sequence_id={12}
-        WHERE "id"={13} '''.format(username,BusinessCode,Market_Country,Market_Customer_Group,Market_Customer,Delivering_Mill,Product_Level_02,Product_Level_05,Document_Item_Currency,Amount,Currency,date_time,sequence_id,id_value)
+       "Product Level 02"='{5}',
+       "Product Level 05"='{6}',
+       "Document Item Currency"='{7}',
+       "Amount"='{8}',
+       "Currency"=''{9}'',
+       "updated_on"='{10}',sequence_id={11}
+        WHERE "id"={12} '''.format(username,BusinessCode,Market_Country,Market_Customer_Group,Delivering_Mill,Product_Level_02,Product_Level_05,Document_Item_Currency,Amount,Currency,date_time,sequence_id,id_value)
         result1=db.insert(query2)
         if result1=='failed' :raise ValueError
         print(query1)
@@ -2403,6 +2495,7 @@ def update_record_extra_profile_Iberia_minibar():
 
    
 @smb_app2.route('/upload_extra_profile_Iberia_minibar', methods=['GET','POST'])
+@token_required
 def upload_extra_profile_Iberia_minibar():
     
         f=request.files['filename']
@@ -2414,13 +2507,13 @@ def upload_extra_profile_Iberia_minibar():
             smb_df=pd.read_excel(input_directory+f.filename,dtype=str)
             
             df=smb_df[["id","BusinessCode", "Market - Country",
-       "Market - Customer Group", "Market - Customer", "Delivering Mill",
+       "Market - Customer Group", "Delivering Mill",
        "Product Level 02", "Product Level 05", "Document Item Currency",
        "Amount", "Currency","sequence_id"]]  
             df["id"]=df["id"].astype(int)
             df["sequence_id"]=df["sequence_id"].astype(int)
             df_main = pd.read_sql('''select "id","BusinessCode", "Market - Country",
-       "Market - Customer Group", "Market - Customer", "Delivering Mill",
+       "Market - Customer Group",  "Delivering Mill",
        "Product Level 02", "Product Level 05", "Document Item Currency",
        "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             
@@ -2442,6 +2535,7 @@ def upload_extra_profile_Iberia_minibar():
 
 
 @smb_app2.route('/validate_extra_profile_Iberia_minibar', methods=['GET','POST'])
+@token_required
 def  validate_extra_profile_Iberia_minibar():
     
         
@@ -2457,7 +2551,7 @@ def  validate_extra_profile_Iberia_minibar():
     try:
        
         df=df[ ["Username","BusinessCode", "Market_Country",
-       "Market_Customer_Group", "Market_Customer", "Delivering_Mill",
+       "Market_Customer_Group",  "Delivering_Mill",
        "Product_Level_02", "Product_Level_05", "Document_Item_Currency",
        "Amount", "Currency","date_time","sequence_id","id"]]
         
@@ -2484,7 +2578,7 @@ def  validate_extra_profile_Iberia_minibar():
         SET 
        "Username"='%s',
        "BusinessCode"='%s', "Market - Country"='%s',
-       "Market - Customer Group"='%s', "Market - Customer"='%s', "Delivering Mill"='%s',
+       "Market - Customer Group"='%s', "Delivering Mill"='%s',
        "Product Level 02"='%s', "Product Level 05"='%s',
        "Document Item Currency"='%s',
        "Amount"='%s',
@@ -2499,6 +2593,7 @@ def  validate_extra_profile_Iberia_minibar():
         return {"status":"failure"},500
     
 @smb_app2.route('/download_extra_profile_Iberia_minibar',methods=['GET'])
+
 def download_extra_profile_Iberia_minibar():
         now = datetime.now()
         try:
