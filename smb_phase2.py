@@ -17,13 +17,17 @@ from functools import wraps
 from collections import OrderedDict
 from flask import Blueprint
 import psycopg2
-import jwt
+
 import shutil
 from pathlib import Path
 import os
 from sqlalchemy import create_engine
 import getpass
 from datetime import datetime,date
+
+from smb_phase1 import token_required
+from smb_phase1 import upsert
+from smb_phase1 import email
 
 
 
@@ -88,23 +92,6 @@ input_directory="/home/ubuntu/mega_dir/"
 
 
 con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
-
-
-def token_required(func):
-    # decorator factory which invoks update_wrapper() method and passes decorated function as an argument
-    @wraps(func)
-    def decorated(*args, **kwargs):
-        #token = request.args.get('token')
-        #if 'x-access-token' in request.headers:
-        token = request.headers['x-access-token']        
-       
-        try:
-            data = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=["HS256"])
-            print(data)
-        except :      
-             return {"msg":"Invalid token;"}
-        return func(*args, **kwargs)
-    return decorated
 
 
 # Login page
@@ -213,39 +200,30 @@ def update_record_frieght_parity():
     id_value=(query_parameters['id'])
     sequence_id=(query_parameters['sequence_id'])
     
+    flag='update'
+      
+    tablename='SMB - Extra - Freight Parity'        
+   
     
-  
-    try:
-        
-        query1='''INSERT INTO "SMB"."SMB - Extra - Freight Parity_History"
-        SELECT 
-        "id","Username",now(),"Delivering Mill", "Market - Country",
-       "Zip Code (Dest)", "Product Division", "Document Item Currency",
-       "Amount", "Currency"  FROM "SMB"."SMB - Extra - Freight Parity"
-        WHERE "id"={} '''.format(id_value)
-        result=db.insert(query1)
-        if result=='failed' :raise ValueError
+    input_tuple=(tablename,id_value,sequence_id,username,Delivering_Mill,Market_Country,Zip_Code_Dest,Product_Division,Document_Item_Currency,Amount,Currency)
+    col_tuple=("table_name","id","sequence_id","Username",
+    "Delivering Mill",
+    "Market - Country",
+    "Zip Code (Dest)"
+    "Product Division",
+    "Document Item Currency",
+    "Amount",
+    "Currency")
+    email_status=''
     
-        query2='''UPDATE "SMB"."SMB - Extra - Freight Parity"
-        SET 
-       "Username"='{0}',
-       "Delivering Mill"='{1}', "Market - Country"='{2}',
-       "Zip Code (Dest)"='{3}', "Product Division"='{4}', 
-       
-       
-       "Document Item Currency"='{5}',
-       "Amount"='{6}',
-       "Currency"='{7}',
-       "updated_on"='{8}',
-       sequence_id={9}
-        WHERE "id"={10} '''.format(username,Delivering_Mill,Market_Country,Zip_Code_Dest,Product_Division,Document_Item_Currency,Amount,Currency,date_time,sequence_id,id_value)
-        result1=db.insert(query2)
-        print(query2)
-        if result1=='failed' :raise ValueError
-        
-        return {"status":"success"},200
-    except:
-        return {"status":"failure"},500
+    status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
+    if(status['status']=='success'):email_status=email([status['tableid']],tablename)
+    
+    
+    
+    if(email_status=='success'): return {"status":"success"},200
+    else: return {"status":"failure"},500
+
 
      
 @smb_app2.route('/add_record_freight_parity',methods=['POST'])
@@ -266,22 +244,30 @@ def add_record_frieght_parity():
     Document_Item_Currency =( query_parameters["Document_Item_Currency"])
     Amount =( query_parameters["Amount"])
     Currency =( query_parameters["Currency"])
-    try:
-        input_tuple=(username,Delivering_Mill,Market_Country,Zip_Code_Dest,Product_Division,Document_Item_Currency, Amount,Currency.strip("'"))
-        query='''INSERT INTO "SMB"."SMB - Extra - Freight Parity"(
-             
-             "Username",
-             "Delivering Mill", "Market - Country",
-       "Zip Code (Dest)", "Product Division", "Document Item Currency",
-       "Amount", "Currency")
-             VALUES{};'''.format(input_tuple)
-        result=db.insert(query)  
-        if result=='failed' :raise ValueError
+   
+    
+    flag='add'
         
-        return {"status":"success"},200
-        
-    except:
-        return {"status":"failure"},500
+    tablename='SMB - Extra - Freight Parity'        
+   
+    
+    input_tuple=(tablename,flag,username,Delivering_Mill,Market_Country,Zip_Code_Dest,Product_Division,Document_Item_Currency,Amount,Currency)
+    col_tuple=("table_name","flag", "Username",
+           "Delivering Mill",
+    "Market - Country",
+    "Zip Code (Dest)"
+    "Product Division",
+    "Document Item Currency",
+    "Amount",
+    "Currency")
+    
+    
+    status=upsert(col_tuple,input_tuple,flag,tablename)
+    if(status['status']=='success'): email_status=email([status['tableid']],tablename)
+    
+    if(email_status=='success'): return {"status":"success"},200
+    else: return {"status":"failure"},500
+    
 
 
     
@@ -337,48 +323,42 @@ def  validate_freight_parity():
     df=pd.DataFrame(json_data["billet"]) 
     
     df.insert(0,'Username',username)
-    df.insert(1,'date_time',date_time)
-    try:
+    
+             
        
-        df=df[ ["Username","Delivering_Mill", "Market_Country",
-       "Zip_Code_Dest", "Product_Division", "Document_Item_Currency",
-       "Amount", "Currency","date_time","sequence_id","id"]]
+    tablename='SMB - Extra - Freight Parity'        
+   
+    
+    flag='update'  
+    
+    df.insert(1,'table_name',tablename)
+    
+    
+    col_tuple=("table_name","id","sequence_id",
+          "Username","Delivering Mill",
+    "Market - Country",
+    "Zip Code (Dest)"
+    "Product Division",
+    "Document Item Currency",
+    "Amount",
+    "Currency")
+    col_list=['table_name','id','sequence_id','Username','Delivering_Mill','Market_Country','Zip_Code_Dest','Product_Division','Document_Item_Currency','Amount','Currency']
+    
+    
+    id_value=[]
+  
+    df=df[ col_list]
+    
+    for i in range(0,len(df)):
+        status=upsert(col_tuple,tuple(df.loc[i]),flag,tablename,df['id'][i])
+        id_value.append(status['tableid'])
         
-        query1='''INSERT INTO "SMB"."SMB - Extra - Freight Parity_History" 
-        SELECT 
-        "id",
-        "Username",now(),
-        "Delivering Mill", "Market - Country",
-       "Zip Code (Dest)", "Product Division", "Document Item Currency",
-       "Amount", "Currency"  FROM "SMB"."SMB - Extra - Freight Parity"
-        WHERE "id" in {} '''
-        
-        id_tuple=tuple(df["id"])
-        if len(id_tuple)==1:id=id_tuple[0] ;id_tuple=(id,id)
-        result=db.insert(query1.format(id_tuple))
-        if result=='failed' :raise ValueError
-        
-        
-        # looping for update query
-        for i in range(0,len(df)):
-            print(tuple(df.loc[0]))
-            query2='''UPDATE "SMB"."SMB - Extra - Freight Parity"
-        SET 
-       "Username"='%s',
-       "Delivering Mill"='%s', "Market - Country"='%s',
-       "Zip Code (Dest)"='%s', "Product Division"='%s', 
-       "Document Item Currency"='%s',
-       "Amount"='%s',
-       "Currency"=''%s'',
-       "updated_on"='%s',
-       sequence_id ='%s'
-        WHERE "id"= '%s' ''' % tuple(df.loc[i])
-            result=db.insert(query2)
-            if result=='failed' :raise ValueError
-            
-        return {"status":"success"},200
-    except:
-        return {"status":"failure"},500
+    if(status['status']=='success'):
+        email_status=email(id_value,tablename)
+  
+    return {"status":"success"},200
+         
+    
     
 @smb_app2.route('/download_freight_parity',methods=['GET'])
 
@@ -499,8 +479,6 @@ def update_record_frieght_parity_minibar():
     Delivering_Mill=(query_parameters["Delivering_Mill"])
     Market_Country=(query_parameters['Market_Country'])
     Market_Customer_Group=(query_parameters['Market_Customer_Group'])
-   
-   
     Zip_Code_Dest=(query_parameters['Zip_Code_Dest'])
     
     Product_Division =( query_parameters["Product_Division"])
@@ -508,42 +486,27 @@ def update_record_frieght_parity_minibar():
     Document_Item_Currency =( query_parameters["Document_Item_Currency"])
     Amount =( query_parameters["Amount"])
     Currency =( query_parameters["Currency"])
-    id_value=(query_parameters['id'])
+    id_value=(query_parameters['id_value'])
     
-    try:
-        
-        query1='''INSERT INTO "SMB"."SMB - Extra - Freight Parity - MiniBar_History"
-        SELECT 
-        "id","Username",now(),"Delivering Mill", "Market - Country",
-       "Market - Customer Group", "Market - Customer", "Zip Code (Dest)",
-       "Product Division", "Document Item Currency", "Amount", "Currency" FROM "SMB"."SMB - Extra - Freight Parity - MiniBar"
-        WHERE "id"={} '''.format(id_value)
-        
-        result=db.insert(query1)
-        if result=='failed' :raise ValueError
+    flag='update'
+  
+    tablename='SMB - Extra - Freight Parity - MiniBar'        
     
-        query2='''UPDATE "SMB"."SMB - Extra - Freight Parity - MiniBar"
-        SET 
-       "Username"='{0}',
-       "Delivering Mill"='{1}', "Market - Country"='{2}',
-       "Market - Customer Group"='{3}',  "Zip Code (Dest)"='{4}',
-       "Product Division"='{5}',
-       
-       "Document Item Currency"='{6}',
-       "Amount"='{7}',
-       "Currency"=''{8}'',
-       "updated_on"='{9}',sequence_id= {10}
-        WHERE "id"={11} '''.format(username,Delivering_Mill,Market_Country,Market_Customer_Group,Zip_Code_Dest,Product_Division,Document_Item_Currency,Amount,Currency,date_time,sequence_id,id_value)
-        result1=db.insert(query2)
-        if result1=='failed' :raise ValueError
-        print(query1)
-        print("*****************************")
-        print(query2)
-        return {"status":"success"},200
-    except:
-        return {"status":"failure"},500
-     
     
+    input_tuple=(tablename,id_value,sequence_id,username,Delivering_Mill,Market_Country,Zip_Code_Dest,Product_Division,Document_Item_Currency,Amount,Currency)	
+    col_tuple=("table_name","id","sequence_id","Username","Delivering Mill","Market - Country","Zip Code (Dest)","Product Division",
+"Document Item Currency","Amount","Currency")
+    
+    status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
+    if(status['status']=='success'):email_status=email([status['tableid']],tablename)
+    
+    
+    
+    if(email_status=='success'): return {"status":"success"},200
+    else: return {"status":"failure"},500
+
+
+
 
 @smb_app2.route('/add_record_freight_parity_minibar',methods=['POST'])
 @token_required
@@ -564,38 +527,25 @@ def add_record_frieght_parity_minibar():
     Amount =( query_parameters["Amount"])
     Currency =( query_parameters["Currency"])
         
+    flag='add'
     
-    try:
-        input_tuple=( username,Delivering_Mill,Market_Country,Market_Customer_Group,Zip_Code_Dest, Product_Division,Document_Item_Currency, Amount, Currency.strip("'"))
-        
-        query='''INSERT INTO "SMB"."SMB - Extra - Freight Parity - MiniBar"(
-             
-             "Username",
-             
-             "Delivering Mill",
-             "Market - Country",
-             "Market - Customer Group",
-            
-           "Zip Code (Dest)", 
-           "Product Division",
-           
-             "Document Item Currency",
-             "Amount",
-             "Currency")
-             VALUES{};'''.format(input_tuple)
-        print(query)
-             
-       
-        result=db.insert(query)
-        if result=='failed' :raise ValueError
-        return {"status":"success"},200
-    except:
-        return {"status":"failure"},500
-            
-            
-     
-        
-       
+    
+    tablename='SMB - Extra - Freight Parity - MiniBar'        
+    
+    # id_value=db.query('''select "SMB".get_max_id('"SMB"."SMB - Base Price - Category Addition"')''')[0][0]+1
+    
+    
+    
+    input_tuple=(tablename,flag,username,Delivering_Mill,Market_Country,Zip_Code_Dest,Product_Division,Document_Item_Currency,Amount,Currency)	
+    col_tuple=("table_name","flag", "Username",
+             "Delivering Mill","Market - Country","Zip Code (Dest)","Product Division",
+"Document Item Currency","Amount","Currency")
+    
+    status=upsert(col_tuple,input_tuple,flag,tablename)
+    if(status['status']=='success'): email_status=email([status['tableid']],tablename)
+    
+    if(email_status=='success'): return {"status":"success"},200
+    else: return {"status":"failure"},500
             
   
 
@@ -643,57 +593,39 @@ def upload_freight_parity_minibar():
 def  validate_freight_parity_minibar():
     
         
-        json_data=json.loads(request.data)
-        username = getpass.getuser() 
-        now = datetime.now()
-        date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
+    json_data=json.loads(request.data)
+    username = getpass.getuser() 
+    now = datetime.now()
+    date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
+    
+    df=pd.DataFrame(json_data["billet"]) 
+    email_status=''
+    df.insert(0,'Username',username)
+    
+    tablename='SMB - Extra - Freight Parity - MiniBar'        
+     
+    flag='update'  
+    df.insert(1,'table_name',tablename)
+    col_tuple=("table_name","id","sequence_id",
+             "Username",
+              "Delivering Mill","Market - Country","Zip Code (Dest)","Product Division",
+"Document Item Currency","Amount","Currency")
+    col_list=['table_name','id','sequence_id','Username','Delivering_Mill','Market_Country','Zip_Code_Dest','Product_Division','Document_Item_Currency','Amount','Currency']
+    
+    
+    id_value=[]
+  
+    df=df[ col_list]
+    
+    for i in range(0,len(df)):
+        status=upsert(col_tuple,tuple(df.loc[i]),flag,tablename,df['id'][i])
+        id_value.append(status['tableid'])
         
-        df=pd.DataFrame(json_data["billet"]) 
-        
-        df.insert(0,'Username',username)
-        df.insert(1,'date_time',date_time)
-   
-       
-        df=df[ ["Username","Delivering_Mill", "Market_Country",
-       "Market_Customer_Group", "Zip_Code_Dest",
-       "Product_Division", "Document_Item_Currency", "Amount", "Currency","date_time","sequence_id","id"]]
-        
-        query1='''INSERT INTO "SMB"."SMB - Extra - Freight Parity - MiniBar_History" 
-        SELECT 
-        "id",
-        "Username",now(),
-        "Delivering Mill", "Market - Country",
-       "Market - Customer Group", "Market - Customer", "Zip Code (Dest)",
-       "Product Division", "Document Item Currency", "Amount", "Currency"  FROM "SMB"."SMB - Extra - Freight Parity - MiniBar"
-        WHERE "id" in {} '''
-        
-        id_tuple=tuple(df["id"])
-        print(query1.format(id_tuple))
-        if len(id_tuple)==1:id=id_tuple[0] ;id_tuple=(id,id)
-        result=db.insert(query1.format(id_tuple))
-        if result=='failed' :raise ValueError
-        
-        
-        # looping for update query
-        for i in range(0,len(df)):
-            print(tuple(df.loc[0]))
-            query2='''UPDATE "SMB"."SMB - Extra - Freight Parity - MiniBar"
-        SET 
-       "Username"='%s',
-       "Delivering Mill"='%s', "Market - Country"='%s',
-       "Market - Customer Group"='%s',  "Zip Code (Dest)"='%s',
-       "Product Division"='%s',
-       "Document Item Currency"='%s',
-       "Amount"='%s',
-       "Currency"=''%s'',
-       "updated_on"='%s',sequence_id='%s'
-        WHERE "id"= '%s' ''' % tuple(df.loc[i])
-            result=db.insert(query2)
-            print(query2)
-            if result=='failed' :raise ValueError
-            
-        return {"status":"success"},200
-   
+    if(status['status']=='success'):
+        email_status=email(id_value,tablename)
+  
+    return {"status":"success"},200
+      
          
 @smb_app2.route('/download_freight_parity_minibar',methods=['GET'])
 
@@ -815,41 +747,32 @@ def update_record_extra_grade():
     Document_Item_Currency =( query_parameters["Document_Item_Currency"])
     Amount =( query_parameters["Amount"])
     Currency =( query_parameters["Currency"])
+
+    flag='update'
+  
+    tablename='SMB - Extra - Grade'
+    input_tuple=(tablename,id_value,sequence_id,username,BusinessCode,Grade_Category,Market_Country,Document_Item_Currency,Product_Division,Country_Group,Amount,Currency)
+    col_tuple=("table_name","id","sequence_id","Username",
+          "BusinessCode",
+        "Grade Category",
+        "Market - Country",
+        "Document Item Currency",
+        "Product Division",
+        "Country Group",
+        "Amount",
+        "Currency")
+    email_status=''
     
-    try:
-        
-        query1='''INSERT INTO "SMB"."SMB - Extra - Grade_History"
-        SELECT 
-        "id","Username",now(),"BusinessCode", "Grade Category",
-       "Country Group", "Market - Country", "Product Division",
-       "Document Item Currency", "Amount", "Currency"  FROM "SMB"."SMB - Extra - Grade"
-        WHERE "id"={} '''.format(id_value)
-        result=db.insert(query1)
-        if result=='failed' :raise ValueError
+    status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
+    if(status['status']=='success'):email_status=email([status['tableid']],tablename)
     
-        query2='''UPDATE "SMB"."SMB - Extra - Grade"
-        SET 
-       "Username"='{0}',
-       "BusinessCode"='{1}', "Grade Category"='{2}',
-       "Country Group"='{3}', "Market - Country"='{4}', "Product Division"='{5}',
-      
-       
-       "Document Item Currency"='{6}',
-       "Amount"='{7}',
-       "Currency"=''{8}'',
-       "updated_on"='{9}',
-       sequence_id={10}
-        WHERE "id"={11} '''.format(username,BusinessCode,Grade_Category,Country_Group,Market_Country,Product_Division,Document_Item_Currency,Amount,Currency,date_time,sequence_id,id_value)
-        result1=db.insert(query2)
-        if result1=='failed' :raise ValueError
-        print(query1)
-        print("*****************************")
-        print(query2)
-        return {"status":"success"},200
-    except:
-        return {"status":"failure"},500
-        
     
+    
+    if(email_status=='success'): return {"status":"success"},200
+    else: return {"status":"failure"},500
+
+
+
     
    
 @smb_app2.route('/add_record_extra_grade',methods=['POST'])
@@ -871,35 +794,30 @@ def add_record_extra_grade():
     Document_Item_Currency =( query_parameters["Document_Item_Currency"])
     Amount =( query_parameters["Amount"])
     Currency =( query_parameters["Currency"])
-    try:
-        input_tuple=( username, BusinessCode,Grade_Category,Country_Group,Market_Country, Product_Division,Document_Item_Currency, Amount, Currency.strip("'"))
-        
-        query='''INSERT INTO "SMB"."SMB - Extra - Grade"(
-             
-             "Username",
-             
-             "BusinessCode",
-             "Grade Category",
-           "Country Group",
-           "Market - Country",
-           "Product Division",
-             "Document Item Currency",
-             "Amount",
-             "Currency")
-             VALUES{};'''.format(input_tuple)
-         
+    
+    
+    flag='add'
+  
+    tablename='SMB - Extra - Grade'        
+    
+    input_tuple=(tablename,flag,username,BusinessCode,Grade_Category,Market_Country,Document_Item_Currency,Product_Division,Country_Group,Amount,Currency)
+    col_tuple=("table_name","flag", "Username", "BusinessCode",
+"Grade Category",
+"Market - Country",
+"Document Item Currency",
+"Product Division",
+"Country Group",
+"Amount",
+"Currency")
+    
+    status=upsert(col_tuple,input_tuple,flag,tablename)
+    if(status['status']=='success'): email_status=email([status['tableid']],tablename)
+    
+    if(email_status=='success'): return {"status":"success"},200
+    else: return {"status":"failure"},500
        
-        result=db.insert(query)  
-        if result=='failed' :raise ValueError
-        
-        return {"status":"success"},200
-        
-    except:
-        return {"status":"failure"},500 
-    
-    
-    
-    
+# **
+
 @smb_app2.route('/upload_extra_grade', methods=['GET','POST'])
 @token_required
 def upload_extra_grade():
@@ -940,10 +858,7 @@ def upload_extra_grade():
 
 @smb_app2.route('/validate_extra_grade', methods=['GET','POST'])
 @token_required
-def  validate_extra_grade():
-    
-        
-        
+def  validate_extra_grade():      
     json_data=json.loads(request.data)
     username = getpass.getuser() 
     now = datetime.now()
@@ -951,52 +866,37 @@ def  validate_extra_grade():
     
     df=pd.DataFrame(json_data["billet"]) 
     
+    email_status=''
     df.insert(0,'Username',username)
-    df.insert(1,'date_time',date_time)
-    try:
-       
-        df=df[ ["Username","BusinessCode", "Grade_Category",
-       "Country_Group", "Market_Country", "Product_Division",
-       "Document_Item_Currency", "Amount", "Currency","date_time","sequence_id","id"]]
+    
+    tablename='SMB - Extra - Grade'  
+    flag='update'  
+    df.insert(1,'table_name',tablename)
+    col_tuple=("table_name","id","sequence_id",
+             "Username",
+            "BusinessCode",
+            "Grade Category",
+            "Market - Country",
+            "Document Item Currency",
+            "Product Division",
+            "Country Group",
+            "Amount",
+            "Currency")
+    col_list=['table_name','id','sequence_id','Username','BusinessCode','Grade_Category','Market_Country','Document_Item_Currency','Product_Division','Country_Group','Amount','Currency']
+    
+    
+    id_value=[]
+  
+    df=df[ col_list]
+    
+    for i in range(0,len(df)):
+        status=upsert(col_tuple,tuple(df.loc[i]),flag,tablename,df['id'][i])
+        id_value.append(status['tableid'])
         
-        query1='''INSERT INTO "SMB"."SMB - Extra - Grade_History" 
-        SELECT 
-        "id",
-        "Username",now(),
-        "BusinessCode", "Grade Category",
-       "Country Group", "Market - Country", "Product Division",
-       "Document Item Currency", "Amount", "Currency"  FROM "SMB"."SMB - Extra - Grade"
-        WHERE "id" in {} '''
-        
-        id_tuple=tuple(df["id"])
-        if len(id_tuple)==1:id=id_tuple[0] ;id_tuple=(id,id)
-        result=db.insert(query1.format(id_tuple))
-        print(query1)
-        if result=='failed' :raise ValueError
-        
-        
-        # looping for update query
-        for i in range(0,len(df)):
-            print(tuple(df.loc[0]))
-            query2='''UPDATE "SMB"."SMB - Extra - Grade"
-        SET 
-       "Username"='%s',
-       "BusinessCode"='%s', "Grade Category"='%s',
-       "Country Group"='%s', "Market - Country"='%s', "Product Division"='%s',
-       
-       "Document Item Currency"='%s',
-       "Amount"='%s',
-       "Currency"=''%s'',
-       "updated_on"='%s',
-       sequence_id='%s'
-        WHERE "id"= '%s' ''' % tuple(df.loc[i])
-            result=db.insert(query2)
-            print(query2)
-            if result=='failed' :raise ValueError
-            
-        return {"status":"success"},200
-    except:
-        return {"status":"failure"},500
+    if(status['status']=='success'):
+        email_status=email(id_value,tablename)
+  
+    return {"status":"success"},200
          
 @smb_app2.route('/download_extra_grade',methods=['GET'])
 
@@ -1038,9 +938,7 @@ def  extra_grade_data_minibar():
     
     # pagination logic
     lowerLimit=offset*limit 
-    upperLimit=lowerLimit+limit
-    
-    
+    upperLimit=lowerLimit+limit  
     
     # fetching the data from database and filtering    
     try:
@@ -1060,10 +958,6 @@ def  extra_grade_data_minibar():
     except:
         return {"statuscode":500,"msg":"failure"},500
         
-
-        
-
-  
 @smb_app2.route('/delete_record_extra_grade_minibar',methods=['POST','GET','DELETE'])
 @token_required
 def delete_record_extra_grade_minibar():  
@@ -1111,51 +1005,59 @@ def add_record_extra_grade_minibar():
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     query_parameters =json.loads(request.data)
-    
-    
-    
+        
     BusinessCode=(query_parameters["BusinessCode"])
-    Customer_Group=(query_parameters["Customer_Group"])
-    
-   
-    
+    Customer_Group=(query_parameters["Customer_Group"]) 
     Market_Country=(query_parameters['Market_Country'])
-    
     Grade_Category=(query_parameters['Grade_Category'])
-    
-    
     Document_Item_Currency =( query_parameters["Document_Item_Currency"])
     Amount =( query_parameters["Amount"])
     Currency =( query_parameters["Currency"])
     
-    try:
+    # try:
+    #     input_tuple=( username,BusinessCode,Customer_Group,Market_Country,Grade_Category ,Document_Item_Currency, Amount, Currency.strip("'"))
         
-  
-   
-        
-       
-        input_tuple=( username,BusinessCode,Customer_Group,Market_Country,Grade_Category ,Document_Item_Currency, Amount, Currency.strip("'"))
-        
-        query='''INSERT INTO "SMB"."SMB - Extra - Grade - MiniBar"(
+    #     query='''INSERT INTO "SMB"."SMB - Extra - Grade - MiniBar"(
              
-             "Username",
+    #          "Username",
              
-             "BusinessCode",
-             "Customer Group",
+    #          "BusinessCode",
+    #          "Customer Group",
           
-           "Market - Country",
-           "Grade Category",
+    #        "Market - Country",
+    #        "Grade Category",
+    #          "Document Item Currency",
+    #          "Amount",
+    #          "Currency")
+    #          VALUES{};'''.format(input_tuple)
+         
+       
+    #     result=db.insert(query)
+    #     if result=='failed': raise ValueError
+    #     return {"status":"success"},200
+    # except:
+    #     return {"status":"failure"},500
+    flag='add'
+   
+    tablename='SMB - Extra - Grade - MiniBar'
+   
+    input_tuple=(tablename,flag,username, BusinessCode,Customer_Group,Market_Country,Grade_Category,Document_Item_Currency, Amount,Currency.strip("'"))
+    col_tuple=("table_name",
+               "flag",  
+               "Username",             
+             "BusinessCode",
+             "Customer Group",            
+             "Market - Country",
+            	 "Grade Category",
              "Document Item Currency",
              "Amount",
              "Currency")
-             VALUES{};'''.format(input_tuple)
-         
-       
-        result=db.insert(query)
-        if result=='failed': raise ValueError
-        return {"status":"success"},200
-    except:
-        return {"status":"failure"},500
+    
+    status=upsert(col_tuple,input_tuple,flag,tablename)
+    if(status['status']=='success'): email_status=email([status['tableid']],tablename)
+    
+    if(email_status=='success'): return {"status":"success"},200
+    else: return {"status":"failure"},500
     
     
 
@@ -1185,37 +1087,63 @@ def update_record_extra_grade_minibar():
     Document_Item_Currency =( query_parameters["Document_Item_Currency"])
     Amount =( query_parameters["Amount"])
     Currency =( query_parameters["Currency"])
-    try:
+    # try:
         
-        query1='''INSERT INTO "SMB"."SMB - Extra - Grade - MiniBar_History"
-        SELECT 
-        "id","Username",now(),"BusinessCode", "Customer Group",
-       "Market - Customer", "Market - Country", "Grade Category",
-       "Document Item Currency", "Amount", "Currency" FROM "SMB"."SMB - Extra - Grade - MiniBar"
-        WHERE "id"={} '''.format(id_value)
-        result=db.insert(query1)
-        if result=='failed' :raise ValueError
+    #     query1='''INSERT INTO "SMB"."SMB - Extra - Grade - MiniBar_History"
+    #     SELECT 
+        # "id","Username",now(),"BusinessCode", "Customer Group",
+        # "Market - Customer", "Market - Country", "Grade Category",
+        # "Document Item Currency", "Amount", "Currency" 
+        # FROM "SMB"."SMB - Extra - Grade - MiniBar"
+    #     WHERE "id"={} '''.format(id_value)
+    #     result=db.insert(query1)
+    #     if result=='failed' :raise ValueError
     
-        query2='''UPDATE "SMB"."SMB - Extra - Grade - MiniBar"
-        SET 
-       "Username"='{0}',
-       "BusinessCode"='{1}', "Customer Group"='{2}',
-       "Market - Country"='{3}', "Grade Category"='{4}',
+    #     query2='''UPDATE "SMB"."SMB - Extra - Grade - MiniBar"
+    #     SET 
+    #    "Username"='{0}',
+    #    "BusinessCode"='{1}', "Customer Group"='{2}',
+    #    "Market - Country"='{3}', "Grade Category"='{4}',
        
        
-       "Document Item Currency"='{5}',
-       "Amount"='{6}',
-       "Currency"=''{7}'',
-       "updated_on"='{8}',sequence_id= {9}
-        WHERE "id"={10} '''.format(username,BusinessCode,Customer_Group,Market_Country,Grade_Category,Document_Item_Currency,Amount,Currency,date_time,sequence_id,id_value)
-        result1=db.insert(query2)
-        if result1=='failed' :raise ValueError
-        print(query1)
-        print("*****************************")
-        print(query2)
-        return {"status":"success"},200
-    except:
-        return {"status":"failure"},500
+    #    "Document Item Currency"='{5}',
+    #    "Amount"='{6}',
+    #    "Currency"=''{7}'',
+    #    "updated_on"='{8}',sequence_id= {9}
+    #     WHERE "id"={10} '''.format(username,BusinessCode,Customer_Group,Market_Country,Grade_Category,Document_Item_Currency,Amount,Currency,date_time,sequence_id,id_value)
+    #     result1=db.insert(query2)
+    #     if result1=='failed' :raise ValueError
+    #     print(query1)
+    #     print("*****************************")
+    #     print(query2)
+    #     return {"status":"success"},200
+    # except:
+    #     return {"status":"failure"},500
+    flag='update'
+      
+    tablename='SMB - Extra - Grade - MiniBar'     
+    
+    input_tuple=(tablename,id_value,sequence_id,username,BusinessCode,Customer_Group,Market_Country,Grade_Category,Document_Item_Currency, Amount,Currency)
+
+    col_tuple=("table_name",
+               "id",
+               "sequence_id",
+              "Username",
+              "BusinessCode",
+              "Customer Group",
+              "Market - Customer",
+              "Market - Country",
+              "Grade Category",
+              "Document Item Currency",
+              "Amount",
+              "Currency")
+    email_status=''
+    
+    status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
+    if(status['status']=='success'):email_status=email([status['tableid']],tablename)      
+        
+    if(email_status=='success'): return {"status":"success"},200
+    else: return {"status":"failure"},500
 
     
    
@@ -1271,48 +1199,90 @@ def  validate_extra_grade_minibar():
     
     df.insert(0,'Username',username)
     df.insert(1,'date_time',date_time)
-    try:
+    # try:
        
-        df=df[ ["Username","BusinessCode", "Customer_Group",
-      "Market_Country", "Grade_Category",
-       "Document_Item_Currency", "Amount", "Currency","date_time","sequence_id","id"]]
+    #     df=df[ ["Username","BusinessCode", "Customer_Group",
+    #   "Market_Country", "Grade_Category",
+    #    "Document_Item_Currency", "Amount", "Currency","date_time","sequence_id","id"]]
         
-        query1='''INSERT INTO "SMB"."SMB - Extra - Grade - MiniBar_History" 
-        SELECT 
-        "id",
-        "Username",now(),
-        "BusinessCode", "Customer Group",
-       "Market - Customer", "Market - Country", "Grade Category",
-       "Document Item Currency", "Amount", "Currency"  FROM "SMB"."SMB - Extra - Grade - MiniBar"
-        WHERE "id" in {} '''
+    #     query1='''INSERT INTO "SMB"."SMB - Extra - Grade - MiniBar_History" 
+    #     SELECT 
+    #     "id",
+    #     "Username",now(),
+    #     "BusinessCode", "Customer Group",
+    #    "Market - Customer", "Market - Country", "Grade Category",
+    #    "Document Item Currency", "Amount", "Currency"  FROM "SMB"."SMB - Extra - Grade - MiniBar"
+    #     WHERE "id" in {} '''
         
-        id_tuple=tuple(df["id"])
-        if len(id_tuple)==1:id=id_tuple[0] ;id_tuple=(id,id)
+    #     id_tuple=tuple(df["id"])
+    #     if len(id_tuple)==1:id=id_tuple[0] ;id_tuple=(id,id)
                     
-        result=db.insert(query1.format(id_tuple))
-        if result=='failed' :raise ValueError
+    #     result=db.insert(query1.format(id_tuple))
+    #     if result=='failed' :raise ValueError
         
         
-        # looping for update query
-        for i in range(0,len(df)):
-            print(tuple(df.loc[0]))
-            query2='''UPDATE "SMB"."SMB - Extra - Grade - MiniBar"
-        SET 
-       "Username"='%s',
-       "BusinessCode"='%s', "Customer Group"='%s',
-        "Market - Country"='%s', "Grade Category"='%s',
+    #     # looping for update query
+    #     for i in range(0,len(df)):
+    #         print(tuple(df.loc[0]))
+    #         query2='''UPDATE "SMB"."SMB - Extra - Grade - MiniBar"
+    #     SET 
+    #    "Username"='%s',
+    #    "BusinessCode"='%s', "Customer Group"='%s',
+    #     "Market - Country"='%s', "Grade Category"='%s',
        
-       "Document Item Currency"='%s',
-       "Amount"='%s',
-       "Currency"=''%s'',
-       "updated_on"='%s',sequence_id='%s'
-        WHERE "id"= '%s' ''' % tuple(df.loc[i])
-            result=db.insert(query2)
-            if result=='failed' :raise ValueError
+    #    "Document Item Currency"='%s',
+    #    "Amount"='%s',
+    #    "Currency"=''%s'',
+    #    "updated_on"='%s',sequence_id='%s'
+    #     WHERE "id"= '%s' ''' % tuple(df.loc[i])
+    #         result=db.insert(query2)
+    #         if result=='failed' :raise ValueError
             
-        return {"status":"success"},200
-    except:
-        return {"status":"failure"},500
+    #     return {"status":"success"},200
+    # except:
+    #     return {"status":"failure"},500
+    tablename='SMB - Extra - Grade - MiniBar'
+    flag='update'  
+    
+    df.insert(1,'table_name',tablename)
+    
+    
+    col_tuple=("table_name",
+               "id",
+    "Username",
+    "BusinessCode", 
+    "Customer Group",
+    "Market - Customer", 
+    "Market - Country", 
+    "Grade Category",
+    "Document Item Currency", 
+    "Amount", 
+    "Currency")
+    col_list=["table_name",
+               "id",
+    "Username",
+    "BusinessCode", 
+    "Customer Group",
+    "Market - Customer", 
+    "Market - Country", 
+    "Grade Category",
+    "Document Item Currency", 
+    "Amount", 
+    "Currency"]
+    
+    
+    id_value=[]
+  
+    df=df[ col_list]
+    
+    for i in range(0,len(df)):
+        status=upsert(col_tuple,tuple(df.loc[i]),flag,tablename,df['id'][i])
+        id_value.append(status['tableid'])
+        
+    if(status['status']=='success'):
+        email_status=email(id_value,tablename)
+  
+    return {"status":"success"},200
         
          
 @smb_app2.route('/download_extra_grade_minibar',methods=['GET'])
@@ -1432,35 +1402,53 @@ def add_record_extra_profile():
     Amount =( query_parameters["Amount"])
     Currency =( query_parameters["Currency"])
     
-    try:
+    # try:
+    #     input_tuple=( username,BusinessCode,Market_Country,Product_Division,Product_Level_04,Product_Level_05,Product_Level_02,Delivering_Mill,Document_Item_Currency, Amount, Currency.strip("'"))
         
-  
-   
-       
-        input_tuple=( username,BusinessCode,Market_Country,Product_Division,Product_Level_04,Product_Level_05,Product_Level_02,Delivering_Mill,Document_Item_Currency, Amount, Currency.strip("'"))
-        
-        query='''INSERT INTO "SMB"."SMB - Extra - Profile"(
+    #     query='''INSERT INTO "SMB"."SMB - Extra - Profile"(
              
-             "Username",
+    #          "Username",
              
-             "BusinessCode",
-             "Market - Country",
-       "Product Division",
-       "Product Level 04", 
-       "Product Level 05",
-       "Product Level 02", 
-       "Delivering Mill",
-             "Document Item Currency",
-             "Amount",
-             "Currency")
-             VALUES{};'''.format(input_tuple)
+        #       "BusinessCode",
+        #       "Market - Country",
+        # "Product Division",
+        # "Product Level 04", 
+        # "Product Level 05",
+        # "Product Level 02", 
+        # "Delivering Mill",
+        #       "Document Item Currency",
+        #       "Amount",
+        #       "Currency")
+    #          VALUES{};'''.format(input_tuple)
          
        
-        result=db.insert(query)
-        if result=='failed' :raise ValueError
-        return {"status":"success"},200
-    except:
-        return {"status":"failure"},500
+    #     result=db.insert(query)
+    #     if result=='failed' :raise ValueError
+    #     return {"status":"success"},200
+    # except:
+    #     return {"status":"failure"},500
+    flag='add'   
+    tablename='SMB - Extra - Profile'
+    input_tuple=(tablename,flag,username, BusinessCode,Market_Country,Product_Division,Product_Level_04,Product_Level_05,Product_Level_02,Delivering_Mill,Document_Item_Currency, Amount,Currency.strip("'"))
+    col_tuple=("table_name",
+               "flag",  
+               "Username",             
+               "BusinessCode",
+              "Market - Country",
+                "Product Division",
+                "Product Level 04", 
+                "Product Level 05",
+                "Product Level 02", 
+                "Delivering Mill",
+              "Document Item Currency",
+              "Amount",
+              "Currency")
+    
+    status=upsert(col_tuple,input_tuple,flag,tablename)
+    if(status['status']=='success'): email_status=email([status['tableid']],tablename)
+    
+    if(email_status=='success'): return {"status":"success"},200
+    else: return {"status":"failure"},500
     
 
 @smb_app2.route('/update_record_extra_profile',methods=['POST'])
@@ -1578,55 +1566,98 @@ def  validate_extra_profile():
     
     df.insert(0,'Username',username)
     df.insert(1,'date_time',date_time)
-    try:
+    # try:
        
-        df=df[ ["Username","BusinessCode", "Market_Country",
-       "Product_Division", "Product_Level_04", "Product_Level_05",
-       "Product_Level_02", "Delivering_Mill", "Document_Item_Currency",
-       "Amount", "Currency","date_time","sequence_id","id"]]
+    #     df=df[ ["Username","BusinessCode", "Market_Country",
+    #    "Product_Division", "Product_Level_04", "Product_Level_05",
+    #    "Product_Level_02", "Delivering_Mill", "Document_Item_Currency",
+    #    "Amount", "Currency","date_time","sequence_id","id"]]
         
-        query1='''INSERT INTO "SMB"."SMB - Extra - Profile_History"
-        SELECT 
-        "id",
-        "Username",now(),
-        "BusinessCode", "Market - Country",
-       "Product Division", "Product Level 04", "Product Level 05",
-       "Product Level 02", "Delivering Mill", "Document Item Currency",
-       "Amount", "Currency"  FROM "SMB"."SMB - Extra - Profile"
-        WHERE "id" in {} '''
+    #     query1='''INSERT INTO "SMB"."SMB - Extra - Profile_History"
+    #     SELECT 
+    #     "id",
+    #     "Username",now(),
+    #     "BusinessCode", "Market - Country",
+    #    "Product Division", "Product Level 04", "Product Level 05",
+    #    "Product Level 02", "Delivering Mill", "Document Item Currency",
+    #    "Amount", "Currency"  FROM "SMB"."SMB - Extra - Profile"
+    #     WHERE "id" in {} '''
         
-        id_tuple=tuple(df["id"])
-        if len(id_tuple)==1:id=id_tuple[0] ;id_tuple=(id,id)
+    #     id_tuple=tuple(df["id"])
+    #     if len(id_tuple)==1:id=id_tuple[0] ;id_tuple=(id,id)
                     
-        result=db.insert(query1.format(id_tuple))
-        if result=='failed' :raise ValueError
+    #     result=db.insert(query1.format(id_tuple))
+    #     if result=='failed' :raise ValueError
         
         
-        # looping for update query
-        for i in range(0,len(df)):
-            print(tuple(df.loc[0]))
-            query2='''UPDATE "SMB"."SMB - Extra - Profile"
-        SET 
-       "Username"='%s',
-       "BusinessCode"='%s', "Market - Country"='%s',
-       "Product Division"='%s', "Product Level 04"='%s', "Product Level 05"='%s',
-       "Product Level 02"='%s',
-        "Delivering Mill"='%s',
-       "Document Item Currency"='%s',
-       "Amount"='%s',
-       "Currency"=''%s'',
-       "updated_on"='%s',
-       sequence_id='%s'
-        WHERE "id"= '%s' ''' % tuple(df.loc[i])
-            result=db.insert(query2)
-            if result=='failed' :raise ValueError
+    #     # looping for update query
+    #     for i in range(0,len(df)):
+    #         print(tuple(df.loc[0]))
+    #         query2='''UPDATE "SMB"."SMB - Extra - Profile"
+    #     SET 
+    #    "Username"='%s',
+    #    "BusinessCode"='%s', "Market - Country"='%s',
+    #    "Product Division"='%s', "Product Level 04"='%s', "Product Level 05"='%s',
+    #    "Product Level 02"='%s',
+    #     "Delivering Mill"='%s',
+    #    "Document Item Currency"='%s',
+    #    "Amount"='%s',
+    #    "Currency"=''%s'',
+    #    "updated_on"='%s',
+    #    sequence_id='%s'
+    #     WHERE "id"= '%s' ''' % tuple(df.loc[i])
+    #         result=db.insert(query2)
+    #         if result=='failed' :raise ValueError
             
-        return {"status":"success"},200
-    except:
-        return {"status":"failure"},500
+    #     return {"status":"success"},200
+    # except:
+    #     return {"status":"failure"},500
+    tablename='SMB - Extra - Profile'
+    flag='update'  
+    
+    # df.insert(1,'table_name',tablename)
+    col_tuple=("table_name",
+               "id",
+        "Username",
+        "BusinessCode", 
+        "Market - Country",
+        "Product Division", 
+        "Product Level 04", 
+        "Product Level 05",
+        "Product Level 02", 
+        "Delivering Mill", 
+        "Document Item Currency",
+        "Amount", 
+        "Currency")
+    col_list=["table_name",
+               "id",
+        "Username",
+        "BusinessCode", 
+        "Market - Country",
+        "Product Division", 
+        "Product Level 04", 
+        "Product Level 05",
+        "Product Level 02", 
+        "Delivering Mill", 
+        "Document Item Currency",
+        "Amount", 
+        "Currency"]
+    
+    id_value=[]
+  
+    df=df[ col_list]
+    
+    for i in range(0,len(df)):
+        status=upsert(col_tuple,tuple(df.loc[i]),flag,tablename,df['id'][i])
+        id_value.append(status['tableid'])
+        
+    if(status['status']=='success'):
+        email_status=email(id_value,tablename)
+  
+    return {"status":"success"},200
          
-@smb_app2.route('/download_extra_profile',methods=['GET'])
 
+@smb_app2.route('/download_extra_profile',methods=['GET'])
 def download_extra_profile():
    
         now = datetime.now()
@@ -1745,35 +1776,56 @@ def add_record_extra_profile_minibar():
     Amount =( query_parameters["Amount"])
     Currency =( query_parameters["Currency"])
     
-    try:
+    # try:
+    #     input_tuple=( username,BusinessCode,Customer_Group,Market_Country,Product_Level_04,Product_Level_05,Product_Level_02,Delivering_Mill,Document_Item_Currency, Amount, Currency.strip("'"))
         
-  
-   
-        input_tuple=( username,BusinessCode,Customer_Group,Market_Country,Product_Level_04,Product_Level_05,Product_Level_02,Delivering_Mill,Document_Item_Currency, Amount, Currency.strip("'"))
-        
-        query='''INSERT INTO "SMB"."SMB - Extra - Profile - MiniBar"(
+    #     query='''INSERT INTO "SMB"."SMB - Extra - Profile - MiniBar"(
              
-             "Username",
+    #          "Username",
              
-             "BusinessCode",
-             "Customer Group",
+        #       "BusinessCode",
+        #       "Customer Group",
      
-       "Market - Country", 
+        # "Market - Country", 
        
-       "Product Level 04", 
-       "Product Level 05",
-       "Product Level 02", 
-       "Delivering Mill",
-             "Document Item Currency",
-             "Amount",
-             "Currency")
-             VALUES{};'''.format(input_tuple)
+        # "Product Level 04", 
+        # "Product Level 05",
+        # "Product Level 02", 
+        # "Delivering Mill",
+        #       "Document Item Currency",
+        #       "Amount",
+        #       "Currency")
+    #          VALUES{};'''.format(input_tuple)
          
        
-        db.insert(query)
-        return {"status":"success"},200
-    except:
-        return {"status":"failure"},500
+    #     db.insert(query)
+    #     return {"status":"success"},200
+    # except:
+    #     return {"status":"failure"},500
+    flag='add'
+   
+    tablename='SMB - Extra - Profile - MiniBar'     
+   
+    input_tuple=(tablename,flag,username,BusinessCode,Customer_Group,Market_Country,Product_Level_04,Product_Level_05,Product_Level_02,Delivering_Mill,Document_Item_Currency, Amount, Currency.strip("'"))
+    col_tuple=("table_name",
+               "flag",  
+               "Username",             
+             "BusinessCode",
+             "Customer Group",
+                "Market - Country", 
+                "Product Level 04", 
+                "Product Level 05",
+                "Product Level 02", 
+                "Delivering Mill",
+                "Document Item Currency",
+                "Amount",
+                "Currency")
+    
+    status=upsert(col_tuple,input_tuple,flag,tablename)
+    if(status['status']=='success'): email_status=email([status['tableid']],tablename)
+    
+    if(email_status=='success'): return {"status":"success"},200
+    else: return {"status":"failure"},500
     
 
 
@@ -1805,45 +1857,67 @@ def update_record_extra_profile_minibar():
     Amount =( query_parameters["Amount"])
     Currency =( query_parameters["Currency"])
     
-    try:
+    # try:
         
-        query1='''INSERT INTO "SMB"."SMB - Extra - Profile - MiniBar_History"
-        SELECT 
-        "id","Username",now(),"BusinessCode", "Customer Group",
-       "Market - Customer", "Market - Country", "Product Level 04",
-       "Product Level 05", "Product Level 02", "Delivering Mill",
-       "Document Item Currency", "Amount", "Currency"  FROM "SMB"."SMB - Extra - Profile - MiniBar"
-        WHERE "id"={} '''.format(id_value)
-        result=db.insert(query1)
-        print(query1)
-        if result=='failed' :raise ValueError
+    #     query1='''INSERT INTO "SMB"."SMB - Extra - Profile - MiniBar_History"
+    #     SELECT 
+    #     "id","Username",now(),"BusinessCode", "Customer Group",
+    #    "Market - Customer", "Market - Country", "Product Level 04",
+    #    "Product Level 05", "Product Level 02", "Delivering Mill",
+    #    "Document Item Currency", "Amount", "Currency"  FROM "SMB"."SMB - Extra - Profile - MiniBar"
+    #     WHERE "id"={} '''.format(id_value)
+    #     result=db.insert(query1)
+    #     print(query1)
+    #     if result=='failed' :raise ValueError
     
-        query2='''UPDATE "SMB"."SMB - Extra - Profile - MiniBar"
-        SET 
-       "Username"='{0}',
-       "BusinessCode"='{1}',
-       "Customer Group"='{2}',
+    #     query2='''UPDATE "SMB"."SMB - Extra - Profile - MiniBar"
+    #     SET 
+    #    "Username"='{0}',
+    #    "BusinessCode"='{1}',
+    #    "Customer Group"='{2}',
        
-       "Market - Country"='{3}',
-      	   "Product Level 04"='{4}',
-       "Product Level 05"='{5}',
-       "Product Level 02"='{6}',
-       "Delivering Mill"='{7}',
-       "Document Item Currency"='{8}',
-       "Amount"='{9}',
-       "Currency"=''{10}'',
-       "updated_on"='{11}',sequence_id={12}
-        WHERE "id"={13} '''.format(username,BusinessCode,Customer_Group,Market_Country,Product_Level_04,Product_Level_05,Product_Level_02,Delivering_Mill,Document_Item_Currency,Amount,Currency,date_time,sequence_id,id_value)
-        result1=db.insert(query2)
-        print(query1)
-        if result1=='failed' :raise ValueError
+    #    "Market - Country"='{3}',
+    #   	   "Product Level 04"='{4}',
+    #    "Product Level 05"='{5}',
+    #    "Product Level 02"='{6}',
+    #    "Delivering Mill"='{7}',
+    #    "Document Item Currency"='{8}',
+    #    "Amount"='{9}',
+    #    "Currency"=''{10}'',
+    #    "updated_on"='{11}',sequence_id={12}
+    #     WHERE "id"={13} '''.format(username,BusinessCode,Customer_Group,Market_Country,Product_Level_04,Product_Level_05,Product_Level_02,Delivering_Mill,Document_Item_Currency,Amount,Currency,date_time,sequence_id,id_value)
+    #     result1=db.insert(query2)
+    #     print(query1)
+    #     if result1=='failed' :raise ValueError
         
-        print("*****************************")
+    #     print("*****************************")
         
-        return {"status":"success"},200
-    except:
-        return {"status":"failure"},500
-     
+    #     return {"status":"success"},200
+    # except:
+    #     return {"status":"failure"},500
+    flag='update'
+      
+    tablename='SMB - Extra - Delivery Mill'  
+    
+    input_tuple=(tablename,id_value,sequence_id,username,BusinessCode,Customer_Group,Market_Country,Product_Level_04,Product_Level_05,Product_Level_02,Delivering_Mill,Document_Item_Currency,Amount,Currency)
+    col_tuple=("table_name","id","sequence_id", "Username",
+            "BusinessCode",
+            "Customer Group",
+        "Market - Customer", 
+        "Market - Country", 
+        "Product Level 04",
+        "Product Level 05", 
+        "Product Level 02", 
+        "Delivering Mill",
+        "Document Item Currency", 
+        "Amount", 
+        "Currency")      
+        
+    
+    email_status=''
+        
+    status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
+    if(status['status']=='success'):email_status=email([status['tableid']],tablename)
 
     
    
@@ -1900,56 +1974,102 @@ def  validate_extra_profile_minibar():
     
     df.insert(0,'Username',username)
     df.insert(1,'date_time',date_time)
-    try:
+    # try:
        
-        df=df[ ["Username","BusinessCode", "Customer_Group",
-       "Market_Country", "Product_Level_04",
-       "Product_Level_05", "Product_Level_02", "Delivering_Mill",
-       "Document_Item_Currency", "Amount", "Currency","date_time","sequence_id","id"]]
+    #     df=df[ ["Username","BusinessCode", "Customer_Group",
+    #    "Market_Country", "Product_Level_04",
+    #    "Product_Level_05", "Product_Level_02", "Delivering_Mill",
+    #    "Document_Item_Currency", "Amount", "Currency","date_time","sequence_id","id"]]
         
-        query1='''INSERT INTO "SMB"."SMB - Extra - Profile - MiniBar_History" 
-        SELECT 
-        "id",
-        "Username",now(),
-        "BusinessCode", "Customer Group",
-       "Market - Customer", "Market - Country", "Product Level 04",
-       "Product Level 05", "Product Level 02", "Delivering Mill",
-       "Document Item Currency", "Amount", "Currency"  FROM "SMB"."SMB - Extra - Profile - MiniBar"
-        WHERE "id" in {} '''
-        id_tuple=tuple(df["id"])
-        if len(id_tuple)==1:id=id_tuple[0] ;id_tuple=(id,id)
+    #     query1='''INSERT INTO "SMB"."SMB - Extra - Profile - MiniBar_History" 
+    #     SELECT 
+    #     "id",
+    #     "Username",now(),
+    #     "BusinessCode", "Customer Group",
+    #    "Market - Customer", "Market - Country", "Product Level 04",
+    #    "Product Level 05", "Product Level 02", "Delivering Mill",
+    #    "Document Item Currency", "Amount", "Currency"  FROM "SMB"."SMB - Extra - Profile - MiniBar"
+    #     WHERE "id" in {} '''
+    #     id_tuple=tuple(df["id"])
+    #     if len(id_tuple)==1:id=id_tuple[0] ;id_tuple=(id,id)
                     
-        query1=query1.format(id_tuple)
+    #     query1=query1.format(id_tuple)
         
-        print(query1)
-        result=db.insert(query1)
-        if result=='failed' :raise ValueError
+    #     print(query1)
+    #     result=db.insert(query1)
+    #     if result=='failed' :raise ValueError
         
         
-        # looping for update query
-        for i in range(0,len(df)):
-            print(tuple(df.loc[0]))
-            query2='''UPDATE "SMB"."SMB - Extra - Profile - MiniBar"
-        SET 
-       "Username"='%s',
-       "BusinessCode"='%s',"Customer Group"='%s', "Market - Country"='%s',
-       "Product Level 04"='%s',"Product Level 05"='%s' ,"Product Level 02"='%s',"Delivering Mill"='%s', 
+    #     # looping for update query
+    #     for i in range(0,len(df)):
+    #         print(tuple(df.loc[0]))
+    #         query2='''UPDATE "SMB"."SMB - Extra - Profile - MiniBar"
+    #     SET 
+    #    "Username"='%s',
+    #    "BusinessCode"='%s',"Customer Group"='%s', "Market - Country"='%s',
+    #    "Product Level 04"='%s',"Product Level 05"='%s' ,"Product Level 02"='%s',"Delivering Mill"='%s', 
        
-       "Document Item Currency"='%s',
-       "Amount"='%s',
-       "Currency"=''%s'',
-       "updated_on"='%s',sequence_id='%s'
-        WHERE "id"= '%s' ''' % tuple(df.loc[i])
-            print(query2)
-            result=db.insert(query2)
-            if result=='failed' :raise ValueError
+    #    "Document Item Currency"='%s',
+    #    "Amount"='%s',
+    #    "Currency"=''%s'',
+    #    "updated_on"='%s',sequence_id='%s'
+    #     WHERE "id"= '%s' ''' % tuple(df.loc[i])
+    #         print(query2)
+    #         result=db.insert(query2)
+    #         if result=='failed' :raise ValueError
             
-        return {"status":"success"},200
-    except:
-        return {"status":"failure"},500
-         
-@smb_app2.route('/download_extra_profile_minibar',methods=['GET'])
+    #     return {"status":"success"},200
+    # except:
+    #     return {"status":"failure"},500
+    tablename="SMB - Extra - Profile - MiniBar"
+    flag='update'  
+        
+    df.insert(1,'table_name',tablename)
 
+    col_tuple=("table_name",
+               "id",
+        "Username",
+        "BusinessCode", 
+        "Customer Group",
+        "Market - Customer", 
+        "Market - Country", 
+        "Product Level 04",
+        "Product Level 05", 
+        "Product Level 02", 
+        "Delivering Mill",
+        "Document Item Currency", 
+        "Amount", 
+        "Currency")
+    col_list=["table_name",
+               "id",
+        "Username",
+        "BusinessCode", 
+        "Customer Group",
+        "Market - Customer", 
+        "Market - Country", 
+        "Product Level 04",
+        "Product Level 05", 
+        "Product Level 02", 
+        "Delivering Mill",
+        "Document Item Currency", 
+        "Amount", 
+        "Currency"]
+    
+    id_value=[]
+  
+    df=df[ col_list]
+    
+    for i in range(0,len(df)):
+        status=upsert(col_tuple,tuple(df.loc[i]),flag,tablename,df['id'][i])
+        id_value.append(status['tableid'])
+        
+    if(status['status']=='success'):
+        email_status=email(id_value,tablename)
+  
+    return {"status":"success"},200
+         
+
+@smb_app2.route('/download_extra_profile_minibar',methods=['GET'])
 def download_extra_profile_minibar():
     
         now = datetime.now()
@@ -1964,14 +2084,6 @@ def download_extra_profile_minibar():
         except:
             return {"status":"failure"},500
    
-       
-        
-
-
-
-
-
-
 # ***********************************************************************************************************************************************************************
 #  "SMB"."SMB - Extra - Profile Iberia and Italy"
 
@@ -2016,8 +2128,6 @@ def  extra_profile_minibar_iberia():
         
 
         
-
-  
 @smb_app2.route('/delete_record_extra_profile_Iberia',methods=['POST','GET','DELETE'])
 @token_required
 def delete_record_extra_profile_Iberia():  
@@ -2074,38 +2184,55 @@ def add_record_extra_profile_Iberia():
     Amount =( query_parameters["Amount"])
     Currency =( query_parameters["Currency"])
     
-    try:
+    # try:
+    #     input_tuple=(username,BusinessCode,Market_Country,Delivering_Mill,Product_Level_02,Product_Level_05,Document_Item_Currency, Amount, Currency.strip("'"))
         
-  
-   
-       
-        input_tuple=(username,BusinessCode,Market_Country,Delivering_Mill,Product_Level_02,Product_Level_05,Document_Item_Currency, Amount, Currency.strip("'"))
-        
-        query='''INSERT INTO "SMB"."SMB - Extra - Profile Iberia and Italy"(
+    #     query='''INSERT INTO "SMB"."SMB - Extra - Profile Iberia and Italy"(
             
-             "Username",
+    #          "Username",
              
-             "BusinessCode",
+        #       "BusinessCode",
              
-       "Market - Country", 
-        "Delivering Mill",
-       "Product Level 02", 
+        # "Market - Country", 
+        # "Delivering Mill",
+        # "Product Level 02", 
        
-       "Product Level 05",
+        # "Product Level 05",
        
       
-             "Document Item Currency",
-             "Amount",
-             "Currency")
-             VALUES{};'''.format(input_tuple)
+        #       "Document Item Currency",
+        #       "Amount",
+        #       "Currency")
+    #          VALUES{};'''.format(input_tuple)
          
        
-        result=db.insert(query)
-        if result=='failed':raise ValueError
-        return {"status":"success"},200
-    except:
-        return {"status":"failure"},500
+    #     result=db.insert(query)
+    #     if result=='failed':raise ValueError
+    #     return {"status":"success"},200
+    # except:
+    #     return {"status":"failure"},500
+    flag='add'
+   
+    tablename='SMB - Extra - Profile Iberia and Italy'     
+   
+    input_tuple=(tablename,flag,username,BusinessCode,Market_Country,Delivering_Mill,Product_Level_02,Product_Level_05,Document_Item_Currency, Amount, Currency.strip("'"))
+    col_tuple=("table_name",
+               "flag",  
+               "Username",             
+             "BusinessCode",             
+            "Market - Country", 
+            "Delivering Mill",
+            "Product Level 02",        
+            "Product Level 05",
+              "Document Item Currency",
+              "Amount",
+              "Currency")
     
+    status=upsert(col_tuple,input_tuple,flag,tablename)
+    if(status['status']=='success'): email_status=email([status['tableid']],tablename)
+    
+    if(email_status=='success'): return {"status":"success"},200
+    else: return {"status":"failure"},500
 
 
 @smb_app2.route('/update_record_extra_profile_Iberia',methods=['POST'])
@@ -2130,39 +2257,61 @@ def update_record_extra_profile_Iberia():
     Currency =( query_parameters["Currency"])
     sequence_id=(query_parameters["sequence_id"])
     
-    try:
+    # try:
         
-        query1='''INSERT INTO "SMB"."SMB - Extra - Profile Iberia and Italy_History"
-        SELECT 
-        "id",
-        "Username",now(),"BusinessCode", "Market - Country",
-       "Delivering Mill", "Product Level 02", "Product Level 05",
-       "Document Item Currency" ,"Amount","Currency" FROM "SMB"."SMB - Extra - Profile Iberia and Italy"
-        WHERE "id"={} '''.format(id_value)
-        result=db.insert(query1)
-        if result=='failed' :raise ValueError
+    #     query1='''INSERT INTO "SMB"."SMB - Extra - Profile Iberia and Italy_History"
+    #     SELECT 
+    #     "id",
+    #     "Username",now(),"BusinessCode", "Market - Country",
+    #    "Delivering Mill", "Product Level 02", "Product Level 05",
+    #    "Document Item Currency" ,"Amount","Currency" FROM "SMB"."SMB - Extra - Profile Iberia and Italy"
+    #     WHERE "id"={} '''.format(id_value)
+    #     result=db.insert(query1)
+    #     if result=='failed' :raise ValueError
     
-        query2='''UPDATE "SMB"."SMB - Extra - Profile Iberia and Italy"
-        SET 
-       "Username"='{0}',
-       "BusinessCode"='{1}',
-       "Market - Country"='{2}',
-      	   "Delivering Mill"='{3}',
-       "Product Level 02"='{4}',
-       "Product Level 05"='{5}',
-       "Document Item Currency"='{6}',
-       "Amount"='{7}',
-       "Currency"=''{8}'',
-       "updated_on"='{9}',
-       sequence_id={10}
-        WHERE "id"={11} '''.format(username,BusinessCode,Market_Country,Delivering_Mill,Product_Level_02,Product_Level_05,Document_Item_Currency,Amount,Currency,date_time,sequence_id,id_value)
-        result1=db.insert(query2)
-        if result1=='failed' :raise ValueError
+    #     query2='''UPDATE "SMB"."SMB - Extra - Profile Iberia and Italy"
+    #     SET 
+    #    "Username"='{0}',
+    #    "BusinessCode"='{1}',
+    #    "Market - Country"='{2}',
+    #   	   "Delivering Mill"='{3}',
+    #    "Product Level 02"='{4}',
+    #    "Product Level 05"='{5}',
+    #    "Document Item Currency"='{6}',
+    #    "Amount"='{7}',
+    #    "Currency"=''{8}'',
+    #    "updated_on"='{9}',
+    #    sequence_id={10}
+    #     WHERE "id"={11} '''.format(username,BusinessCode,Market_Country,Delivering_Mill,Product_Level_02,Product_Level_05,Document_Item_Currency,Amount,Currency,date_time,sequence_id,id_value)
+    #     result1=db.insert(query2)
+    #     if result1=='failed' :raise ValueError
         
-        return {"status":"success"},200
-    except:
-        return {"status":"failure"},500
-     
+    #     return {"status":"success"},200
+    # except:
+    #     return {"status":"failure"},500
+    flag='update'
+      
+    tablename='SMB - Extra - Profile Iberia and Italy'  
+    
+    input_tuple=(tablename,id_value,sequence_id,username,BusinessCode,Market_Country,Delivering_Mill,Product_Level_02,Product_Level_05,Document_Item_Currency,Amount,Currency)
+    col_tuple=("table_name",
+               "id",
+               "sequence_id",
+            "Username",
+        "BusinessCode", 
+        "Market - Country",
+        "Delivering Mill", 
+        "Product Level 02", 
+        "Product Level 05",
+        "Document Item Currency" ,
+        "Amount",
+        "Currency")      
+        
+    
+    email_status=''
+        
+    status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
+    if(status['status']=='success'):email_status=email([status['tableid']],tablename)
 
     
     
@@ -2223,50 +2372,93 @@ def  validate_extra_profile_Iberia():
     
     df.insert(0,'Username',username)
     df.insert(1,'date_time',date_time)
-    try:
+    # try:
        
-        df=df[ ["Username","BusinessCode", "Market_Country",
-       "Delivering_Mill", "Product_Level_02", "Product_Level_05",
-       "Document_Item_Currency", "Amount", "Currency","date_time","sequence_id","id"]]
+    #     df=df[ ["Username","BusinessCode", "Market_Country",
+    #    "Delivering_Mill", "Product_Level_02", "Product_Level_05",
+    #    "Document_Item_Currency", "Amount", "Currency","date_time","sequence_id","id"]]
         
-        query1='''INSERT INTO "SMB"."SMB - Extra - Profile Iberia and Italy_History"
-        SELECT 
-        "id",
-        "Username",now(),
-        "BusinessCode", "Market - Country",
-       "Delivering Mill", "Product Level 02", "Product Level 05",
-       "Document Item Currency", "Amount", "Currency"  FROM "SMB"."SMB - Extra - Profile Iberia and Italy"
-        WHERE "id" in {} '''
+    #     query1='''INSERT INTO "SMB"."SMB - Extra - Profile Iberia and Italy_History"
+    #     SELECT 
+    #     "id",
+    #     "Username",now(),
+    #     "BusinessCode", "Market - Country",
+    #    "Delivering Mill", "Product Level 02", "Product Level 05",
+    #    "Document Item Currency", "Amount", "Currency"  FROM "SMB"."SMB - Extra - Profile Iberia and Italy"
+    #     WHERE "id" in {} '''
         
-        id_tuple=tuple(df["id"])
-        if len(id_tuple)==1:id=id_tuple[0] ;id_tuple=(id,id)
-        result=db.insert(query1.format(id_tuple))
-        if result=='failed' :raise ValueError
+    #     id_tuple=tuple(df["id"])
+    #     if len(id_tuple)==1:id=id_tuple[0] ;id_tuple=(id,id)
+    #     result=db.insert(query1.format(id_tuple))
+    #     if result=='failed' :raise ValueError
         
         
-        # looping for update query
-        for i in range(0,len(df)):
-            print(tuple(df.loc[0]))
-            query2='''UPDATE "SMB"."SMB - Extra - Profile Iberia and Italy"
-        SET 
-       "Username"='%s',
-       "BusinessCode"='%s', "Market - Country"='%s',
-       "Delivering Mill"='%s', "Product Level 02"='%s', "Product Level 05"='%s',
+    #     # looping for update query
+    #     for i in range(0,len(df)):
+    #         print(tuple(df.loc[0]))
+    #         query2='''UPDATE "SMB"."SMB - Extra - Profile Iberia and Italy"
+    #     SET 
+    #    "Username"='%s',
+    #    "BusinessCode"='%s', "Market - Country"='%s',
+    #    "Delivering Mill"='%s', "Product Level 02"='%s', "Product Level 05"='%s',
        
-       "Document Item Currency"='%s',
-       "Amount"='%s',
-       "Currency"=''%s'',
-       "updated_on"='%s',
-       sequence_id='%s'
-        WHERE "id"= '%s' ''' % tuple(df.loc[i])
-            result=db.insert(query2)
-            if result=='failed' :raise ValueError
+    #    "Document Item Currency"='%s',
+    #    "Amount"='%s',
+    #    "Currency"=''%s'',
+    #    "updated_on"='%s',
+    #    sequence_id='%s'
+    #     WHERE "id"= '%s' ''' % tuple(df.loc[i])
+    #         result=db.insert(query2)
+    #         if result=='failed' :raise ValueError
             
-        return {"status":"success"},200
-    except:
-        return {"status":"failure"},500
-@smb_app2.route('/download_extra_profile_Iberia',methods=['GET'])
+    #     return {"status":"success"},200
+    # except:
+    #     return {"status":"failure"},500
+    tablename='SMB - Extra - Profile Iberia and Italy'
+    flag='update'  
+    
+    # df.insert(1,'table_name',tablename)
 
+    col_tuple=("table_name",
+               "id",
+               "sequence_id",
+          "Username",
+        "BusinessCode", 
+        "Market - Country",
+        "Delivering Mill", 
+        "Product Level 02", 
+        "Product Level 05",
+        "Document Item Currency", 
+        "Amount", 
+        "Currency")
+    col_list=["table_name",
+               "id",
+               "sequence_id",
+          "Username",
+        "BusinessCode", 
+        "Market - Country",
+        "Delivering Mill", 
+        "Product Level 02", 
+        "Product Level 05",
+        "Document Item Currency", 
+        "Amount", 
+        "Currency"]
+    
+    id_value=[]
+  
+    df=df[ col_list]
+    
+    for i in range(0,len(df)):
+        status=upsert(col_tuple,tuple(df.loc[i]),flag,tablename,df['id'][i])
+        id_value.append(status['tableid'])
+        
+    if(status['status']=='success'):
+        email_status=email(id_value,tablename)
+  
+    return {"status":"success"},200
+
+
+@smb_app2.route('/download_extra_profile_Iberia',methods=['GET'])
 def download_extra_profile_Iberia():
         now = datetime.now()
         try:
@@ -2280,9 +2472,6 @@ def download_extra_profile_Iberia():
         except:
             return {"status":"failure"},500
    
-       
-
-
 
 # ***********************************************************************************************************************************************************************
 #  "SMB"."SMB - Extra - Profile Iberia and Italy minibar"
@@ -2389,37 +2578,60 @@ def add_record_extra_profile_Iberia_minibar():
     Amount =( query_parameters["Amount"])
     Currency =( query_parameters["Currency"])
     
-    try:
+    # try:
         
         
-        input_tuple=( username,BusinessCode,Market_Country,Market_Customer_Group,Delivering_Mill,Product_Level_02,Product_Level_05,Document_Item_Currency, Amount, Currency.strip("'"))
+    #     input_tuple=( username,BusinessCode,Market_Country,Market_Customer_Group,Delivering_Mill,Product_Level_02,Product_Level_05,Document_Item_Currency, Amount, Currency.strip("'"))
         
-        query='''INSERT INTO "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar"(
+    #     query='''INSERT INTO "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar"(
              
-             "Username",
+    #          "Username",
             
-             "BusinessCode",
+        #       "BusinessCode",
              
-       "Market - Country",
-       "Market - Customer Group",
+        # "Market - Country",
+        # "Market - Customer Group",
 
-        "Delivering Mill",
-       "Product Level 02", 
+        # "Delivering Mill",
+        # "Product Level 02", 
        
-       "Product Level 05",
+        # "Product Level 05",
        
       
-             "Document Item Currency",
-             "Amount",
-             "Currency")
-             VALUES{};'''.format(input_tuple)
+        #       "Document Item Currency",
+        #       "Amount",
+        #       "Currency")
+    #          VALUES{};'''.format(input_tuple)
          
        
-        result=db.insert(query)
-        if result=='failed':raise ValueError
-        return {"status":"success"},200
-    except:
-        return {"status":"failure"},500
+    #     result=db.insert(query)
+    #     if result=='failed':raise ValueError
+    #     return {"status":"success"},200
+    # except:
+    #     return {"status":"failure"},500
+    flag='add'
+   
+    tablename='SMB - Extra - Profile Iberia and Italy - MiniBar'     
+   
+    input_tuple=(tablename,flag,username,BusinessCode,Market_Country,Market_Customer_Group,Delivering_Mill,Product_Level_02,Product_Level_05,Document_Item_Currency, Amount, Currency.strip("'"))
+    col_tuple=("table_name",
+               "flag",  
+               "Username",             
+             "BusinessCode",
+            "Market - Country",
+            "Market - Customer Group",
+            "Delivering Mill",
+            "Product Level 02",
+            "Product Level 05",
+              "Document Item Currency",
+              "Amount",
+              "Currency")
+    
+    status=upsert(col_tuple,input_tuple,flag,tablename)
+    if(status['status']=='success'): email_status=email([status['tableid']],tablename)
+    
+    if(email_status=='success'): return {"status":"success"},200
+    else: return {"status":"failure"},500
     
 
 
@@ -2445,44 +2657,68 @@ def update_record_extra_profile_Iberia_minibar():
     Currency =( query_parameters["Currency"])
     sequence_id=(query_parameters['sequence_id'])
     
-    try:
+    # try:
         
-        query1='''INSERT INTO "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar_History" 
-        SELECT 
-        "id","Username",now(),"BusinessCode", "Market - Country",
-       "Market - Customer Group", "Market - Customer", "Delivering Mill",
-       "Product Level 02", "Product Level 05", "Document Item Currency",
-       "Amount", "Currency"  FROM "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar"
-        WHERE "id"={} '''.format(id_value)
-        result=db.insert(query1)
-        if result=='failed' :raise ValueError
+    #     query1='''INSERT INTO "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar_History" 
+    #     SELECT 
+    #     "id","Username",now(),"BusinessCode", "Market - Country",
+    #    "Market - Customer Group", "Market - Customer", "Delivering Mill",
+    #    "Product Level 02", "Product Level 05", "Document Item Currency",
+    #    "Amount", "Currency"  FROM "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar"
+    #     WHERE "id"={} '''.format(id_value)
+    #     result=db.insert(query1)
+    #     if result=='failed' :raise ValueError
     
-        query2='''UPDATE "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar"
-        SET 
-       "Username"='{0}',
-       "BusinessCode"='{1}',
-       "Market - Country"='{2}',
-       "Market - Customer Group"='{3}',
+    #     query2='''UPDATE "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar"
+    #     SET 
+    #    "Username"='{0}',
+    #    "BusinessCode"='{1}',
+    #    "Market - Country"='{2}',
+    #    "Market - Customer Group"='{3}',
       
-       "Delivering Mill"='{4}',
+    #    "Delivering Mill"='{4}',
        
       	   
-       "Product Level 02"='{5}',
-       "Product Level 05"='{6}',
-       "Document Item Currency"='{7}',
-       "Amount"='{8}',
-       "Currency"=''{9}'',
-       "updated_on"='{10}',sequence_id={11}
-        WHERE "id"={12} '''.format(username,BusinessCode,Market_Country,Market_Customer_Group,Delivering_Mill,Product_Level_02,Product_Level_05,Document_Item_Currency,Amount,Currency,date_time,sequence_id,id_value)
-        result1=db.insert(query2)
-        if result1=='failed' :raise ValueError
-        print(query1)
-        print("*****************************")
-        print(query2)
-        return {"status":"success"},200
-    except:
-        return {"status":"failure"},500
-     
+    #    "Product Level 02"='{5}',
+    #    "Product Level 05"='{6}',
+    #    "Document Item Currency"='{7}',
+    #    "Amount"='{8}',
+    #    "Currency"=''{9}'',
+    #    "updated_on"='{10}',sequence_id={11}
+    #     WHERE "id"={12} '''.format(username,BusinessCode,Market_Country,Market_Customer_Group,Delivering_Mill,Product_Level_02,Product_Level_05,Document_Item_Currency,Amount,Currency,date_time,sequence_id,id_value)
+    #     result1=db.insert(query2)
+    #     if result1=='failed' :raise ValueError
+    #     print(query1)
+    #     print("*****************************")
+    #     print(query2)
+    #     return {"status":"success"},200
+    # except:
+    #     return {"status":"failure"},500
+    flag='update'
+      
+    tablename='SMB - Extra - Profile Iberia and Italy - MiniBar'  
+    
+    input_tuple=(tablename,id_value,sequence_id,username,BusinessCode,Market_Country,Market_Customer_Group,Delivering_Mill,Product_Level_02,Product_Level_05,Document_Item_Currency,Amount,Currency)
+    col_tuple=("table_name",
+               "id",
+               "sequence_id", 
+               "Username",
+                "BusinessCode", 
+                "Market - Country",
+                "Market - Customer Group", 
+                "Market - Customer", 
+                "Delivering Mill",
+                "Product Level 02", 
+                "Product Level 05", 
+                "Document Item Currency",
+                "Amount", 
+                "Currency")      
+        
+    
+    email_status=''
+        
+    status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
+    if(status['status']=='success'):email_status=email([status['tableid']],tablename)
 
      
 
@@ -2541,52 +2777,96 @@ def  validate_extra_profile_Iberia_minibar():
     
     df.insert(0,'Username',username)
     df.insert(1,'date_time',date_time)
-    try:
+    # try:
        
-        df=df[ ["Username","BusinessCode", "Market_Country",
-       "Market_Customer_Group",  "Delivering_Mill",
-       "Product_Level_02", "Product_Level_05", "Document_Item_Currency",
-       "Amount", "Currency","date_time","sequence_id","id"]]
+    #     df=df[ ["Username","BusinessCode", "Market_Country",
+    #    "Market_Customer_Group",  "Delivering_Mill",
+    #    "Product_Level_02", "Product_Level_05", "Document_Item_Currency",
+    #    "Amount", "Currency","date_time","sequence_id","id"]]
         
-        query1='''INSERT INTO "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar_History"
-        SELECT 
-        "id",
-        "Username",now(),
-        "BusinessCode", "Market - Country",
-       "Market - Customer Group", "Market - Customer", "Delivering Mill",
-       "Product Level 02", "Product Level 05", "Document Item Currency",
-       "Amount", "Currency"  FROM "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar"
-        WHERE "id" in {} '''
+    #     query1='''INSERT INTO "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar_History"
+    #     SELECT 
+    #     "id",
+    #     "Username",now(),
+    #     "BusinessCode", "Market - Country",
+    #    "Market - Customer Group", "Market - Customer", "Delivering Mill",
+    #    "Product Level 02", "Product Level 05", "Document Item Currency",
+    #    "Amount", "Currency"  FROM "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar"
+    #     WHERE "id" in {} '''
         
-        id_tuple=tuple(df["id"])
-        if len(id_tuple)==1:id=id_tuple[0] ;id_tuple=(id,id)
-        result=db.insert(query1.format(id_tuple))
-        print(query1.format(id_tuple))
-        if result=='failed' :raise ValueError
+    #     id_tuple=tuple(df["id"])
+    #     if len(id_tuple)==1:id=id_tuple[0] ;id_tuple=(id,id)
+    #     result=db.insert(query1.format(id_tuple))
+    #     print(query1.format(id_tuple))
+    #     if result=='failed' :raise ValueError
         
-        # looping for update query
-        for i in range(0,len(df)):
-            print(tuple(df.loc[0]))
-            query2='''UPDATE "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar"
-        SET 
-       "Username"='%s',
-       "BusinessCode"='%s', "Market - Country"='%s',
-       "Market - Customer Group"='%s', "Delivering Mill"='%s',
-       "Product Level 02"='%s', "Product Level 05"='%s',
-       "Document Item Currency"='%s',
-       "Amount"='%s',
-       "Currency"=''%s'',
-       "updated_on"='%s',"sequence_id"='%s'
-        WHERE "id"= '%s' ''' % tuple(df.loc[i])
-            result=db.insert(query2)
-            if result=='failed' :raise ValueError
+    #     # looping for update query
+    #     for i in range(0,len(df)):
+    #         print(tuple(df.loc[0]))
+    #         query2='''UPDATE "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar"
+    #     SET 
+    #    "Username"='%s',
+    #    "BusinessCode"='%s', "Market - Country"='%s',
+    #    "Market - Customer Group"='%s', "Delivering Mill"='%s',
+    #    "Product Level 02"='%s', "Product Level 05"='%s',
+    #    "Document Item Currency"='%s',
+    #    "Amount"='%s',
+    #    "Currency"=''%s'',
+    #    "updated_on"='%s',"sequence_id"='%s'
+    #     WHERE "id"= '%s' ''' % tuple(df.loc[i])
+    #         result=db.insert(query2)
+    #         if result=='failed' :raise ValueError
             
-        return {"status":"success"},200
-    except:
-        return {"status":"failure"},500
+    #     return {"status":"success"},200
+    # except:
+    #     return {"status":"failure"},500
+    tablename='SMB - Extra - Profile Iberia and Italy - MiniBar'
+    
+    flag='update'
+    # df.insert(1,'table_name',tablename)
+    col_tuple=("table_name",
+               "id",
+               "sequence_id",
+          "Username",
+        "BusinessCode", 
+        "Market - Country",
+        "Market - Customer Group", 
+        "Market - Customer", 
+        "Delivering Mill",
+        "Product Level 02", 
+        "Product Level 05", 
+        "Document Item Currency",
+        "Amount", 
+        "Currency")
+    col_list=["table_name",
+               "id",
+               "sequence_id",
+              "Username",
+            "BusinessCode", 
+            "Market - Country",
+            "Market - Customer Group", 
+            "Market - Customer", 
+            "Delivering Mill",
+            "Product Level 02", 
+            "Product Level 05", 
+            "Document Item Currency",
+            "Amount", 
+            "Currency"]
+    
+    id_value=[]
+  
+    df=df[col_list]
+    
+    for i in range(0,len(df)):
+        status=upsert(col_tuple,tuple(df.loc[i]),flag,tablename,df['id'][i])
+        id_value.append(status['tableid'])
+        
+    if(status['status']=='success'):
+        email_status=email(id_value,tablename)
+  
+    return {"status":"success"},200
     
 @smb_app2.route('/download_extra_profile_Iberia_minibar',methods=['GET'])
-
 def download_extra_profile_Iberia_minibar():
         now = datetime.now()
         try:
