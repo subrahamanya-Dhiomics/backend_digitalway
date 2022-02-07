@@ -80,12 +80,12 @@ CORS(smb_app2)
 
 db=Database()
 
-download_path="/home/ubuntu/mega_dir/"
-input_directory="/home/ubuntu/mega_dir/"
+# download_path="/home/ubuntu/mega_dir/"
+# input_directory="/home/ubuntu/mega_dir/"
 
 
-# download_path="C:/Users/Administrator/Documents/"
-# input_directory="C:/Users/Administrator/Documents/"
+download_path="C:/Users/Administrator/Documents/"
+input_directory="C:/Users/Administrator/Documents/"
 
 
 
@@ -197,7 +197,7 @@ def update_record_frieght_parity():
     Document_Item_Currency =( query_parameters["Document_Item_Currency"])
     Amount =( query_parameters["Amount"])
     Currency =( query_parameters["Currency"])
-    id_value=(query_parameters['id'])
+    id_value=(query_parameters['id_value'])
     sequence_id=(query_parameters['sequence_id'])
     
     flag='update'
@@ -209,7 +209,7 @@ def update_record_frieght_parity():
     col_tuple=("table_name","id","sequence_id","Username",
     "Delivering Mill",
     "Market - Country",
-    "Zip Code (Dest)"
+    "Zip Code(Dest)",
     "Product Division",
     "Document Item Currency",
     "Amount",
@@ -276,12 +276,12 @@ def add_record_frieght_parity():
 @token_required
 def upload_freight_parity():
     
-        f=request.files['filename']
-  
+            f=request.files['filename']
+      
+                
+            f.save(input_directory+f.filename)
             
-        f.save(input_directory+f.filename)
-        
-        try:
+       
             smb_df=pd.read_excel(input_directory+f.filename,dtype=str)
             
             df=smb_df[["id","Delivering Mill", "Market - Country",
@@ -306,9 +306,7 @@ def upload_freight_parity():
             table=json.loads(df3.to_json(orient='records'))
             
             return {"data":table},200
-        except:
-            return {"status":"failure"},500
-
+       
 
 @smb_app2.route('/validate_freight_parity', methods=['GET','POST'])
 @token_required
@@ -337,7 +335,7 @@ def  validate_freight_parity():
     col_tuple=("table_name","id","sequence_id",
           "Username","Delivering Mill",
     "Market - Country",
-    "Zip Code (Dest)"
+    "Zip Code (Dest)",
     "Product Division",
     "Document Item Currency",
     "Amount",
@@ -355,6 +353,7 @@ def  validate_freight_parity():
         
     if(status['status']=='success'):
         email_status=email(id_value,tablename)
+        print("mail_sent")
   
     return {"status":"success"},200
          
@@ -366,7 +365,7 @@ def download_freight_parity():
    
         now = datetime.now()
         try:
-            df = pd.read_sql('''select  sequence_id,"Delivering Mill","Market - Country","Zip Code (Dest)","Product Division","Document Item Currency","Amount", "Currency" from "SMB"."SMB - Extra - Freight Parity" where "active"='1' order by sequence_id ''', con=con)
+            df = pd.read_sql('''select  "id",sequence_id,"Delivering Mill","Market - Country","Zip Code (Dest)","Product Division","Document Item Currency","Amount", "Currency" from "SMB"."SMB - Extra - Freight Parity" where "active"='1' order by sequence_id ''', con=con)
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'freight_parity.xlsx'
             print(file)
@@ -741,7 +740,7 @@ def update_record_extra_grade():
     Market_Country=(query_parameters['Market_Country'])
     sequence_id=(query_parameters['sequence_id'])
     
-    id_value=(query_parameters['id'])
+    id_value=(query_parameters['id_value'])
     Product_Division =( query_parameters["Product_Division"])
     
     Document_Item_Currency =( query_parameters["Document_Item_Currency"])
@@ -904,7 +903,9 @@ def download_extra_grade():
    
         now = datetime.now()
         try:
-            df = pd.read_sql('''"Amount", "Currency" where "active"='1' order by sequence_id ''', con=con)
+            df = pd.read_sql('''select "id",sequence_id,"BusinessCode", "Grade Category",
+       "Country Group", "Market - Country", "Product Division",
+       "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Grade" where "active"='1' order by sequence_id ''', con=con)
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'extra_grade.xlsx'
             print(file)

@@ -81,12 +81,12 @@ CORS(smb_app3)
 
 db=Database()
 
-download_path="/home/ubuntu/mega_dir/"
-input_directory="/home/ubuntu/mega_dir/"
+# download_path="/home/ubuntu/mega_dir/"
+# input_directory="/home/ubuntu/mega_dir/"
 
 
-# download_path="C:/Users/Administrator/Documents/"
-# input_directory="C:/Users/Administrator/Documents/"
+download_path="C:/Users/Administrator/Documents/"
+input_directory="C:/Users/Administrator/Documents/"
 
 
 
@@ -1007,7 +1007,7 @@ def update_record_length_production():
     Length=(query_parameters['Length'])
     Length_From=(query_parameters['Length_From'])
     Length_To=(query_parameters['Length_From'])
-    id_value=(query_parameters['id'])
+    id_value=(query_parameters['id_value'])
     sequence_id=(query_parameters["sequence_id"])
     
     Document_Item_Currency =( query_parameters["Document_Item_Currency"])
@@ -1072,6 +1072,9 @@ def update_record_length_production():
         
     status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
     if(status['status']=='success'):email_status=email([status['tableid']],tablename)
+    
+    if(email_status=='success'):return {"status":"success"},200
+    
      
 
    
@@ -1170,7 +1173,8 @@ def  validate_length_production():
     # except:
     #     return {"status":"failure"},500
     tablename='SMB - Extra - Length Production'
-    flag='update'  
+    flag='update' 
+    df.insert(0,"tablename",tablename)
 
     # df.insert(1,'table_name',tablename)
     col_tuple=("table_name",
@@ -1186,17 +1190,17 @@ def  validate_length_production():
         "Document Item Currency", 
         "Amount", 
         "Currency")
-    col_list=["table_name",
+    col_list=["tablename",
                "id",
         "Username",
         "BusinessCode",
-        "Country Group",
-        "Market - Country", 
-        "Delivering Mill", 
+        "Country_Group",
+        "Market_Country", 
+        "Delivering_Mill", 
         "Length", 
-        "Length From",
-        "Length To", 
-        "Document Item Currency", 
+        "Length_From",
+        "Length_To", 
+        "Document_Item_Currency", 
         "Amount", 
         "Currency"]
     
@@ -1223,7 +1227,8 @@ def download_length_production():
             df = pd.read_sql('''select * from "SMB"."SMB - Extra - Length Production" where "active"='1' order by sequence_id ''', con=con)
             df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
-            file=download_path+t+'length_production_minibar.xlsx'
+            # file=download_path+t+'length_production_minibar.xlsx'
+            file=download_path+t+'length_production.xlsx'
             print(file)
             df.to_excel(file,index=False)
             
@@ -1267,7 +1272,7 @@ def  data_length_production_minibar():
         df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer":"Market_Customer"},inplace=True)
         
         if(search_string!="all" and search_string!=None):
-                      df=df[df.eq(search_string).any(1)]
+            df=df[df.eq(search_string).any(1)]
         
         table=json.loads(df.to_json(orient='records'))
         
@@ -1834,8 +1839,7 @@ def update_record_length_logistic():
     Length_From=(query_parameters['Length_From'])
     Length_To=(query_parameters['Length_From'])
     Transport_Mode=(query_parameters['Transport_Mode'])
-    
-    id_value=(query_parameters['id'])
+    id_value=(query_parameters['id_value'])
     sequence_id=(query_parameters["sequence_id"])
     Document_Item_Currency =( query_parameters["Document_Item_Currency"])
     Amount =( query_parameters["Amount"])
@@ -1955,8 +1959,8 @@ def  validate_length_logistic():
        
     df=pd.DataFrame(json_data["billet"]) 
        
-    df.insert(0,'Username',username)
-    df.insert(1,'date_time',date_time)
+   
+    # df.insert(1,'date_time',date_time)
     
         #  df=df[ ["Username","Country_Group", "Market_Country",
         # "Delivering_Mill", "Length", "Length_From", "Length_To",
@@ -1999,7 +2003,9 @@ def  validate_length_logistic():
     tablename='SMB - Extra - Length Logistic'
     flag='update'  
     
-    # df.insert(1,'table_name',tablename)
+    df.insert(0,'table_name',tablename)
+    df.insert(1,'Username',username)
+    
     col_tuple=("table_name",
                "id",
           "Username",
@@ -2016,20 +2022,20 @@ def  validate_length_logistic():
     col_list=["table_name",
                "id",
               "Username",
-              "Country Group", 
-              "Market - Country",
-            "Delivering Mill", 
+              "Country_Group", 
+              "Market_Country",
+            "Delivering_Mill", 
             "Length", 
-            "Length From", 
-            "Length To",
-            "Transport Mode", 
-            "Document Item Currency", 
+            "Length_From", 
+            "Length_To",
+            "Transport_Mode", 
+            "Document_Item_Currency", 
             "Amount", 
             "Currency"]
     
     id_value=[]
       
-    df=df[ col_list]
+    df=df[col_list]
     
     for i in range(0,len(df)):
         status=upsert(col_tuple,tuple(df.loc[i]),flag,tablename,df['id'][i])

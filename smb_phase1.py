@@ -122,6 +122,7 @@ def upsert(col_tuple,input_tuple,flag='update',tablename=None,id_value=None):
             status=db.insert(querystr)
             
             tableid=db.query(''' select tableid from "SMB"."SMB_Aproval" where id={} '''.format(id_value))[0][0]
+            print(tableid)
           
             
         if(flag=='add'):
@@ -1267,6 +1268,8 @@ def add_record_extra_certificate():
         
     status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
     if(status['status']=='success'):email_status=email([status['tableid']],tablename)
+    
+    if(email_status=='success'):return {"status":"success"},200
 
     
         
@@ -1381,7 +1384,7 @@ def  validate_extra_certificate():
     
     
     col_tuple=("table_name","id","sequence_id",
-          
+          "Username",
              "BusinessCode",
 "Certificate",
 "Grade Category",
@@ -1391,7 +1394,7 @@ def  validate_extra_certificate():
 "Document Item Currency",
 "Amount",
 "Currency")
-    col_list=['table_name','id','sequence_id','Username','Business_Code','Certificate','Grade_Category','Market_Country','Delivering_Mill','Document_Item_Currency', 'Amount', 'Currency']
+    col_list=['table_name','id','sequence_id','Username','BusinessCode','Certificate','Grade_Category','Market_Country','Delivering_Mill','Document_Item_Currency', 'Amount', 'Currency']
     
     
     id_value=[]
@@ -1793,7 +1796,7 @@ def update_record_delivery_mill():
     Document_Item_Currency =( query_parameters["Document_Item_Currency"])
     Amount =( query_parameters["Amount"])
     Currency =( query_parameters["Currency"])
-    id_value=(query_parameters['id'])
+    id_value=(query_parameters['id_value'])
     sequence_id=(query_parameters['sequence_id'])
     
     flag='update'
@@ -1817,6 +1820,8 @@ def update_record_delivery_mill():
         
     status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
     if(status['status']=='success'):email_status=email([status['tableid']],tablename)
+    
+    if(email_status=='success'):return {"status":"success"},200
 
     
        
@@ -1942,7 +1947,7 @@ def  validate_delivery_mill():
 "Document Item Currency",
 "Amount",
 "Currency")
-    col_list=['table_name','id','sequence_id','Username','Business_Code','Market_Country','Delivering_Mill','Product_Division','Beam_Category','Document_Item_Currency', 'Amount', 'Currency']
+    col_list=['table_name','id','sequence_id','Username','BusinessCode','Market_Country','Delivering_Mill','Product_Division','Beam_Category','Document_Item_Currency', 'Amount', 'Currency']
     
     
     id_value=[]
