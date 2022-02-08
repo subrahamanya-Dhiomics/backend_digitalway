@@ -80,12 +80,12 @@ CORS(smb_app2)
 
 db=Database()
 
-# download_path="/home/ubuntu/mega_dir/"
-# input_directory="/home/ubuntu/mega_dir/"
+download_path="/home/ubuntu/mega_dir/"
+input_directory="/home/ubuntu/mega_dir/"
 
 
-download_path="C:/Users/Administrator/Documents/"
-input_directory="C:/Users/Administrator/Documents/"
+# download_path="C:/Users/Administrator/Documents/"
+# input_directory="C:/Users/Administrator/Documents/"
 
 
 
@@ -335,7 +335,7 @@ def  validate_freight_parity():
     col_tuple=("table_name","id","sequence_id",
           "Username","Delivering Mill",
     "Market - Country",
-    "Zip Code (Dest)",
+    "Zip Code(Dest)",
     "Product Division",
     "Document Item Currency",
     "Amount",
@@ -1470,49 +1470,40 @@ def update_record_extra_profile():
     Product_Level_05=(query_parameters['Product_Level_05'])
     Product_Level_02=(query_parameters['Product_Level_02'])
     Delivering_Mill=(query_parameters['Delivering_Mill'])
-    id_value=(query_parameters['id'])
+    id_value=(query_parameters['id_value'])
     Document_Item_Currency =( query_parameters["Document_Item_Currency"])
     Amount =( query_parameters["Amount"])
     Currency =( query_parameters["Currency"])
     sequence_id=(query_parameters["sequence_id"])
+    flag='update'
+      
+    tablename='SMB - Extra - Profile'   
     
-    try:
+    input_tuple=(tablename,id_value,sequence_id,username,BusinessCode,Market_Country,Product_Division,Product_Level_04,Product_Level_05,Product_Level_02,Delivering_Mill,Document_Item_Currency, Amount,Currency)
+
+    col_tuple=("table_name",
+               "id",
+               "sequence_id",
+              "Username",
+              "BusinessCode",
+              "Market - Country",
+                "Product Division",
+                "Product Level 04", 
+                "Product Level 05",
+                "Product Level 02", 
+                "Delivering Mill",
+              "Document Item Currency",
+              "Amount",
+              "Currency")
+    email_status=''
+    
+    status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
+    if(status['status']=='success'):email_status=email([status['tableid']],tablename)      
         
-        query1='''INSERT INTO "SMB"."SMB - Extra - Profile_History"
-        SELECT 
-        "id","Username",now(),"BusinessCode", "Market - Country",
-       "Product Division", "Product Level 04", "Product Level 05",
-       "Product Level 02", "Delivering Mill", "Document Item Currency",
-       "Amount", "Currency"  FROM "SMB"."SMB - Extra - Profile"
-        WHERE "id"={} '''.format(id_value)
-        result=db.insert(query1)
-        if result=='failed' :raise ValueError
+    if(email_status=='success'): return {"status":"success"},200
+    else: return {"status":"failure"},500
     
-        query2='''UPDATE "SMB"."SMB - Extra - Profile"
-        SET 
-       "Username"='{0}',
-       "BusinessCode"='{1}',
-       "Market - Country"='{2}',
-      	   "Product Division"='{3}',
-       "Product Level 04"='{4}',
-       "Product Level 05"='{5}',
-        "Product Level 02"='{6}',
-        "Delivering Mill"='{7}',
-       "Document Item Currency"='{8}',
-       "Amount"='{9}',
-       "Currency"=''{10}'',
-       "updated_on"='{11}',
-       sequence_id={12}
-        WHERE "id"={13} '''.format(username,BusinessCode,Market_Country,Product_Division,Product_Level_04,Product_Level_05,Product_Level_02,Delivering_Mill,Document_Item_Currency,Amount,Currency,date_time,sequence_id,id_value)
-        result1=db.insert(query2)
-        if result1=='failed' :raise ValueError
-        print(query1)
-        print("*****************************")
-        print(query2)
-        return {"status":"success"},200
-    except:
-        return {"status":"failure"},500
-     
+    
 
    
 @smb_app2.route('/upload_extra_profile', methods=['GET','POST'])
@@ -1663,7 +1654,7 @@ def download_extra_profile():
    
         now = datetime.now()
         try:
-            df = pd.read_sql('''select sequence_id,"BusinessCode","Market - Country","Product Division","Product Level 04","Product Level 05","Product Level 02","Delivering Mill","Document Item Currency","Amount", "Currency" from "SMB"."SMB - Extra - Profile" where "active"='1' order by sequence_id ''', con=con)
+            df = pd.read_sql('''select "id",sequence_id,"BusinessCode","Market - Country","Product Division","Product Level 04","Product Level 05","Product Level 02","Delivering Mill","Document Item Currency","Amount", "Currency" from "SMB"."SMB - Extra - Profile" where "active"='1' order by sequence_id ''', con=con)
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'extra_profile.xlsx'
             print(file)
@@ -2252,7 +2243,7 @@ def update_record_extra_profile_Iberia():
     Delivering_Mill=(query_parameters['Delivering_Mill'])
     Product_Level_02=(query_parameters['Product_Level_02'])
     Product_Level_05=(query_parameters['Product_Level_05'])
-    id_value=(query_parameters['id'])
+    id_value=(query_parameters['id_value'])
     Document_Item_Currency =( query_parameters["Document_Item_Currency"])
     Amount =( query_parameters["Amount"])
     Currency =( query_parameters["Currency"])
@@ -2314,6 +2305,7 @@ def update_record_extra_profile_Iberia():
     status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
     if(status['status']=='success'):email_status=email([status['tableid']],tablename)
 
+    if(email_status=='success'):return {"status":"success"},200
     
     
     
@@ -2418,7 +2410,7 @@ def  validate_extra_profile_Iberia():
     tablename='SMB - Extra - Profile Iberia and Italy'
     flag='update'  
     
-    # df.insert(1,'table_name',tablename)
+    df.insert(1,'table_name',tablename)
 
     col_tuple=("table_name",
                "id",
@@ -2437,11 +2429,11 @@ def  validate_extra_profile_Iberia():
                "sequence_id",
           "Username",
         "BusinessCode", 
-        "Market - Country",
-        "Delivering Mill", 
-        "Product Level 02", 
-        "Product Level 05",
-        "Document Item Currency", 
+        "Market_Country",
+        "Delivering_Mill", 
+        "Product_Level_02", 
+        "Product_Level_05",
+        "Document_Item_Currency", 
         "Amount", 
         "Currency"]
     
@@ -2463,7 +2455,7 @@ def  validate_extra_profile_Iberia():
 def download_extra_profile_Iberia():
         now = datetime.now()
         try:
-            df = pd.read_sql('''select sequence_id,"BusinessCode","Market - Country","Delivering Mill","Product Level 02","Product Level 05","Document Item Currency","Amount", "Currency" from "SMB"."SMB - Extra - Profile Iberia and Italy" where "active"='1' order by sequence_id ''', con=con)
+            df = pd.read_sql('''select "id",sequence_id,"BusinessCode","Market - Country","Delivering Mill","Product Level 02","Product Level 05","Document Item Currency","Amount", "Currency" from "SMB"."SMB - Extra - Profile Iberia and Italy" where "active"='1' order by sequence_id ''', con=con)
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'extra_profile_Iberia.xlsx'
             print(file)

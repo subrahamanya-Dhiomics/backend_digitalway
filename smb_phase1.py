@@ -119,23 +119,25 @@ def upsert(col_tuple,input_tuple,flag='update',tablename=None,id_value=None):
             if check and check!='failed':querystr=''' UPDATE "SMB"."SMB_Aproval" SET ({})= {} where id={} and table_name='{}' '''.format(columnstr,input_tuple,id_value,tablename)
             else: querystr='''INSERT INTO "SMB"."SMB_Aproval" ({}) VALUES{}; '''.format(columnstr,input_tuple)
             print(querystr)
+            
             status=db.insert(querystr)
             
             tableid=db.query(''' select tableid from "SMB"."SMB_Aproval" where id={} '''.format(id_value))[0][0]
             print(tableid)
-          
+            
             
         if(flag=='add'):
             querystr=''' Insert into  "SMB"."SMB_Aproval"  ({}) VALUES{}'''.format(columnstr,input_tuple)
            
-            status=db.insert(querystr)            
+            status=db.insert(querystr)
+            print(querystr)            
             
             tableid=db.query(''' select max(tableid) from "SMB"."SMB_Aproval" where table_name='{}' and flag='add' '''.format(tablename) )[0][0]
             
         if status!='failed' : status='success'
         return {"status":status,"tableid":tableid}
     
-def move_records(tablename,col_tuple,value_tuple,flag,id_value=None):
+def move_records(tablename,col_tuple,value_tuple,flag,id_value=None,sequence_id=None):
     querystr=''' '''
     columnstr=tuple_to_string(col_tuple)
    
@@ -149,11 +151,24 @@ def move_records(tablename,col_tuple,value_tuple,flag,id_value=None):
          FROM "SMB"."{}"
         WHERE "id" ={} '''.format(tablename,columnstr,columnstr,tablename,id_value)
         
+        try:
+            auto_id=db.query(''' select id from "SMB"."{}" where sequence_id={}'''.format(tablename,sequence_id))[0][0]
+            seq_id=db.query(''' select sequence_id from "SMB"."{}" where id={} '''.format(tablename,id_value))[0][0]
+        except:
+            pass
         
         query2= ''' UPDATE "SMB"."{}" SET ({})= {} where id={}  '''.format(tablename,columnstr,value_tuple,id_value)
+        print(query2)
         
         db.insert(query1)
         status=db.insert(query2)
+        try:
+            auto_update=''' update "SMB"."{}"  set sequence_id={} where id={} '''.format(tablename,seq_id,auto_id) 
+            print(auto_update)
+            db.insert(auto_update)
+        except:
+            pass
+        
         if(status!='failed'):
             db.insert(''' delete from "SMB"."SMB_Aproval" where id={} '''.format(id_value))
             status='success'
@@ -181,7 +196,7 @@ def email(id_value,tablename):
         encoded_id = cryptocode.encrypt(str(id_value),current_app.config["mypassword"])
         ## And then to decode it:
         
-        approver='subrahamanya.shetty@dhiomics.com'
+        approver='juan.perez-de-arrilucea@arcelormittal.com'
         mail_from='''subrahamanya@digitalway-lu.com'''
        
         msg = MIMEMultipart('alternative')
@@ -192,12 +207,7 @@ def email(id_value,tablename):
         html=''
         with open('email_aproval.html', 'r') as f:
          html = f.read()
-        print("*********")
         
-        print(html)
-        
-        
-        print("**")
         html=html.format(tablename,'subbu',id_value,encoded_id,tablename)
        
         
@@ -214,12 +224,12 @@ def email(id_value,tablename):
    
         
         
-# download_path="/home/ubuntu/mega_dir/"
-# input_directory="/home/ubuntu/mega_dir/"
+download_path="/home/ubuntu/mega_dir/"
+input_directory="/home/ubuntu/mega_dir/"
 
 
-download_path="C:/Users/Administrator/Documents/"
-input_directory="C:/Users/Administrator/Documents/"
+# download_path="C:/Users/Administrator/Documents/"
+# input_directory="C:/Users/Administrator/Documents/"
 
 
 con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
@@ -409,6 +419,7 @@ def aproval_data():
     tablename=request.args.get('tablename')
     
     query='''select * from "SMB"."SMB_Aproval" where tableid in {} and table_name='{}' '''.format(id_tuple,tablename)
+    print(query)
     df=pd.read_sql(query,con=con)
     if(len(df)<1):raise ValueError
     
@@ -433,6 +444,7 @@ def aprove_records():
         tableid=df['tableid'][i]
         try:
             id_value=df['id'][i]
+            sequence_id=df['sequence_id'][i]
             
         except:pass
        
@@ -440,7 +452,8 @@ def aprove_records():
          df2=df.drop(['tableid','flag','updated_on'], axis = 1)
          col_tuple=tuple(list(df2.columns))
          value_tuple=tuple(df2.loc[i])
-         status=move_records(tablename,col_tuple,value_tuple,flag,id_value)
+         
+         status=move_records(tablename,col_tuple,value_tuple,flag,id_value,sequence_id)
        
         else:
            df2=df.drop(['tableid','flag','updated_on'], axis = 1)

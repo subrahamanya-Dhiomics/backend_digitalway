@@ -81,12 +81,14 @@ CORS(smb_app3)
 
 db=Database()
 
-# download_path="/home/ubuntu/mega_dir/"
-# input_directory="/home/ubuntu/mega_dir/"
 
 
-download_path="C:/Users/Administrator/Documents/"
-input_directory="C:/Users/Administrator/Documents/"
+download_path="/home/ubuntu/mega_dir/"
+input_directory="/home/ubuntu/mega_dir/"
+
+
+# download_path="C:/Users/Administrator/Documents/"
+# input_directory="C:/Users/Administrator/Documents/"
 
 
 
@@ -252,7 +254,7 @@ def update_record_transport():
     Product_Division =( query_parameters["Product_Division"])
     Market_Country=(query_parameters['Market_Country'])
     Transport_Mode=(query_parameters["Transport_Mode"])
-    id_value=(query_parameters['id'])
+    id_value=(query_parameters['id_value'])
     Document_Item_Currency =( query_parameters["Document_Item_Currency"])
     Amount =( query_parameters["Amount"])
     Currency =( query_parameters["Currency"])
@@ -291,7 +293,8 @@ def update_record_transport():
     #     return {"status":"failure"},500
     flag='update'
 
-    tablename='SMB - Extra - Grade'
+    tablename='SMB - Extra - Transport Mode'     
+   
     input_tuple=(tablename,id_value,sequence_id,username,Product_Division,Market_Country,Transport_Mode,Document_Item_Currency,Amount,Currency)
     col_tuple=("table_name",
                "id",
@@ -406,7 +409,7 @@ def  validate_transport():
     # except:
     #     return {"status":"failure"},500
     tablename='SMB - Extra - Transport Mode'
-        
+    df.insert(0,"table_name",tablename)
     flag='update'
     col_tuple=("table_name",
                "id",
@@ -422,10 +425,10 @@ def  validate_transport():
                "id",
                "sequence_id",
             "Username",
-            "Product Division", 
-            "Market - Country",
-            "Transport Mode", 
-            "Document Item Currency", 
+            "Product_Division", 
+            "Market_Country",
+            "Transport_Mode", 
+            "Document_Item_Currency", 
             "Amount", 
             "Currency"]
     
@@ -446,8 +449,9 @@ def download_transport():
    
         now = datetime.now()
         try:
-            df = pd.read_sql('''select * from "SMB"."SMB - Extra - Transport Mode" where "active"='1' order by sequence_id ''', con=con)
-            df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
+            df = pd.read_sql('''select "id","Product Division", "Market - Country",
+       "Transport Mode", "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Transport Mode" where "active"='1' order by sequence_id ''', con=con)
+           
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'extra_transport_mode.xlsx'
             print(file)
