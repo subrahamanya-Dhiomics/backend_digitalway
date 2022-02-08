@@ -15,7 +15,8 @@ from flask_cors import CORS
 
 
 from datetime import datetime
-from datetime import date
+import cryptas
+
 from Alloy_scrap import scrap_app
 from smb_phase1 import smb_app1
 from smb_phase2 import smb_app2
@@ -147,6 +148,6 @@ def web_api():
        
  
 if __name__ == '__main__':
-    # app.run(host='172.16.4.190')
-    app.run()
+    app.run(host='172.16.4.190')
+    # app.run()
    
