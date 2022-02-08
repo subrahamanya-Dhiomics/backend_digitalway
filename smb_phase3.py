@@ -83,12 +83,12 @@ db=Database()
 
 
 
-download_path="/home/ubuntu/mega_dir/"
-input_directory="/home/ubuntu/mega_dir/"
+# download_path="/home/ubuntu/mega_dir/"
+# input_directory="/home/ubuntu/mega_dir/"
 
 
-# download_path="C:/Users/Administrator/Documents/"
-# input_directory="C:/Users/Administrator/Documents/"
+download_path="C:/Users/Administrator/Documents/"
+input_directory="C:/Users/Administrator/Documents/"
 
 
 
@@ -336,7 +336,7 @@ def upload_transport():
             df_main = pd.read_sql('''select "id","Product Division", "Market - Country",
        "Transport Mode", "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Transport Mode" where "active"='1' order by sequence_id ''', con=con)
             
-            
+            df['Currency'] = df['Currency'].str.replace("'","")
             df3 = df.merge(df_main, how='left', indicator=True)
             df3=df3[df3['_merge']=='left_only']
             
@@ -586,9 +586,9 @@ def add_record_transport_minibar():
     #     return {"status":"failure"},500
     flag='add'
    
-    tablename='SMB - Base Price - Category Addition - MiniBar'     
+    tablename='SMB - Extra - Transport Mode - MiniBar'    
             
-    input_tuple=(tablename,flag,username,Product_Division,Market_Country,Market_Customer_Group,Market_Customer_Group,Transport_Mode,Document_Item_Currency, Amount, Currency.strip("'"))
+    input_tuple=(tablename,flag,username,Product_Division,Market_Country,Market_Customer_Group,Transport_Mode,Document_Item_Currency, Amount, Currency.strip("'"))
     col_tuple=("table_name",
                "flag",  
                "Username",            
@@ -624,7 +624,7 @@ def update_record_transport_minibar():
         
         
         Transport_Mode=(query_parameters["Transport_Mode"])
-        id_value=(query_parameters['id'])
+        id_value=(query_parameters['id_value'])
         Document_Item_Currency =( query_parameters["Document_Item_Currency"])
         Amount =( query_parameters["Amount"])
         Currency =( query_parameters["Currency"])
@@ -674,7 +674,7 @@ def update_record_transport_minibar():
               "Product Division", 
               "Market - Country",
               "Market - Customer Group", 
-              "Market - Customer", 
+             
               "Transport Mode",
               "Document Item Currency", 
               "Amount", 
@@ -684,7 +684,9 @@ def update_record_transport_minibar():
         email_status=''
         
         status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
-        if(status['status']=='success'):email_status=email([status['tableid']],tablename)           
+        if(status['status']=='success'):email_status=email([status['tableid']],tablename)  
+        
+        if(email_status=='success'):return {"status":"success"}         
         
         
 @smb_app3.route('/upload_transport_minibar', methods=['GET','POST'])
@@ -709,7 +711,7 @@ def upload_transport_minibar():
        "Market - Customer Group",  "Transport Mode",
        "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Transport Mode - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             
-            
+            df['Currency'] = df['Currency'].str.replace("'","")
             df3 = df.merge(df_main, how='left', indicator=True)
             df3=df3[df3['_merge']=='left_only']
             
@@ -739,6 +741,7 @@ def  validate_transport_minibar():
     
     df.insert(0,'Username',username)
     df.insert(1,'date_time',date_time)
+   
     # try:
        
     #     df=df[ ["Username","Product_Division", "Market_Country",
@@ -782,6 +785,7 @@ def  validate_transport_minibar():
     # except:
     #     return {"status":"failure"},500
     tablename='SMB - Extra - Transport Mode - MiniBar'
+    df.insert(1,"table_name",tablename)
     
     flag='update'
     # df.insert(1,'table_name',tablename)
@@ -789,31 +793,26 @@ def  validate_transport_minibar():
                "id",
                "sequence_id",
           "Username",
-        "BusinessCode", 
-        "Market - Country",
-        "Market - Customer Group", 
-        "Market - Customer", 
-        "Delivering Mill",
-        "Product Level 02", 
-        "Product Level 05", 
-        "Document Item Currency",
-        "Amount", 
-        "Currency")
+          "Product Division",
+          "Market - Country",
+           "Market - Customer Group",
+           # "Market - Customer",
+           "Transport Mode",
+           "Document Item Currency",
+            "Amount", 
+            "Currency")
     col_list=["table_name",
                "id",
                "sequence_id",
-              "Username",
-            "BusinessCode", 
-            "Market - Country",
-            "Market - Customer Group", 
-            "Market - Customer", 
-            "Delivering Mill",
-            "Product Level 02", 
-            "Product Level 05", 
-            "Document Item Currency",
+          "Username",
+          "Product_Division",
+          "Market_Country",
+           "Market_Customer_Group",
+           # "Market - Customer",
+           "Transport_Mode",
+           "Document_Item_Currency",
             "Amount", 
             "Currency"]
-    
     id_value=[]
   
     df=df[col_list]
@@ -1104,6 +1103,7 @@ def upload_length_production():
        "Market - Country", "Delivering Mill", "Length", "Length From",
        "Length To", "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Length Production" where "active"='1' order by sequence_id ''', con=con)
             
+            df['Currency'] = df['Currency'].str.replace("'","")
             
             df3 = df.merge(df_main, how='left', indicator=True)
             df3=df3[df3['_merge']=='left_only']
@@ -1427,7 +1427,7 @@ def update_record_length_production_minibar():
     Document_Item_Currency =( query_parameters["Document_Item_Currency"])
     Amount =( query_parameters["Amount"])
     Currency =( query_parameters["Currency"])
-    id_value=(query_parameters['id'])
+    id_value=(query_parameters['id_value'])
     sequence_id=(query_parameters['sequence_id'])
     
     # try:
@@ -1472,11 +1472,11 @@ def update_record_length_production_minibar():
 
     input_tuple=(tablename,id_value,sequence_id,username,BusinessCode,Customer_Group,Market_Country,Delivering_Mill,Length,Length_From,Length_To,Document_Item_Currency,Amount,Currency)
     col_tuple=("table_name",
-               "id",
+               "id","sequence_id",
         "Username",
         "BusinessCode", 
         "Customer Group",
-        "Market - Customer",
+       
         "Market - Country", 
         "Delivering Mill", 
         "Length",
@@ -1491,6 +1491,8 @@ def update_record_length_production_minibar():
         
     status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
     if(status['status']=='success'):email_status=email([status['tableid']],tablename)
+    
+    if(email_status=='success'):return {"status":"success"},200
      
 
        
@@ -1520,7 +1522,7 @@ def upload_length_production_minibar():
       "Market - Country", "Delivering Mill", "Length",
        "Length From", "Length To", "Document Item Currency", "Amount",
        "Currency",sequence_id from "SMB"."SMB - Extra - Length Production - MiniBar" where "active"='1' order by sequence_id ''', con=con)
-            
+            df['Currency'] = df['Currency'].str.replace("'","")
             
             df3 = df.merge(df_main, how='left', indicator=True)
             df3=df3[df3['_merge']=='left_only']
@@ -1601,13 +1603,14 @@ def  validate_length_production_minibar():
     tablename='SMB - Extra - Length Production - MiniBar'
     flag='update'  
         
-    # df.insert(1,'table_name',tablename)
+    df.insert(1,'table_name',tablename)
     col_tuple=("table_name",
                "id",
+               "sequence_id",
         "Username",
         "BusinessCode", 
         "Customer Group",
-        "Market - Customer", 
+       
         "Market - Country", 
         "Delivering Mill", 
         "Length",
@@ -1617,17 +1620,17 @@ def  validate_length_production_minibar():
         "Amount",
         "Currency")
     col_list=["table_name",
-               "id",
+               "id","sequence_id",
             "Username",
             "BusinessCode", 
-            "Customer Group",
-            "Market - Customer", 
-            "Market - Country", 
-            "Delivering Mill", 
+            "Customer_Group",
+            
+            "Market_Country", 
+            "Delivering_Mill", 
             "Length",
-            "Length From", 
-            "Length To", 
-            "Document Item Currency", 
+            "Length_From", 
+            "Length_To", 
+            "Document_Item_Currency", 
             "Amount",
             "Currency"]
     
@@ -1936,7 +1939,7 @@ def upload_length_logistic():
        "Delivering Mill", "Length", "Length From", "Length To",
        "Transport Mode", "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Length Logistic" where "active"='1' order by sequence_id ''', con=con)
             
-            
+            df['Currency'] = df['Currency'].str.replace("'","")
             df3 = df.merge(df_main, how='left', indicator=True)
             df3=df3[df3['_merge']=='left_only']
             
@@ -2252,7 +2255,7 @@ def update_record_length_logistic_minibar():
     Document_Item_Currency =( query_parameters["Document_Item_Currency"])
     Amount =( query_parameters["Amount"])
     Currency =( query_parameters["Currency"])
-    id_value=(query_parameters['id'])
+    id_value=(query_parameters['id_value'])
     sequence_id=(query_parameters['sequence_id'])
     
     # try:
@@ -2301,7 +2304,7 @@ def update_record_length_logistic_minibar():
                "sequence_id", 
                "Username",
             "Customer Group", 
-            "Market - Customer",
+          
             "Market - Country", 
             "Delivering Mill", 
             "Length", 
@@ -2317,6 +2320,8 @@ def update_record_length_logistic_minibar():
         
     status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
     if(status['status']=='success'):email_status=email([status['tableid']],tablename)
+    
+    if(email_status=='success'): return {"status":"success"},200
      
 
     
@@ -2344,7 +2349,7 @@ def upload_length_logistic_minibar():
        "Length To", "Transport Mode", "Document Item Currency", "Amount",
        "Currency",sequence_id from "SMB"."SMB - Extra - Length Logistic - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             
-            
+            df['Currency'] = df['Currency'].str.replace("'","")
             df3 = df.merge(df_main, how='left', indicator=True)
             df3=df3[df3['_merge']=='left_only']
             
@@ -2420,14 +2425,16 @@ def  validate_length_logistic_minibar():
     # except:
     #     return {"status":"failure"},500
     tablename='SMB - Extra - Length Logistic - MiniBar'
+    df.insert(1,'table_name',tablename)
     flag='update'  
     # df.insert(1,'table_name',tablename)   
            
     col_tuple=("table_name",
+               "sequence_id",
                "id",
         "Username",
         "Customer Group", 
-        "Market - Customer",
+       
         "Market - Country", 
         "Delivering Mill", 
         "Length", 
@@ -2438,17 +2445,18 @@ def  validate_length_logistic_minibar():
         "Amount",
         "Currency")
     col_list=["table_name",
+              "sequence_id",
                "id",
         "Username",
-        "Customer Group", 
-        "Market - Customer",
-        "Market - Country", 
-        "Delivering Mill", 
+        "Customer_Group", 
+       
+        "Market_Country", 
+        "Delivering_Mill", 
         "Length", 
-        "Length From",
-        "Length To", 
-        "Transport Mode", 
-        "Document Item Currency", 
+        "Length_From",
+        "Length_To", 
+        "Transport_Mode", 
+        "Document_Item_Currency", 
         "Amount",
         "Currency"]
     

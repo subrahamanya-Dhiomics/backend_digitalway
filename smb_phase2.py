@@ -80,12 +80,12 @@ CORS(smb_app2)
 
 db=Database()
 
-download_path="/home/ubuntu/mega_dir/"
-input_directory="/home/ubuntu/mega_dir/"
+# download_path="/home/ubuntu/mega_dir/"
+# input_directory="/home/ubuntu/mega_dir/"
 
 
-# download_path="C:/Users/Administrator/Documents/"
-# input_directory="C:/Users/Administrator/Documents/"
+download_path="C:/Users/Administrator/Documents/"
+input_directory="C:/Users/Administrator/Documents/"
 
 
 
@@ -293,7 +293,7 @@ def upload_freight_parity():
             df_main = pd.read_sql('''select "id","Delivering Mill", "Market - Country",
        "Zip Code (Dest)", "Product Division", "Document Item Currency",
        "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Freight Parity" where "active"='1' order by sequence_id ''', con=con)
-            
+            df['Currency'] = df['Currency'].str.replace("'","")
             
             df3 = df.merge(df_main, how='left', indicator=True)
             df3=df3[df3['_merge']=='left_only']
@@ -553,12 +553,12 @@ def add_record_frieght_parity_minibar():
 @token_required
 def upload_freight_parity_minibar():
     
-        f=request.files['filename']
-  
+            f=request.files['filename']
+      
+                
+            f.save(input_directory+f.filename)
             
-        f.save(input_directory+f.filename)
-        
-        try:
+       
             smb_df=pd.read_excel(input_directory+f.filename,dtype=str)
             
             df=smb_df[["id","Delivering Mill", "Market - Country",
@@ -571,7 +571,7 @@ def upload_freight_parity_minibar():
        "Market - Customer Group","Zip Code (Dest)",
        "Product Division", "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Freight Parity - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             
-            
+            df['Currency'] = df['Currency'].str.replace("'","")
             df3 = df.merge(df_main, how='left', indicator=True)
             df3=df3[df3['_merge']=='left_only']
             
@@ -583,9 +583,7 @@ def upload_freight_parity_minibar():
             table=json.loads(df3.to_json(orient='records'))
             
             return {"data":table},200
-        except:
-            return {"status":"failure"},500
-
+     
 
 @smb_app2.route('/validate_freight_parity_minibar', methods=['GET','POST'])
 @token_required
@@ -632,7 +630,7 @@ def download_freight_parity_minibar():
    
         now = datetime.now()
         try:
-            df = pd.read_sql('''sequence_id,"Delivering Mill","Market - Country","Zip Code (Dest)","Product Division","Document Item Currency","Amount", "Currency" where "active"='1' order by sequence_id ''', con=con)
+            df = pd.read_sql('''select id,sequence_id,"Delivering Mill","Market - Customer Group","Market - Country","Zip Code (Dest)","Product Division","Document Item Currency","Amount", "Currency" from "SMB"."SMB - Extra - Freight Parity - MiniBar"  where "active"='1' order by sequence_id ''', con=con)
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'freight_parity_minibar.xlsx'
             print(file)
@@ -834,7 +832,7 @@ def upload_extra_grade():
        "Document Item Currency", "Amount", "Currency","sequence_id"]]  
             df["id"]=df["id"].astype(int)
             df["sequence_id"]=df["sequence_id"].astype(int)
-            
+            df['Currency'] = df['Currency'].str.replace("'","")
             
             df_main = pd.read_sql('''select "id","BusinessCode", "Grade Category",
        "Country Group", "Market - Country", "Product Division",
@@ -1082,7 +1080,7 @@ def update_record_extra_grade_minibar():
     Market_Country=(query_parameters['Market_Country'])
     
     Grade_Category=(query_parameters['Grade_Category'])
-    id_value=(query_parameters['id'])
+    id_value=(query_parameters['id_value'])
     
     
     Document_Item_Currency =( query_parameters["Document_Item_Currency"])
@@ -1132,7 +1130,7 @@ def update_record_extra_grade_minibar():
               "Username",
               "BusinessCode",
               "Customer Group",
-              "Market - Customer",
+            
               "Market - Country",
               "Grade Category",
               "Document Item Currency",
@@ -1152,12 +1150,12 @@ def update_record_extra_grade_minibar():
 @token_required
 def upload_extra_grade_minibar():
     
-     f=request.files['filename']
-  
-            
-     f.save(input_directory+f.filename)
-     
-     try:
+         f=request.files['filename']
+      
+                
+         f.save(input_directory+f.filename)
+         
+         
          smb_df=pd.read_excel(input_directory+f.filename,dtype=str)
          
          df=smb_df[["id","BusinessCode", "Customer Group",
@@ -1170,7 +1168,7 @@ def upload_extra_grade_minibar():
        "Market - Country", "Grade Category",
        "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Grade - MiniBar" where "active"='1' order by sequence_id ''', con=con)
          
-         
+         df['Currency'] = df['Currency'].str.replace("'","")
          df3 = df.merge(df_main, how='left', indicator=True)
          df3=df3[df3['_merge']=='left_only']
          
@@ -1182,8 +1180,7 @@ def upload_extra_grade_minibar():
          table=json.loads(df3.to_json(orient='records'))
          
          return {"data":table},200
-     except:
-         return {"status":"failure"},500
+   
 
 
 @smb_app2.route('/validate_extra_grade_minibar', methods=['GET','POST'])
@@ -1249,25 +1246,26 @@ def  validate_extra_grade_minibar():
     
     
     col_tuple=("table_name",
+               "sequence_id",
                "id",
     "Username",
     "BusinessCode", 
     "Customer Group",
-    "Market - Customer", 
+     
     "Market - Country", 
     "Grade Category",
     "Document Item Currency", 
     "Amount", 
     "Currency")
-    col_list=["table_name",
+    col_list=["table_name","sequence_id",
                "id",
     "Username",
     "BusinessCode", 
-    "Customer Group",
-    "Market - Customer", 
-    "Market - Country", 
-    "Grade Category",
-    "Document Item Currency", 
+    "Customer_Group",
+    
+    "Market_Country", 
+    "Grade_Category",
+    "Document_Item_Currency", 
     "Amount", 
     "Currency"]
     
@@ -1291,7 +1289,7 @@ def  validate_extra_grade_minibar():
 def download_extra_grade_minibar():
         now = datetime.now()
         try:
-            df = pd.read_sql('''select sequence_id,"BusinessCode","Grade Category","Market - Country","Document Item Currency","Customer Group","Amount", "Currency" from "SMB"."SMB - Extra - Grade - MiniBar" where "active"='1' order by sequence_id ''', con=con)
+            df = pd.read_sql('''select id,sequence_id,"BusinessCode","Grade Category","Market - Country","Document Item Currency","Customer Group","Amount", "Currency" from "SMB"."SMB - Extra - Grade - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'extra_grade_minibar.xlsx'
             print(file)
@@ -1531,6 +1529,8 @@ def upload_extra_profile():
        "Product Level 02", "Delivering Mill", "Document Item Currency",
        "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Profile" where "active"='1' order by sequence_id ''', con=con)
             
+            
+            df['Currency'] = df['Currency'].str.replace("'","")
             
             df3 = df.merge(df_main, how='left', indicator=True)
             df3=df3[df3['_merge']=='left_only']
@@ -1843,7 +1843,7 @@ def update_record_extra_profile_minibar():
     Product_Level_05=(query_parameters['Product_Level_05'])
     Product_Level_02=(query_parameters['Product_Level_02'])
     Delivering_Mill=(query_parameters['Delivering_Mill'])
-    id_value=(query_parameters['id'])
+    id_value=(query_parameters['id_value'])
     
     Document_Item_Currency =( query_parameters["Document_Item_Currency"])
     Amount =( query_parameters["Amount"])
@@ -1889,13 +1889,13 @@ def update_record_extra_profile_minibar():
     #     return {"status":"failure"},500
     flag='update'
       
-    tablename='SMB - Extra - Delivery Mill'  
+    tablename='SMB - Extra - Profile - MiniBar'  
     
     input_tuple=(tablename,id_value,sequence_id,username,BusinessCode,Customer_Group,Market_Country,Product_Level_04,Product_Level_05,Product_Level_02,Delivering_Mill,Document_Item_Currency,Amount,Currency)
     col_tuple=("table_name","id","sequence_id", "Username",
             "BusinessCode",
             "Customer Group",
-        "Market - Customer", 
+       
         "Market - Country", 
         "Product Level 04",
         "Product Level 05", 
@@ -1910,6 +1910,7 @@ def update_record_extra_profile_minibar():
         
     status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
     if(status['status']=='success'):email_status=email([status['tableid']],tablename)
+    if(email_status=='success'): return {"status":"success"},200
 
     
    
@@ -1917,12 +1918,12 @@ def update_record_extra_profile_minibar():
 @token_required
 def upload_extra_profile_minibar():
     
-        f=request.files['filename']
-  
+            f=request.files['filename']
+      
+                
+            f.save(input_directory+f.filename)
             
-        f.save(input_directory+f.filename)
         
-        try:
             smb_df=pd.read_excel(input_directory+f.filename,dtype=str)
             
             df=smb_df[["id","BusinessCode", "Customer Group",
@@ -1938,6 +1939,8 @@ def upload_extra_profile_minibar():
        "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Profile - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             
             
+            df['Currency'] = df['Currency'].str.replace("'","")
+            
             df3 = df.merge(df_main, how='left', indicator=True)
             df3=df3[df3['_merge']=='left_only']
             print(df3)
@@ -1949,9 +1952,7 @@ def upload_extra_profile_minibar():
             table=json.loads(df3.to_json(orient='records'))
             
             return {"data":table},200
-        except:
-            return {"status":"failure"},500
-
+        
 @smb_app2.route('/validate_extra_profile_minibar', methods=['GET','POST'])
 @token_required
 def  validate_extra_profile_minibar():
@@ -2020,10 +2021,11 @@ def  validate_extra_profile_minibar():
 
     col_tuple=("table_name",
                "id",
+               "sequence_id",
         "Username",
         "BusinessCode", 
         "Customer Group",
-        "Market - Customer", 
+       
         "Market - Country", 
         "Product Level 04",
         "Product Level 05", 
@@ -2034,16 +2036,17 @@ def  validate_extra_profile_minibar():
         "Currency")
     col_list=["table_name",
                "id",
+               "sequence_id",
         "Username",
         "BusinessCode", 
-        "Customer Group",
-        "Market - Customer", 
-        "Market - Country", 
-        "Product Level 04",
-        "Product Level 05", 
-        "Product Level 02", 
-        "Delivering Mill",
-        "Document Item Currency", 
+        "Customer_Group",
+        
+        "Market_Country", 
+        "Product_Level_04",
+        "Product_Level_05", 
+        "Product_Level_02", 
+        "Delivering_Mill",
+        "Document_Item_Currency", 
         "Amount", 
         "Currency"]
     
@@ -2066,7 +2069,7 @@ def download_extra_profile_minibar():
     
         now = datetime.now()
         try:
-            df = pd.read_sql('''select sequence_id,"BusinessCode","Market - Country","Product Level 04","Product Level 05","Product Level 02","Delivering Mill","Customer Group","Document Item Currency","Amount", "Currency" from "SMB"."SMB - Extra - Profile - MiniBar" where "active"='1' order by sequence_id ''', con=con)
+            df = pd.read_sql('''select id,sequence_id,"BusinessCode","Market - Country","Product Level 04","Product Level 05","Product Level 02","Delivering Mill","Customer Group","Document Item Currency","Amount", "Currency" from "SMB"."SMB - Extra - Profile - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'extra_profile_minibar.xlsx'
             print(file)
@@ -2334,7 +2337,7 @@ def upload_extra_profile_Iberia():
        "Delivering Mill", "Product Level 02", "Product Level 05",
        "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Profile Iberia and Italy" where "active"='1' order by sequence_id ''', con=con)
             
-            
+            df['Currency'] = df['Currency'].str.replace("'","")
             df3 = df.merge(df_main, how='left', indicator=True)
             df3=df3[df3['_merge']=='left_only']
             print(df3)
@@ -2720,12 +2723,12 @@ def update_record_extra_profile_Iberia_minibar():
 @token_required
 def upload_extra_profile_Iberia_minibar():
     
-        f=request.files['filename']
-  
-            
-        f.save(input_directory+f.filename)
+            f=request.files['filename']
+      
+                
+            f.save(input_directory+f.filename)
         
-        try:
+        
             smb_df=pd.read_excel(input_directory+f.filename,dtype=str)
             
             df=smb_df[["id","BusinessCode", "Market - Country",
@@ -2734,11 +2737,15 @@ def upload_extra_profile_Iberia_minibar():
        "Amount", "Currency","sequence_id"]]  
             df["id"]=df["id"].astype(int)
             df["sequence_id"]=df["sequence_id"].astype(int)
+            
+            
             df_main = pd.read_sql('''select "id","BusinessCode", "Market - Country",
        "Market - Customer Group",  "Delivering Mill",
        "Product Level 02", "Product Level 05", "Document Item Currency",
        "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             
+            
+            df['Currency'] = df['Currency'].str.replace("'","")
             
             df3 = df.merge(df_main, how='left', indicator=True)
             df3=df3[df3['_merge']=='left_only']
@@ -2752,9 +2759,7 @@ def upload_extra_profile_Iberia_minibar():
             table=json.loads(df3.to_json(orient='records'))
             
             return {"data":table},200
-        except:
-            return {"status":"failure"},500
-
+       
 
 @smb_app2.route('/validate_extra_profile_Iberia_minibar', methods=['GET','POST'])
 @token_required

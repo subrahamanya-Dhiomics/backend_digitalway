@@ -182,6 +182,7 @@ def move_records(tablename,col_tuple,value_tuple,flag,id_value=None,sequence_id=
              
             {})
              VALUES{};'''.format(tablename,columnstr,value_tuple)
+        print(query)
         status=db.insert(query)
         if(status!='failed'):
             db.insert(''' delete from "SMB"."SMB_Aproval" where tableid={} '''.format(id_value))
@@ -196,7 +197,7 @@ def email(id_value,tablename):
         encoded_id = cryptocode.encrypt(str(id_value),current_app.config["mypassword"])
         ## And then to decode it:
         
-        approver='juan.perez-de-arrilucea@arcelormittal.com'
+        approver='subrahamanya.shetty@dhiomics.com'
         mail_from='''subrahamanya@digitalway-lu.com'''
        
         msg = MIMEMultipart('alternative')
@@ -224,12 +225,12 @@ def email(id_value,tablename):
    
         
         
-download_path="/home/ubuntu/mega_dir/"
-input_directory="/home/ubuntu/mega_dir/"
+# download_path="/home/ubuntu/mega_dir/"
+# input_directory="/home/ubuntu/mega_dir/"
 
 
-# download_path="C:/Users/Administrator/Documents/"
-# input_directory="C:/Users/Administrator/Documents/"
+download_path="C:/Users/Administrator/Documents/"
+input_directory="C:/Users/Administrator/Documents/"
 
 
 con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
@@ -497,8 +498,14 @@ def  SMB_upload():
             df_main = pd.read_sql('''select "id","BusinessCode","Market - Country","Product Division","Product Level 02","Document Item Currency", "Amount", "Currency" ,sequence_id from "SMB"."SMB - Base Price - Category Addition" where "active"='1' order by "id" ''', con=con)
             
             
+            df['Currency'] = df['Currency'].str.replace("'","")
+            
             df3 = df.merge(df_main, how='left', indicator=True)
             df3=df3[df3['_merge']=='left_only']
+            
+            df['Currency'] = df['Currency'].str.replace("'","")
+            
+            
             
             df3.columns = df3.columns.str.replace(' ', '_')
             df3.rename(columns={"Market_-_Country":"Market_Country"},inplace=True)  
@@ -805,6 +812,9 @@ def  SMB_upload_baseprice_minibar():
             df_main = pd.read_sql('''select "id","BusinessCode", "Customer Group", "Market - Country", "Beam Category","Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Base Price - Category Addition - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             
             
+            df['Currency'] = df['Currency'].str.replace("'","")
+            
+            
             df3 = df.merge(df_main, how='left', indicator=True)
             df3=df3[df3['_merge']=='left_only']
             
@@ -1082,7 +1092,7 @@ def  SMB_upload_baseprice_incoterm():
     "Incoterm1", "Product Division", "Beam Category", "Delivering Mill",
     "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Base Price - Incoterm Exceptions" where "active"='1' order by sequence_id ''', con=con)
          
-         
+         df['Currency'] = df['Currency'].str.replace("'","")
          df3 = df.merge(df_main, how='left', indicator=True)
          df3=df3[df3['_merge']=='left_only']
          
@@ -1358,7 +1368,7 @@ def  Upload_extra_certificate():
        "Grade Category", "Market - Country", "Delivering Mill",
        "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Certificate" where "active"='1' order by sequence_id ''', con=con)
             
-            
+            df['Currency'] = df['Currency'].str.replace("'","")
             df3 = df.merge(df_main, how='left', indicator=True)
             df3=df3[df3['_merge']=='left_only']
             
@@ -1630,6 +1640,7 @@ def  Upload_extra_certificate_minibar():
        "Market - Country", "Certificate",
        "Grade Category", "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Certificate - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             
+            df['Currency'] = df['Currency'].str.replace("'","")
             
             df3 = df.merge(df_main, how='left', indicator=True)
             df3=df3[df3['_merge']=='left_only']
@@ -1911,7 +1922,7 @@ def upload_delivery_mill():
        "Delivering Mill", "Product Division", "Beam Category",
        "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Delivery Mill" where "active"='1' order by sequence_id ''', con=con)
             
-            
+            df['Currency'] = df['Currency'].str.replace("'","")
             df3 = df.merge(df_main, how='left', indicator=True)
             df3=df3[df3['_merge']=='left_only']
             
@@ -2181,6 +2192,7 @@ def upload_delivery_mill_minibar():
        "Market - Customer Group", "Delivering Mill",
        "Product Division", "Document Item Currency", "Amount", "Currency","sequence_id" from "SMB"."SMB - Extra - Delivery Mill - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             
+            df['Currency'] = df['Currency'].str.replace("'","")
             
             df3 = df.merge(df_main, how='left', indicator=True)
             df3=df3[df3['_merge']=='left_only']
