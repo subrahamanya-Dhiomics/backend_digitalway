@@ -148,6 +148,6 @@ def web_api():
        
  
 if __name__ == '__main__':
-    # app.run(host='172.16.4.190')
-    app.run()
+    app.run(host='172.16.4.190')
+    # app.run()
    

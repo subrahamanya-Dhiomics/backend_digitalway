@@ -197,7 +197,8 @@ def email(id_value,tablename):
         encoded_id = cryptocode.encrypt(str(id_value),current_app.config["mypassword"])
         ## And then to decode it:
         
-        approver='subrahamanya.shetty@dhiomics.com'
+        approver='juan.perez-de-arrilucea@arcelormittal.com'
+
         mail_from='''subrahamanya@digitalway-lu.com'''
        
         msg = MIMEMultipart('alternative')
@@ -225,12 +226,12 @@ def email(id_value,tablename):
    
         
         
-# download_path="/home/ubuntu/mega_dir/"
-# input_directory="/home/ubuntu/mega_dir/"
+download_path="/home/ubuntu/mega_dir/"
+input_directory="/home/ubuntu/mega_dir/"
 
 
-download_path="C:/Users/Administrator/Documents/"
-input_directory="C:/Users/Administrator/Documents/"
+# download_path="C:/Users/Administrator/Documents/"
+# input_directory="C:/Users/Administrator/Documents/"
 
 
 con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
@@ -1548,7 +1549,7 @@ def update_record_extra_certificate_minibar():
     Market_Country =( query_parameters["Market_Country"])
     Certificate=(query_parameters['Certificate'])
     Grade_Category =( query_parameters["Grade_Category"])
-    id_value=(query_parameters['id'])
+    id_value=(query_parameters['id_value'])
     sequence_id=(query_parameters['sequence_id'])
     Document_Item_Currency =( query_parameters["Document_Item_Currency"])
     Amount =( query_parameters["Amount"])
@@ -1570,6 +1571,7 @@ def update_record_extra_certificate_minibar():
     status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
     if(status['status']=='success'):email_status=email([status['tableid']],tablename)
 
+    if(email_status=='success'): return {"status":"success"},200
     
     
     
@@ -2103,7 +2105,7 @@ def update_record_delivery_mill_minibar():
    
     Delivering_Mill=(query_parameters["Delivering_Mill"])
     Product_Division =( query_parameters["Product_Division"])
-    id_value=(query_parameters['id'])
+    id_value=(query_parameters['id_value'])
     sequence_id=(query_parameters['sequence_id'])
     
     Document_Item_Currency =( query_parameters["Document_Item_Currency"])
@@ -2126,7 +2128,7 @@ def update_record_delivery_mill_minibar():
         
     status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
     if(status['status']=='success'):email_status=email([status['tableid']],tablename)
-
+    if(email_status=='sucess'): return {"status":"success"},200
     
        
 
@@ -2215,59 +2217,41 @@ def upload_delivery_mill_minibar():
 def  validate_delivery_mill_minibar():
     
         
-            json_data=json.loads(request.data)
-            username = getpass.getuser() 
-            now = datetime.now()
-            date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
-            
-            df=pd.DataFrame(json_data["billet"]) 
-            
-            df.insert(0,'Username',username)
-            df.insert(1,'date_time',date_time)
-            
-            try:
+    json_data=json.loads(request.data)
+    username = getpass.getuser() 
+    now = datetime.now()
+    date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     
+    df=pd.DataFrame(json_data["billet"]) 
+    
+    df.insert(0,'Username',username)
+    df.insert(1,'date_time',date_time)
+    
+    tablename='SMB - Extra - Delivery Mill - MiniBar'
+    flag='update'  
+   
+    df.insert(1,'table_name',tablename)
+   
+   
+    col_tuple=("table_name","id","sequence_id",
+          "Username","Market - Country",
+       "Market - Customer Group", "Delivering Mill",
+       "Product Division", "Document Item Currency", "Amount", "Currency")
+    col_list=['table_name','id','sequence_id','Username','Market_Country','Market_Customer_Group','Delivering_Mill','Product_Division','Document_Item_Currency', 'Amount', 'Currency']
+   
+   
+    id_value=[]
+ 
+    df=df[ col_list]
+   
+    for i in range(0,len(df)):
+        status=upsert(col_tuple,tuple(df.loc[i]),flag,tablename,df['id'][i])
+        id_value.append(status['tableid'])
        
-                df=df[ ["Username","Market_Country",
-               "Market_Customer_Group", "Delivering_Mill",
-               "Product_Division", "Document_Item_Currency", "Amount", "Currency","date_time","sequence_id","id"]]
-                
-                query1='''INSERT INTO "SMB"."SMB - Extra - Delivery Mill - MiniBar_History"
-                SELECT 
-                "id",
-                "Username",now(),
-                "Market - Country",
-               "Market - Customer Group", "Delivering Mill",
-               "Product Division", "Document Item Currency", "Amount", "Currency"  FROM "SMB"."SMB - Extra - Delivery Mill - MiniBar"
-                WHERE "id" in {} '''
-                
-                id_tuple=tuple(df["id"])
-                if len(id_tuple)==1:id=id_tuple[0] ;id_tuple=(id,id)
-                result=db.insert(query1.format(id_tuple))
-                if result=='failed' :raise ValueError
-                        
-                # looping for update query
-                for i in range(0,len(df)):
-                    print(tuple(df.loc[0]))
-                    query2='''UPDATE "SMB"."SMB - Extra - Delivery Mill - MiniBar"
-                SET 
-               "Username"='%s',
-               "Market - Country"='%s', "Market - Customer Group"='%s',
-               "Market - Customer"='%s', "Delivering Mill"='%s', "Product Division"='%s',
-               
-               "Document Item Currency"='%s',
-               "Amount"='%s',
-               "Currency"=''%s'',
-               "updated_on"='%s',sequence_id='%s'
-                WHERE "id"= '%s' ''' % tuple(df.loc[i])
-                    result=db.insert(query2)
-                    print(query2)
-                    if result=='failed' :raise ValueError
-                    
-                return {"status":"success"},200
-            except:
-                return {"status":"failure"},500        
-           
+    if(status['status']=='success'):
+        email_status=email(id_value,tablename)
+ 
+    return {"status":"success"},200
 @smb_app1.route('/download_delivery_mill_minibar',methods=['GET'])
 def  download_delivery_mill_minibar():
    

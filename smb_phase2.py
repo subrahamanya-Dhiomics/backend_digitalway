@@ -2647,7 +2647,7 @@ def update_record_extra_profile_Iberia_minibar():
     Delivering_Mill=(query_parameters['Delivering_Mill'])
     Product_Level_02=(query_parameters['Product_Level_02'])
     Product_Level_05=(query_parameters['Product_Level_05'])
-    id_value=(query_parameters['id'])
+    id_value=(query_parameters['id_value'])
     Document_Item_Currency =( query_parameters["Document_Item_Currency"])
     Amount =( query_parameters["Amount"])
     Currency =( query_parameters["Currency"])
@@ -2702,7 +2702,7 @@ def update_record_extra_profile_Iberia_minibar():
                 "BusinessCode", 
                 "Market - Country",
                 "Market - Customer Group", 
-                "Market - Customer", 
+                
                 "Delivering Mill",
                 "Product Level 02", 
                 "Product Level 05", 
@@ -2715,6 +2715,8 @@ def update_record_extra_profile_Iberia_minibar():
         
     status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
     if(status['status']=='success'):email_status=email([status['tableid']],tablename)
+    
+    if(email_status=='success'):return {"status":"success"},200
 
      
 
@@ -2821,7 +2823,7 @@ def  validate_extra_profile_Iberia_minibar():
     tablename='SMB - Extra - Profile Iberia and Italy - MiniBar'
     
     flag='update'
-    # df.insert(1,'table_name',tablename)
+    df.insert(1,'table_name',tablename)
     col_tuple=("table_name",
                "id",
                "sequence_id",
@@ -2829,7 +2831,7 @@ def  validate_extra_profile_Iberia_minibar():
         "BusinessCode", 
         "Market - Country",
         "Market - Customer Group", 
-        "Market - Customer", 
+      
         "Delivering Mill",
         "Product Level 02", 
         "Product Level 05", 
@@ -2843,7 +2845,7 @@ def  validate_extra_profile_Iberia_minibar():
             "BusinessCode", 
             "Market - Country",
             "Market - Customer Group", 
-            "Market - Customer", 
+            
             "Delivering Mill",
             "Product Level 02", 
             "Product Level 05", 
@@ -2868,7 +2870,7 @@ def  validate_extra_profile_Iberia_minibar():
 def download_extra_profile_Iberia_minibar():
         now = datetime.now()
         try:
-            df = pd.read_sql('''select sequence_id,"BusinessCode","Market - Country","Delivering Mill","Product Level 02","Product Level 05","Document Item Currency","Market - Customer Group","Amount", "Currency" from "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar" where "active"='1' order by sequence_id ''', con=con)
+            df = pd.read_sql('''select id,sequence_id,"BusinessCode","Market - Country","Delivering Mill","Product Level 02","Product Level 05","Document Item Currency","Market - Customer Group","Amount", "Currency" from "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'extra_profile_Iberia_minibar.xlsx'
             print(file)
