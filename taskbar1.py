@@ -99,7 +99,8 @@ def add_income():
         customer=request.args.get('customer',type=str)
         pending_with=request.args.get('pending_with')
         status='Pending Business Validation'
-        created=request.args.get('created')
+        posting_date_from = request.args.get('posting_date_from')
+        posting_date_to = request.args.get('posting_date_to')
         
         offerid=request.args.get('offerid')
         cust_ref=request.args.get('customer_ref')
@@ -130,13 +131,19 @@ def add_income():
         else:wherestr+=" and  S.DESCRIPTION = '{}' ".format(status)
         flag=1
     
-    if(created!='All' and created!='all' and created!=None ):
+    if(posting_date_from!='All' and posting_date_to!='all' and posting_date_from!=None and posting_date_to!=None ):
         
-        created=created.replace(created.split(' ')[-1],'').strip()+'+00'
-        if(flag==0):wherestr+="where P.CREATIONDATETIME = '{}' ".format(created)
-        else:wherestr+=" and  P.CREATIONDATETIME = '{}' ".format(created)
+       # posting_date_from=posting_date_from.replace(posting_date_from.split(' ')[-1],'').strip()+'+00'
+        
+        print("hii " ,type(posting_date_from),"hello ",type(posting_date_to))
+        if(flag==0):
+            wherestr+="where P.CREATIONDATETIME = '{}' ".format(posting_date_from) 
+            print("ssss")
+        else:
+            wherestr+=" and date(P.CREATIONDATETIME) between '{}' and '{}' ".format(posting_date_from,posting_date_to)
+            print("nnnn")
         flag=1
-        print(created)
+        print(posting_date_from)
         print("************************************")
     
     if(offerid !='All' and offerid !='all' and offerid != None ):
@@ -185,7 +192,6 @@ def add_income():
 	COALESCE(P.TOTALSUBITEMS,
 		0) SUBLITEMS
 FROM OFFERTOOL.OFFER P
-
 
 INNER JOIN OFFERTOOL.ACCOUNT C ON C.ACCOUNTCODE = P.ACCOUNTCODE
 LEFT JOIN OFFERTOOL.OFFERSTATUS S ON S.OFFERSTATUSCODE = P.OFFERSTATUSCODE

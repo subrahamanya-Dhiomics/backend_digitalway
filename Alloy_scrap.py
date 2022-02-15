@@ -521,6 +521,7 @@ def history():
         history_data=cur.fetchall()
         columns=['Batch_ID','username','date_time','filename','condition_type']
         df=pd.DataFrame(history_data,columns=columns)
+        print(df)
         
         if(search_string !=None and search_string !="all"):
             
@@ -596,5 +597,4 @@ def getfiles():
     except:
         
          return {"statuscode":"500","message":"failed"},500
-    
- 
+scrap_app()
