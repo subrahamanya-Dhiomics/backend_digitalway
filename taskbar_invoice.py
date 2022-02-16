@@ -74,7 +74,7 @@ cursor=con.cursor()
 
   
 @taskbar_invoice_app.route('/invoice_payments',methods=['GET','POST'])
-@token_required
+
 def invoice():
     
     customer=request.args.get('customer')

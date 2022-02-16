@@ -141,7 +141,6 @@ def web_api():
              df=pd.read_sql(query,con=con)
              df_json=json.loads(df.to_json(orient='records'))
                     
-                  
              return {"data":df_json,"status":"sucess"}
          except:
              return {"status":"invalid request"}

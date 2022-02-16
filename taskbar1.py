@@ -90,7 +90,7 @@ db=Database()
 
 
 @taskbar1.route('/taskbar1_data', methods=['POST','GET'])
-@token_required
+
 def add_income():
     
     try:
@@ -103,6 +103,7 @@ def add_income():
         posting_date_to = request.args.get('posting_date_to')
         
         offerid=request.args.get('offerid')
+        
         cust_ref=request.args.get('customer_ref')
     except:
         return {"satatus":"failure"}
@@ -143,13 +144,13 @@ def add_income():
             wherestr+=" and date(P.CREATIONDATETIME) between '{}' and '{}' ".format(posting_date_from,posting_date_to)
             print("nnnn")
         flag=1
-        print(posting_date_from)
         print("************************************")
     
     if(offerid !='All' and offerid !='all' and offerid != None ):
-        
-        if(flag==0):wherestr+='where  P.OFFERID = {}'.format(offerid)
-        else:wherestr+=' and  P.OFFERID = {}'.format(offerid)
+        if(flag==0):
+            wherestr+='where  P.OFFERID = {}'.format(offerid)
+        else:
+            wherestr+=' and  P.OFFERID = {}'.format(offerid)
         flag=1
     
     if(cust_ref !='All'  and cust_ref !='all'  and cust_ref != None ):
@@ -205,8 +206,10 @@ LEFT JOIN OFFERTOOL.PLANT PL ON PL.PLANTCODE = P.PLANTCODE {} '''.format(wherest
        
         db.insert('rollback')
         df = pd.read_sql(query1, con=con)
+        df['offerid'] = df['offerid'].astype(float)
+        df['offerid'] = df['offerid'].astype(int)
         df = df.applymap(str)
-        
+
         if(search_string!="All" and search_string!='all' and search_string!=None):
                           df=df[df.eq(search_string).any(1)]
                           
@@ -226,8 +229,14 @@ LEFT JOIN OFFERTOOL.PLANT PL ON PL.PLANTCODE = P.PLANTCODE {} '''.format(wherest
         
         df['creationdatetime']=df['creationdatetime'].astype(str)
         df['closedate']=df['closedate'].astype(str)
-            
+        # for i in data:
+        #     i['offerid']=float(i['offerid'])
+        #     i['offerid'] = int(i['offerid'])
+        
+        df['offerid'] = df['offerid'].astype(float)
+        df['offerid'] = df['offerid'].astype(int)
         data=json.loads(df.to_json(orient='records'))
+        
         
         customer_name=list(set(df.accountname))
         customer_name.append('All')
@@ -240,7 +249,9 @@ LEFT JOIN OFFERTOOL.PLANT PL ON PL.PLANTCODE = P.PLANTCODE {} '''.format(wherest
         
         pending_with.append('All')
         
+        # Converting Float to Int
         
+            
         return jsonify({"data":data ,"customer_name":customer_name,"status":status,"pending_with":pending_with,"created":created}),200
     except:
         return {"status":"failure"},500
