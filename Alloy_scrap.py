@@ -42,11 +42,9 @@ con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',
 cur = con.cursor()
 
 
-# folder_path="C:/Users/Administrator/Documents/Input_files"
 
-
-csv_out_path="/home/ubuntu/mega_dir/"
-input_path="/home/ubuntu/mega_dir/"
+csv_out_path="C:/Users/Administrator/Documents/Input_files"
+input_path="C:/Users/Administrator/Documents/Input_files"
 
 engine = create_engine('postgresql://postgres:ocpphase01@ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com:5432/offertool')
 
@@ -335,14 +333,14 @@ def validate_files1():
       if(i=="Duisburg"):
           filename=date_time+counter+'_'+cond_type+'_'+sales_org["Duisburg"]+'.csv'
           file_path=csv_out_path+filename
-          df=out_df[out_df['Mill']=='Duisburg']
-          out_df.to_csv(file_path, index = False)
+          df1=out_df[out_df['Mill']=='Duisburg']
+          df1.to_csv(file_path, index = False)
           funUpload(file_path,filename)
       else:
           filename=date_time+counter+'_'+cond_type+'_'+sales_org["Hamburg"]+'.csv'
           file_path=csv_out_path+filename
-          df=out_df[out_df['Mill']=='Hamburg']
-          out_df.to_csv(file_path, index = False)
+          df2=out_df[out_df['Mill']=='Hamburg']
+          df2.to_csv(file_path, index = False)
           funUpload(file_path,filename)
     
     

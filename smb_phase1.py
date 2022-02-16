@@ -118,13 +118,11 @@ def upsert(col_tuple,input_tuple,flag='update',tablename=None,id_value=None):
             check=db.query(''' select exists(select 1  from "SMB"."SMB_Aproval" where id={} and table_name='{}') '''.format(id_value,tablename))[0][0]
             if check and check!='failed':querystr=''' UPDATE "SMB"."SMB_Aproval" SET ({})= {} where id={} and table_name='{}' '''.format(columnstr,input_tuple,id_value,tablename)
             else: querystr='''INSERT INTO "SMB"."SMB_Aproval" ({}) VALUES{}; '''.format(columnstr,input_tuple)
-            print(querystr)
-            
+             
             status=db.insert(querystr)
             
             tableid=db.query(''' select tableid from "SMB"."SMB_Aproval" where id={} '''.format(id_value))[0][0]
-            print(tableid)
-            
+           
             
         if(flag=='add'):
             querystr=''' Insert into  "SMB"."SMB_Aproval"  ({}) VALUES{}'''.format(columnstr,input_tuple)
@@ -197,9 +195,9 @@ def email(id_value,tablename):
         encoded_id = cryptocode.encrypt(str(id_value),current_app.config["mypassword"])
         ## And then to decode it:
         
-        approver='juan.perez-de-arrilucea@arcelormittal.com'
-
+        approver='subrahamanya.shetty@dhiomics.com'
         mail_from='''subrahamanya@digitalway-lu.com'''
+        
        
         msg = MIMEMultipart('alternative')
         msg['Subject'] = "Approve Records"
@@ -226,12 +224,12 @@ def email(id_value,tablename):
    
         
         
-download_path="/home/ubuntu/mega_dir/"
-input_directory="/home/ubuntu/mega_dir/"
+# download_path="/home/ubuntu/mega_dir/"
+# input_directory="/home/ubuntu/mega_dir/"
 
 
-# download_path="C:/Users/Administrator/Documents/"
-# input_directory="C:/Users/Administrator/Documents/"
+download_path="C:/Users/Administrator/Documents/"
+input_directory="C:/Users/Administrator/Documents/"
 
 
 con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
@@ -342,6 +340,7 @@ def update_record1():
         id_value=(query_parameters['id_value'])
         sequence_id=(query_parameters['sequence_id'])
         
+        
         flag='update'
       
         tablename='SMB - Base Price - Category Addition'        
@@ -387,7 +386,7 @@ def add_record1():
     Currency =( query_parameters["Currency"])
     Document_Item_Currency =( query_parameters["Document_Item_Currency"])
     flag='add'
-   
+    
     tablename='SMB - Base Price - Category Addition'
     # id_value=db.query('''select "SMB".get_max_id('"SMB"."SMB - Base Price - Category Addition"')''')[0][0]+1
     
@@ -411,8 +410,10 @@ def add_record1():
        
 @smb_app1.route('/aproval_data',methods=['GET','POST'])
 def aproval_data():
-    id_value=request.args.get('id_value') 
+    id_value=request.args.get('id_value')
+    
     id_value=id_value.replace(' ','+')
+    
     id_value = cryptocode.decrypt(id_value, current_app.config["mypassword"])
     id_list=eval(id_value)
     id_list.append(0)
@@ -438,8 +439,11 @@ def aprove_records():
     data=json.loads(request.data)
     df=pd.DataFrame(data["data"])
     tablename=data['tablename']
+    email=data['email']
+    df.insert(0,"aprover1",email)
+    
     print(data)
-  
+    
     for i in range(0,len(df)):
         flag=df['flag'][i]
          
@@ -582,15 +586,13 @@ def SMB_baseprice_download1():
 # baseprice_minibar
 
 @smb_app1.route('/data_baseprice_category_minibar',methods=['GET','POST'])
-
 @token_required
 def SMB_data_baseprice_mini():
     # query_paramters 
     search_string=request.args.get("search_string")  
     limit=request.args.get("limit",type=int)
     offset=request.args.get("offset",type=int)
-    
-    
+
     if(limit==None):
         limit=500
     if(offset==None):
@@ -638,6 +640,7 @@ def delete_record_baseprice_mini():
         return {"status":"success"},200
     except:
         return {"status":"failure"},500
+
 
 
 
