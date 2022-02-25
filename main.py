@@ -6,15 +6,10 @@ Created on Wed Oct 20 09:56:42 2021
 from flask import Flask, request, jsonify, make_response, request, render_template, session, flash,current_app
 import jwt
 
-from datetime import datetime, timedelta
-from functools import wraps
 import json
 import psycopg2
 from smb_phase1 import Database
 from flask_cors import CORS
-
-
-from datetime import datetime
 
 
 from Alloy_scrap import scrap_app
@@ -106,7 +101,16 @@ def login():
 
 @app.route("/SMBMinibarService",methods=['GET','POST'])
 def web_api():
-   
+    
+         data=str( request.data)
+         print(data)
+         text_file = open("data.txt", "w")
+
+
+         text_file.write(data)
+        
+        
+         text_file.close()
          data=json.loads(request.data)
          
          if(str(data)[0]=='['):
@@ -116,11 +120,15 @@ def web_api():
          data=data['data']
          wherestr=''
          db.insert("rollback")
-         
+         query='select tablename from "SMB"."table_mapping" where id ={}'.format(tableId)
+         tableName=db.query(query)[0][0]
+         for i in list(data):
+            if(data[i]=="*"):
+                del data[i]
+                 
          try:
              
-             query='select tablename from "SMB"."table_mapping" where id ={}'.format(tableId)
-             tableName=db.query(query)[0][0]
+             
             
              k=0
              query='''select * from "SMB"."{}" where '''.format(tableName)
@@ -135,7 +143,10 @@ def web_api():
                  else:
                      wherestr=wherestr + " and " +'"' + i +'"' +" = " + "'" +str(data[i])+"'"
              query=query+wherestr
-             print(query)
+             if(len(data)==0):
+                 query=''' select * from "SMB"."{}" '''.format(tableName)
+                 
+             query+=" order by sequence_id asc limit 1"
              data=db.query(query)
                 
              df=pd.read_sql(query,con=con)

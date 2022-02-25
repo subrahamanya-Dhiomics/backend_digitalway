@@ -120,7 +120,7 @@ def upsert(col_tuple,input_tuple,flag='update',tablename=None,id_value=None):
             else: querystr='''INSERT INTO "SMB"."SMB_Aproval" ({}) VALUES{}; '''.format(columnstr,input_tuple)
              
             status=db.insert(querystr)
-            
+            print(querystr)
             tableid=db.query(''' select tableid from "SMB"."SMB_Aproval" where id={} '''.format(id_value))[0][0]
            
             
@@ -149,23 +149,47 @@ def move_records(tablename,col_tuple,value_tuple,flag,id_value=None,sequence_id=
          FROM "SMB"."{}"
         WHERE "id" ={} '''.format(tablename,columnstr,columnstr,tablename,id_value)
         
+        
+        sequence_initial=db.query(''' select sequence_id from "SMB"."{}" where id={} and active=1 '''.format(tablename,id_value) )[0][0]
+        print(sequence_initial)
+        print("***********")
+        vacant_check=0
         try:
-            auto_id=db.query(''' select id from "SMB"."{}" where sequence_id={}'''.format(tablename,sequence_id))[0][0]
-            seq_id=db.query(''' select sequence_id from "SMB"."{}" where id={} '''.format(tablename,id_value))[0][0]
+         vacant_check=db.query('''select active from "SMB"."{}" where sequence_id={} '''.format(tablename,sequence_id))[0][0]
         except:
-            pass
+          pass
+            
+        if(vacant_check==1):
+             
+            sequence_final=int(sequence_id)
+            if(sequence_final<sequence_initial):
+                id_array=db.query(''' select id from "SMB"."{}" where sequence_id >={} and sequence_id<{} and active=1 order by sequence_id '''.format(tablename,sequence_final,sequence_initial))
+                id_array=list(sum(id_array,()))
+                print(id_array)
+                for i in  id_array:
+                 qr1= ''' UPDATE "SMB"."{}" SET sequence_id=sequence_id+1 where id={}  and active=1 '''.format(tablename,i)
+                 print(qr1)
+                 db.insert(qr1)
+            else:
+                id_array=db.query(''' select id from "SMB"."{}" where sequence_id >{} and sequence_id<={} and active=1 order by sequence_id '''.format(tablename,sequence_initial,sequence_final))
+                id_array=list(sum(id_array,()))
+                for j in  id_array:
+                 qr2= ''' UPDATE "SMB"."{}" SET sequence_id=sequence_id-1 where id={} and active=1 '''.format(tablename,j)
+                 db.insert(qr2)
+                
+        
         
         query2= ''' UPDATE "SMB"."{}" SET ({})= {} where id={}  '''.format(tablename,columnstr,value_tuple,id_value)
         print(query2)
         
         db.insert(query1)
         status=db.insert(query2)
-        try:
-            auto_update=''' update "SMB"."{}"  set sequence_id={} where id={} '''.format(tablename,seq_id,auto_id) 
-            print(auto_update)
-            db.insert(auto_update)
-        except:
-            pass
+        # try:
+        #     auto_update=''' update "SMB"."{}"  set sequence_id={} where id={} '''.format(tablename,seq_id,auto_id) 
+        #     print(auto_update)
+        #     db.insert(auto_update)
+        # except:
+        #     pass
         
         if(status!='failed'):
             db.insert(''' delete from "SMB"."SMB_Aproval" where id={} '''.format(id_value))
@@ -424,7 +448,7 @@ def aproval_data():
     query='''select * from "SMB"."SMB_Aproval" where tableid in {} and table_name='{}' '''.format(id_tuple,tablename)
     print(query)
     df=pd.read_sql(query,con=con)
-    if(len(df)<1):raise ValueError
+
     
     df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer_Group":"Market_Customer_Group","Zip_Code_(Dest)":"Zip_Code_Dest"},inplace=True)
     df.dropna(axis=1, how='all',inplace=True)
@@ -571,8 +595,14 @@ def SMB_baseprice_download1():
    
         now = datetime.now()
        
-        df = pd.read_sql('''select * from "SMB"."SMB - Base Price - Category Addition" where "active"='1' order by sequence_id ''', con=con)
-        df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
+        df = pd.read_sql('''select "id",sequence_id,"BusinessCode",
+             "Market - Country",
+             "Product Division",
+             "Product Level 02",
+             "Document Item Currency",
+             "Amount",
+             "Currency" from "SMB"."SMB - Base Price - Category Addition" where "active"='1' order by sequence_id ''', con=con)
+        
         t=now.strftime("%d-%m-%Y-%H-%M-%S")
         file=download_path+t+'baseprice_category_addition.xlsx'
         
@@ -728,7 +758,7 @@ def update_record_category_minibar():
               "Username",
               "BusinessCode",
               "Customer Group",
-              "Market - Customer",
+             
               "Market - Country",
               "Beam Category",
               "Document Item Currency",
@@ -881,9 +911,16 @@ def SMB_baseprice_catecory_minibar_download():
         now = datetime.now()
         try:
             print("hi")
-            df = pd.read_sql('''select * from "SMB"."SMB - Base Price - Category Addition - MiniBar" where "active"='1' order by sequence_id ''', con=con)
+            df = pd.read_sql('''select "id",sequence_id, "BusinessCode",
+              "Customer Group",
+             
+              "Market - Country",
+              "Beam Category",
+              "Document Item Currency",
+              "Amount",
+              "Currency" from "SMB"."SMB - Base Price - Category Addition - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             
-            df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
+            
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             
             file=download_path+t+'baseprice_addition_minibar.xlsx'
@@ -1161,8 +1198,15 @@ def SMB_baseprice_download_incoterm():
    
         now = datetime.now()
         try:
-            df = pd.read_sql('''select * from "SMB"."SMB - Base Price - Incoterm Exceptions" where "active"='1' order by sequence_id ''', con=con)
-            df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
+            df = pd.read_sql('''select "id","sequence_id","Market - Country",
+	        "Product Division",
+                "Incoterm1",
+		"Customer Group",
+		"Beam Category",
+		"Delivering Mill",
+		"Document Item Currency",
+		"Amount","Currency" from "SMB"."SMB - Base Price - Incoterm Exceptions" where "active"='1' order by sequence_id ''', con=con)
+           
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'incoterm.xlsx'
             print(file)
@@ -1443,8 +1487,16 @@ def download_extra_certificate():
    
         now = datetime.now()
         try:
-            df = pd.read_sql('''select * from "SMB"."SMB - Extra - Certificate" where "active"='1' order by sequence_id ''', con=con)
-            df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
+            df = pd.read_sql('''select "id",sequence_id, "BusinessCode",
+"Certificate",
+"Grade Category",
+"Market - Country",
+
+"Delivering Mill",
+"Document Item Currency",
+"Amount",
+"Currency" from "SMB"."SMB - Extra - Certificate" where "active"='1' order by sequence_id ''', con=con)
+          
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'extra_certificate.xlsx'
             print(file)
@@ -1711,8 +1763,9 @@ def  download_extra_certificate_minibar():
    
         now = datetime.now()
         try:
-            df = pd.read_sql('''select * from "SMB"."SMB - Extra - Certificate - MiniBar" where "active"='1' order by sequence_id ''', con=con)
-            df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
+            df = pd.read_sql('''select "id",sequence_id,"BusinessCode","Certificate","Market - Country",
+"Grade Category","Customer Group","Document Item Currency","Amount","Currency" from "SMB"."SMB - Extra - Certificate - MiniBar" where "active"='1' order by sequence_id ''', con=con)
+           
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'extra_certificate_minibar.xlsx'
             print(file)
@@ -1998,8 +2051,15 @@ def  download_delivery_mill():
    
         now = datetime.now()
         try:
-            df = pd.read_sql('''select * from "SMB"."SMB - Extra - Delivery Mill" where "active"='1' order by sequence_id ''', con=con)
-            df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
+            df = pd.read_sql('''select "id",sequence_id, "BusinessCode",
+"Market - Country",
+"Delivering Mill",
+"Product Division",
+"Beam Category",
+"Document Item Currency",
+"Amount",
+"Currency" from "SMB"."SMB - Extra - Delivery Mill" where "active"='1' order by sequence_id ''', con=con)
+           
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'delivery_mill.xlsx'
             print(file)
@@ -2260,8 +2320,10 @@ def  download_delivery_mill_minibar():
    
         now = datetime.now()
         try:
-            df = pd.read_sql('''select * from "SMB"."SMB - Extra - Delivery Mill - MiniBar" where "active"='1' order by sequence_id ''', con=con)
-            df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
+            df = pd.read_sql('''select "id",sequence_id,"Market - Country",
+       "Market - Customer Group",  "Delivering Mill",
+       "Product Division", "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Delivery Mill - MiniBar" where "active"='1' order by sequence_id ''', con=con)
+            
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'delivery_mill_minibar.xlsx'
             print(file)

@@ -595,4 +595,3 @@ def getfiles():
     except:
         
          return {"statuscode":"500","message":"failed"},500
-scrap_app()

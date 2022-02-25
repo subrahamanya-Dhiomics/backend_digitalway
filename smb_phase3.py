@@ -449,8 +449,8 @@ def download_transport():
    
         now = datetime.now()
         try:
-            df = pd.read_sql('''select "id","Product Division", "Market - Country",
-       "Transport Mode", "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Transport Mode" where "active"='1' order by sequence_id ''', con=con)
+            df = pd.read_sql('''select "id",sequence_id,"Product Division", "Market - Country",
+       "Transport Mode", "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Transport Mode" where "active"='1' order by sequence_id ''', con=con)
            
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'extra_transport_mode.xlsx'
@@ -831,8 +831,15 @@ def  validate_transport_minibar():
 def download_transport_minibar():
         now = datetime.now()
         try:
-            df = pd.read_sql('''select * from "SMB"."SMB - Extra - Transport Mode - MiniBar" where "active"='1' order by sequence_id ''', con=con)
-            df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
+            df = pd.read_sql('''select "id",sequence_id,"Product Division", 
+              "Market - Country",
+              "Market - Customer Group", 
+             
+              "Transport Mode",
+              "Document Item Currency", 
+              "Amount", 
+              "Currency" from "SMB"."SMB - Extra - Transport Mode - MiniBar" where "active"='1' order by sequence_id ''', con=con)
+           
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'transport_mode_minibar.xlsx'
             print(file)
@@ -1009,7 +1016,7 @@ def update_record_length_production():
     Delivering_Mill=(query_parameters['Delivering_Mill'])
     Length=(query_parameters['Length'])
     Length_From=(query_parameters['Length_From'])
-    Length_To=(query_parameters['Length_From'])
+    Length_To=(query_parameters['Length_To'])
     id_value=(query_parameters['id_value'])
     sequence_id=(query_parameters["sequence_id"])
     
@@ -1228,8 +1235,17 @@ def download_length_production():
    
         now = datetime.now()
         try:
-            df = pd.read_sql('''select * from "SMB"."SMB - Extra - Length Production" where "active"='1' order by sequence_id ''', con=con)
-            df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
+            df = pd.read_sql('''select "id",sequence_id,"BusinessCode", 
+        "Country Group",
+        "Market - Country", 
+        "Delivering Mill", 
+        "Length", 
+        "Length From",
+        "Length To", 
+        "Document Item Currency", 
+        "Amount", 
+        "Currency" from "SMB"."SMB - Extra - Length Production" where "active"='1' order by sequence_id ''', con=con)
+            
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             # file=download_path+t+'length_production_minibar.xlsx'
             file=download_path+t+'length_production.xlsx'
@@ -1653,8 +1669,17 @@ def download_length_production_minibar():
    
         now = datetime.now()
         try:
-            df = pd.read_sql('''select * from "SMB"."SMB - Extra - Length Production - MiniBar" where "active"='1' order by sequence_id ''', con=con)
-            df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
+            df = pd.read_sql('''select "id",sequence_id, "BusinessCode",
+              "Customer Group",
+            "Market - Country", 
+            "Delivering Mill", 
+            "Length",
+            "Length From",
+            "Length To",
+              "Document Item Currency",
+              "Amount",
+              "Currency" from "SMB"."SMB - Extra - Length Production - MiniBar" where "active"='1' order by sequence_id ''', con=con)
+           
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'length_production_minibar.xlsx'
             print(file)
@@ -2060,8 +2085,17 @@ def download_length_logistic():
    
         now = datetime.now()
         try:
-            df = pd.read_sql('''select * from "SMB"."SMB - Extra - Length Logistic" where "active"='1' order by sequence_id ''', con=con)
-            df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
+            df = pd.read_sql('''select "id",sequence_id, "Country Group", 
+                "Market - Country",
+                "Delivering Mill",
+                "Length", 
+                "Length From", 
+                "Length To",
+                "Transport Mode", 
+                "Document Item Currency", 
+                "Amount", 
+                "Currency" from "SMB"."SMB - Extra - Length Logistic" where "active"='1' order by sequence_id ''', con=con)
+           
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'length_logistic.xlsx'
             print(file)
@@ -2480,8 +2514,16 @@ def download_length_logistic_minibar():
     
         now = datetime.now()
         try:
-            df = pd.read_sql('''select * from "SMB"."SMB - Extra - Length Logistic - MiniBar" where "active"='1' order by sequence_id ''', con=con)
-            df.drop(['Username','updated_on','active','aprover1','aprover2','aprover3'],axis=1,inplace=True)
+            df = pd.read_sql('''select "id",sequence_id, "Market - Country", 
+            "Delivering Mill",
+            "Length",
+            "Length From",
+            "Length To",
+            "Transport Mode",
+              "Document Item Currency",
+              "Amount",
+              "Currency" from "SMB"."SMB - Extra - Length Logistic - MiniBar" where "active"='1' order by sequence_id ''', con=con)
+           
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'length_logistic_minibar.xlsx'
             print(file)
