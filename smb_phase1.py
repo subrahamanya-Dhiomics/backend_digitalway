@@ -434,27 +434,74 @@ def add_record1():
        
 @smb_app1.route('/aproval_data',methods=['GET','POST'])
 def aproval_data():
-    id_value=request.args.get('id_value')
-    
+    id_value=request.args.get('id_value') 
     id_value=id_value.replace(' ','+')
-    
     id_value = cryptocode.decrypt(id_value, current_app.config["mypassword"])
     id_list=eval(id_value)
     id_list.append(0)
     id_tuple=tuple(id_list)
+    data=[{}]
     
     tablename=request.args.get('tablename')
+
+    if(tablename=="SMB - Base Price - Category Addition"):
+      lis=["sequence_id","BusinessCode","Market - Country","Product Division","Product Level 02","Document Item Currency","Amount","Currency","updated_on","status","flag","table_name","id","tableid"]
+    if(tablename=="SMB - Base Price - Incoterm Exceptions"):
+      lis=["sequence_id","Market - Country","Customer Group","Incoterm1","Product Division","Beam Category","Delivering Mill","Document Item Currency","Amount","Currency","updated_on","status","flag","table_name","id","tableid"]
+    if(tablename=="SMB - Extra - Certificate"):
+        lis=["sequence_id","BusinessCode","Certificate","Grade Category","Market - Country","Delivering Mill","Document Item Currency","Amount","Currency","updated_on","status","flag","table_name","id","tableid"]
+    if(tablename=="SMB - Extra - Delivery Mill"):
+        lis=["sequence_id","BusinessCode","Market - Country","Delivering Mill","Product Division","Beam Category","Document Item Currency","Amount","Currency","updated_on","status","flag","table_name","id","tableid"]
+    if(tablename=="SMB - Extra - Grade"):
+        lis=["sequence_id","BusinessCode","Market - Country","Product Division","Document Item Currency","Amount","Currency","updated_on","status","flag","table_name","id","tableid"]
+    if(tablename=="length logestic"):
+        lis=["sequence_id","Country Group","Market - Country","Delivering Mill","Length","Length From","Length To","Transport Mode","Document Item Currency","Amount","Currency","updated_on","status","flag","table_name","id","tableid"]
+    if(tablename=="SMB - Extra - Length Production"):
+        lis=["sequence_id","BusinessCode","Country Group","Market - Country","Delivering Mill","Length","Length From","Length To","Document Item Currency","Amount","Currency","updated_on","status","flag","table_name","id","tableid"]
+    if(tablename=="SMB - Extra - Profile"):
+        lis=["sequence_id","BusinessCode","Market - Country","Product Division","Product Level 04","Product Level 05","Product Level 02","Delivering Mill","Document Item Currency","Amount","Currency","updated_on","status","flag","table_name","id","tableid"]
+    if(tablename=="SMB - Extra - Profile Iberia and Italy"):
+        lis=["sequence_id","BusinessCode","Market - Country","Delivering Mill","Product Level 02","Product Level 05","Document Item Currency","Amount","Currency","updated_on","status","flag","table_name","id","tableid"]
+    if(tablename=="SMB - Extra - Transport Mode"):
+        lis=["sequence_id","Product Division","Market - Country","Transport Mode","Document Item Currency","Amount","Currency","updated_on","status","flag","table_name","id","tableid"]
+        
+    # SMB-Mini-Bar
+    if(tablename=="SMB - Base Price - Category Addition - MiniBar"):
+        lis=["sequence_id","BusinessCode","Customer Group","Market - Country","Beam Category","Document Item Currency","Amount","Currency","updated_on","status","flag","table_name","id","tableid"]
+    if(tablename=="SMB - Extra - Certificate - MiniBar"):
+        lis=["sequence_id","BusinessCode","Customer Group","Market - Country","Certificate","Grade Category","Document Item Currency","Amount","Currency","updated_on","status","flag","table_name","id","tableid"]
+    if(tablename=="SMB - Extra - Delivery Mill - MiniBar"):
+        lis=["sequence_id","Market - Country","Market - Customer Group","Delivering Mill","Product Division","Document Item Currency","Amount","Currency","updated_on","status","flag","table_name","id","tableid"]
+    if(tablename=="SMB - Extra - Freight Parity - MiniBar"):
+        lis=["sequence_id","Delivering Mill","Market - Country","Market - Customer Group","Zip Code (Dest)","Product Division","Document Item Currency","Amount","Currency","updated_on","status","flag","table_name","id","tableid"]
+    if(tablename=="SMB - Extra - Grade - MiniBar"):
+        lis=["sequence_id","BusinessCode","Grade Category","Customer Group","Market - Country","Document Item Currency","Amount","Currency","updated_on","status","flag","table_name","id","tableid"]
+    if(tablename=="SMB - Extra - Length Logistic - MiniBar"):
+        lis=["sequence_id","Customer Group","Market - Country","Delivering Mill","Length","Length From","Length To","Transport Mode","Document Item Currency","Amount","Currency","updated_on","status","flag","table_name","id","tableid"]
+    if(tablename=="SMB - Extra - Length Production - MiniBar"):
+        lis=["sequence_id","BusinessCode","Customer Group","Market - Country","Delivering Mill","Length","Length From","Length To","Document Item Currency","Amount","Currency","updated_on","status","flag","table_name","id","tableid"]
+    if(tablename=="SMB - Extra - Profile - MiniBar"):
+        lis=["sequence_id","BusinessCode","Customer Group","Market - Country","Product Level 04","Product Level 05","Product Level 02","Delivering Mill","Document Item Currency","Amount","Currency","updated_on","status","flag","table_name","id","tableid"]
+    if(tablename=="SMB - Extra - Profile Iberia and Italy - MiniBar"):
+        lis=["sequence_id","BusinessCode","Market - Country","Market - Customer Group","Delivering Mill","Product Level 02","Product Level 05","Document Item Currency","Amount","Currency","updated_on","status","flag","table_name","id","tableid"]
+    if(tablename=="SMB - Extra - Transport Mode - MiniBar"):
+        lis=["sequence_id","Product Division","Market - Country","Market - Customer Group","Transport Mode","Document Item Currency","Amount","Currency","updated_on","status","flag","table_name","id","tableid"]
+    
     
     query='''select * from "SMB"."SMB_Aproval" where tableid in {} and table_name='{}' '''.format(id_tuple,tablename)
-    print(query)
     df=pd.read_sql(query,con=con)
-
-    
-    df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer_Group":"Market_Customer_Group","Zip_Code_(Dest)":"Zip_Code_Dest"},inplace=True)
-    df.dropna(axis=1, how='all',inplace=True)
-    data=json.loads(df.to_json(orient='records'))
-    
-    return {"data":data},200
+    try:
+        if(len(df)<1):raise ValueError
+          
+        df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer_Group":"Market_Customer_Group","Zip_Code_(Dest)":"Zip_Code_Dest"},inplace=True)
+        df.dropna(axis=1, how='all',inplace=True)
+        data=json.loads(df.to_json(orient='records'))
+        
+        return {"data":data,"lis":lis},200
+    except:
+        data=[]
+        return {"data": data,"lis":lis},200
+      
       
  
 
