@@ -111,6 +111,8 @@ def  download_delivery_mill_minibar_history():
         df['updated_on']=pd.to_datetime(df['updated_on'])
         df['updated_on']=df['updated_on'].astype(str)
         
+        # df['updated_on'] = df['updated_on'].dt.strftime('%d/%m/%Y')
+       
         if(search_string!="all" and search_string!=None):
                       df=df[df.eq(search_string).any(1)]
         
