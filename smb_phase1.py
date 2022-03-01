@@ -220,9 +220,9 @@ def move_records(tablename,col_tuple,value_tuple,flag,id_value=None,sequence_id=
         return status
     
 
-def email(id_value,tablename):  
+def email(id_value,tablename,flag='change'):  
           
-        flag='sda'
+       
         
         encoded_id = cryptocode.encrypt(str(id_value),current_app.config["mypassword"])
         ## And then to decode it:
@@ -254,22 +254,7 @@ def email(id_value,tablename):
         server.close()
         return 'success'
    
-def dyno_del(tablename,id_value):
-      try:
-        for i in id_value:
-              
-                check=db.query(''' select exists(select 1  from "SMB"."delete_flow" where id={} and tablename='{}') '''.format(i,tablename))[0][0]
-                if (check!=1 and check=='failed') :
-                    querystr='''INSERT INTO "SMB"."delete_flow" (tablename,id)  VALUES({},{}); '''.format(tablename,id_value)
-                    res=db.insert(querystr)
-        return 1
-      except :
-          return 0
   
-        
-                
-                
-    
         
         
 # download_path="/home/ubuntu/mega_dir/"
@@ -283,14 +268,126 @@ input_directory="C:/Users/Administrator/Documents/"
 con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
 
 
-
-@smb_app1.route('/hello_world',methods=['GET'])
-
-def Hello():
+     
+@smb_app1.route('/aproval_data',methods=['GET','POST'])
+def aproval_data():
+    id_value=request.args.get('id_value')
+    flag=request.args.get('flag')
     
-    return {"status":"success"}
+    # decoding the id array 
+    id_value=id_value.replace(' ','+')
+    id_value = cryptocode.decrypt(id_value, current_app.config["mypassword"])
+    id_list=eval(id_value)
+    id_list.append(0)
+    id_tuple=tuple(id_list)
+    tablename=request.args.get('tablename')
+    
+    # preparing the columns list
+    col_df=pd.read_sql(''' select * from "SMB"."{}"  limit 1 '''.format(tablename),con)
+    lis=list(col_df.columns)
+    lis.append('flag')
+    removals=['id','Username','active','aprover1','aprover2','aprover3']
+    for i in removals:
+        lis.remove(i)
+        
+    
+    if(flag=='delete'):
+        query=''' select * from "SMB"."{}" where id in {} and active=1 '''.format(tablename,id_tuple)
+        df=pd.read_sql(query,con)
+        df.insert(0,"flag",flag)
+        data=json.loads(df.to_json(orient='records'))
+        return {"data":data,"lis":lis},200
+        
+        
+    else:
+  
+        query='''select * from "SMB"."SMB_Aproval" where tableid in {} and table_name='{}' '''.format(id_tuple,tablename)
+        print(query)
+        df=pd.read_sql(query,con=con)
+    
+        
+        df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer_Group":"Market_Customer_Group","Zip_Code_(Dest)":"Zip_Code_Dest"},inplace=True)
+        df.dropna(axis=1, how='all',inplace=True)
+        data=json.loads(df.to_json(orient='records'))
+        
+        return {"data":data,"lis":lis},200
+      
+ 
+
+@smb_app1.route('/aprove_records',methods=['GET','POST'])
+def aprove_records():
+    data=json.loads(request.data)
+    df=pd.DataFrame(data["data"])
+    tablename=data['tablename']
+    email=data['email']
+    
+    if(df['flag'][0]=='delete'):
+            id_value=list(df['id'])
+            id_value.append(0)
+            id_value=tuple(id_value)
+                        
+            query='''UPDATE "SMB"."{}" SET "active"=0 WHERE "id" in {} '''.format(tablename,id_value)
+            print(query)
+            result=db.insert(query)
+            
+            return {"status":"success"},200
+        
+        
+    else:
+        df.insert(0,"aprover1",email)
+        for i in range(0,len(df)):
+            flag=df['flag'][i]
+             
+            tableid=df['tableid'][i]
+            try:
+                id_value=df['id'][i]
+                sequence_id=df['sequence_id'][i]
+                
+            except:pass
+            
+            if(flag=='update'):
+             df2=df.drop(['tableid','flag','updated_on'], axis = 1)
+             col_tuple=tuple(list(df2.columns))
+             value_tuple=tuple(df2.loc[i])
+             status=move_records(tablename,col_tuple,value_tuple,flag,id_value,sequence_id)
+           
+            else:
+               df2=df.drop(['tableid','flag','updated_on'], axis = 1)
+               col_tuple=tuple(list(df2.columns))
+               value_tuple=tuple(df2.loc[i])
+               status=move_records(tablename,col_tuple,value_tuple,flag,tableid)
+            
+        return {"status":"success"},200
+
+@smb_app1.route('/reject_records',methods=['GET','POST'])
+def reject_records():
+    data=json.loads(request.data)
+    tablename=data['tablename']
+    id_value=data['id_value']
+    id_value=id_value.replace(' ','+')
+    id_value = cryptocode.decrypt(id_value, current_app.config["mypassword"])
+    id_list=eval(id_value)
+    id_list.append(0)
+    id_tuple=tuple(id_list) 
+    query=''' delete from "SMB"."SMB_Aproval" where tableid in {} '''.format(id_tuple)
+    db.insert(query)
+    return {"status":"success"},200
+    
 
 
+@smb_app1.route('/delete_record_baseprice',methods=['POST','GET','DELETE'])
+@token_required
+
+def delete_record():  
+    id_value=json.loads(request.data)['id']
+    
+    
+    tablename='SMB - Base Price - Category Addition'
+   
+    status=email(id_value,tablename,'delete')
+    if(status=='success'):return {"status":"success"},200
+    else: return {"status":"failure"},500
+    
 
 @smb_app1.route('/Base_Price_Data',methods=['GET','POST'])
 @token_required
@@ -334,20 +431,6 @@ def SMB_data():
         return {"statuscode":500,"msg":"failure"},500
         
 
-@smb_app1.route('/delete_record_baseprice',methods=['POST','GET','DELETE'])
-@token_required
-
-def delete_record():  
-    id_value=json.loads(request.data)['id']
-    
-    
-    tablename='SMB - Base Price - Category Addition'
-    status=dyno_del(tablename,id_value)
-    if(status==1):
-        status=email(id_value,tablename)
-        return {"status":"success"},200
-    else:
-        return {"status":"failure"},500
     
     
    
@@ -457,94 +540,7 @@ def add_record1():
     
     if(email_status=='success'): return {"status":"success"},200
     else: return {"status":"failure"},500
-       
-@smb_app1.route('/aproval_data',methods=['GET','POST'])
-def aproval_data():
-    id_value=request.args.get('id_value')
-    print(request.args.get('flag'))
-    print("**************")
-    
-    id_value=id_value.replace(' ','+')
-    
-    id_value = cryptocode.decrypt(id_value, current_app.config["mypassword"])
-    id_list=eval(id_value)
-    id_list.append(0)
-    id_tuple=tuple(id_list)
-    
-    tablename=request.args.get('tablename')
-    
-    col_df=pd.read_sql(''' select * from "SMB"."{}"  limit 1 '''.format(tablename),con)
-    lis=list(col_df.columns)
-    lis.append('flag')
-    
-    
-    removals=['id','Username','active','aprover1','aprover2','aprover3']
-    
-    for i in removals:
-        lis.remove(i)
   
-    query='''select * from "SMB"."SMB_Aproval" where tableid in {} and table_name='{}' '''.format(id_tuple,tablename)
-    print(query)
-    df=pd.read_sql(query,con=con)
-
-    
-    df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer_Group":"Market_Customer_Group","Zip_Code_(Dest)":"Zip_Code_Dest"},inplace=True)
-    df.dropna(axis=1, how='all',inplace=True)
-    data=json.loads(df.to_json(orient='records'))
-    
-    return {"data":data,"lis":lis},200
-      
- 
-
-@smb_app1.route('/aprove_records',methods=['GET','POST'])
-def aprove_records():
-    data=json.loads(request.data)
-    df=pd.DataFrame(data["data"])
-    tablename=data['tablename']
-    email=data['email']
-    df.insert(0,"aprover1",email)
-    
-    print(data)
-    
-    for i in range(0,len(df)):
-        flag=df['flag'][i]
-         
-        tableid=df['tableid'][i]
-        try:
-            id_value=df['id'][i]
-            sequence_id=df['sequence_id'][i]
-            
-        except:pass
-       
-        if(flag=='update'):
-         df2=df.drop(['tableid','flag','updated_on'], axis = 1)
-         col_tuple=tuple(list(df2.columns))
-         value_tuple=tuple(df2.loc[i])
-         
-         status=move_records(tablename,col_tuple,value_tuple,flag,id_value,sequence_id)
-       
-        else:
-           df2=df.drop(['tableid','flag','updated_on'], axis = 1)
-           col_tuple=tuple(list(df2.columns))
-           value_tuple=tuple(df2.loc[i])
-           status=move_records(tablename,col_tuple,value_tuple,flag,tableid)
-        
-    return {"status":"success"},200
-
-@smb_app1.route('/reject_records',methods=['GET','POST'])
-def reject_records():
-    data=json.loads(request.data)
-    tablename=data['tablename']
-    id_value=data['id_value']
-    id_value=id_value.replace(' ','+')
-    id_value = cryptocode.decrypt(id_value, current_app.config["mypassword"])
-    id_list=eval(id_value)
-    id_list.append(0)
-    id_tuple=tuple(id_list) 
-    query=''' delete from "SMB"."SMB_Aproval" where tableid in {} '''.format(id_tuple)
-    db.insert(query)
-    return {"status":"success"},200
-    
    
 @smb_app1.route('/Base_Price_Upload', methods=['GET','POST'])
 
@@ -698,16 +694,15 @@ def SMB_data_baseprice_mini():
 @token_required
 def delete_record_baseprice_mini():  
     id_value=json.loads(request.data)['id']
-    id_value.append(0)
-    id_value=tuple(id_value)
-    try:
-        query='''UPDATE "SMB"."SMB - Base Price - Category Addition - MiniBar" SET "active"=0 WHERE "id" in {} '''.format(id_value)
-        result=db.insert(query)
-        
-        
-        return {"status":"success"},200
-    except:
-        return {"status":"failure"},500
+    
+    
+    tablename='SMB - Base Price - Category Addition - MiniBar'
+   
+    status=email(id_value,tablename,'delete')
+    if(status=='success'):return {"status":"success"},200
+    else: return {"status":"failure"},500
+    
+    
 
 
 
@@ -1027,17 +1022,17 @@ def SMB_data_baseprice_incoterm():
 @token_required
 def delete_record_baseprice_incoterm():  
     
+   
+    
     id_value=json.loads(request.data)['id']
-    id_value.append(0)
-    id_value=tuple(id_value)
-    try:
-        query='''UPDATE "SMB"."SMB - Base Price - Incoterm Exceptions" SET "active"=0 WHERE "id" in {} '''.format(id_value)
-        result=db.insert(query)
-        
-        
-        return {"status":"success"},200
-    except:
-        return {"status":"failure"},500
+    
+    
+    tablename='SMB - Base Price - Incoterm Exceptions'
+   
+    status=email(id_value,tablename,'delete')
+    if(status=='success'):return {"status":"success"},200
+    else: return {"status":"failure"},500
+    
 
 
 @smb_app1.route('/get_record_baseprice_incoterm',methods=['GET','POST'])     
@@ -1313,15 +1308,16 @@ def extra_certificate_data():
 @token_required
 def delete_extra_certificate():  
     id_value=json.loads(request.data)['id']
-    id_value.append(0)
-    id_value=tuple(id_value)
-    try:
-        query='''UPDATE "SMB"."SMB - Extra - Certificate" SET "active"=0 WHERE "id" in {} '''.format(id_value)
-        result=db.insert(query)
-        
-        return {"status":"success"},200
-    except:
-        return {"status":"failure"},500
+    
+    
+    tablename='SMB - Extra - Certificate'
+   
+    status=email(id_value,tablename,'delete')
+    if(status=='success'):return {"status":"success"},200
+    else: return {"status":"failure"},500
+    
+    
+   
 
 
 @smb_app1.route('/get_record_extra_certificate',methods=['GET','POST']) 
@@ -1602,19 +1598,15 @@ def extra_certificate_data_minibar():
 @smb_app1.route('/delete_record_extra_certificate_minibar',methods=['POST','GET','DELETE'])
 @token_required
 def delete_extra_certificate_minibar():  
+   
     id_value=json.loads(request.data)['id']
-    id_value.append(0)
-    id_value=tuple(id_value)
-    try:
-        query='''UPDATE "SMB"."SMB - Extra - Certificate - MiniBar" SET "active"=0 WHERE "id" in {} '''.format(id_value)
-        result=db.insert(query)
-        
-
-        if result=='failed': raise ValueError
-        
-        return {"status":"success"},200
-    except:
-        return {"status":"failure"},500
+    
+    
+    tablename='SMB - Extra - Certificate - MiniBar'
+   
+    status=email(id_value,tablename,'delete')
+    if(status=='success'):return {"status":"success"},200
+    else: return {"status":"failure"},500
 
 
 @smb_app1.route('/get_record_extra_certificate_minibar',methods=['GET','POST'])       
@@ -1876,18 +1868,16 @@ def data_delivery_mill():
 @smb_app1.route('/delete_record_delivery_mill',methods=['POST','GET','DELETE'])
 @token_required
 def delete_record_delivery_mill():  
+   
     id_value=json.loads(request.data)['id']
-    id_value.append(0)
-    id_value=tuple(id_value)
-    try:
-        query='''UPDATE "SMB"."SMB - Extra - Delivery Mill" SET "active"=0 WHERE "id" in {} '''.format(id_value)
-        result=db.insert(query)
-        
+    
+    
+    tablename='SMB - Extra - Delivery Mill'
+   
+    status=email(id_value,tablename,'delete')
+    if(status=='success'):return {"status":"success"},200
+    else: return {"status":"failure"},500
 
-        
-        return {"status":"success"},200
-    except:
-        return {"status":"failure"},500
 
 
 @smb_app1.route('/get_record_delivery_mill',methods=['GET','POST']) 
@@ -2172,16 +2162,17 @@ def data_delivery_mill_minibar():
 @smb_app1.route('/delete_record_delivery_mill_minibar',methods=['POST','GET','DELETE'])
 @token_required
 def delete_record_delivery_mill_minibar():  
+   
     id_value=json.loads(request.data)['id']
-    id_value.append(0)
-    id_value=tuple(id_value)
-    try:
-        query='''UPDATE "SMB"."SMB - Extra - Delivery Mill - MiniBar" SET "active"=0 WHERE "id" in {} '''.format(id_value)
-        result=db.insert(query)
-        
-        return {"status":"success"},200
-    except:
-        return {"status":"failure"},500
+    
+    
+    tablename='SMB - Extra - Delivery Mill - MiniBar'
+   
+    status=email(id_value,tablename,'delete')
+    if(status=='success'):return {"status":"success"},200
+    else: return {"status":"failure"},500
+
+
 
 
 @smb_app1.route('/get_record_delivery_mill_minibar',methods=['GET','POST'])       

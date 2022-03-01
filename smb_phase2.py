@@ -144,18 +144,16 @@ def  freight_parity():
 @token_required
 def delete_record_delivery_mill_minibar():  
     
+   
     id_value=json.loads(request.data)['id']
-    id_value.append(0)
-    id_value=tuple(id_value)
     
-    try:
-        query='''UPDATE "SMB"."SMB - Extra - Freight Parity" SET "active"=0 WHERE "id" in {} '''.format(id_value)
-        result=db.insert(query)
-        
-        
-        return {"status":"success"},200
-    except:
-        return {"status":"failure"},500
+    
+    tablename='SMB - Extra - Freight Parity'
+   
+    status=email(id_value,tablename,'delete')
+    if(status=='success'):return {"status":"success"},200
+    else: return {"status":"failure"},500
+
 
 
 @smb_app2.route('/get_record_freight_parity',methods=['GET','POST'])    
@@ -431,16 +429,16 @@ def  freight_parity_minibar():
 @smb_app2.route('/delete_record_freight_parity_minibar',methods=['POST','GET','DELETE'])
 @token_required
 def delete_record_freight_parity_minibar():  
-    id_value=json.loads(request.data)['id']
-    id_value.append(0)
-    id_value=tuple(id_value)
+   
     
-    try:
-        query='''UPDATE "SMB"."SMB - Extra - Freight Parity - MiniBar" SET "active"=0 WHERE "id" in {} '''.format(id_value)
-        result=db.insert(query)
-        return {"status":"success"},200
-    except:
-        return {"status":"failure"},500
+    id_value=json.loads(request.data)['id']
+    
+    
+    tablename='SMB - Extra - Freight Parity - MiniBar'
+   
+    status=email(id_value,tablename,'delete')
+    if(status=='success'):return {"status":"success"},200
+    else: return {"status":"failure"},500
 
 
 @smb_app2.route('/get_record_freight_parity_minibar',methods=['GET','POST'])       
@@ -688,17 +686,15 @@ def  extra_grade_data():
 @smb_app2.route('/delete_record_extra_grade',methods=['POST','GET','DELETE'])
 @token_required
 def delete_record_extra_grade():  
-    id_value=json.loads(request.data)['id']
-    id_value.append(0)
-    id_value=tuple(id_value)
     
-    try:
-        query='''UPDATE "SMB"."SMB - Extra - Grade" SET "active"=0 WHERE "id" in {} '''.format(id_value)
-        result=db.insert(query)
-        
-        return {"status":"success"},200
-    except:
-        return {"status":"failure"},500
+    id_value=json.loads(request.data)['id']
+    
+    
+    tablename='SMB - Extra - Grade'
+   
+    status=email(id_value,tablename,'delete')
+    if(status=='success'):return {"status":"success"},200
+    else: return {"status":"failure"},500
 
 
 @smb_app2.route('/get_record_extra_grade',methods=['GET','POST'])  
@@ -961,18 +957,16 @@ def  extra_grade_data_minibar():
 @smb_app2.route('/delete_record_extra_grade_minibar',methods=['POST','GET','DELETE'])
 @token_required
 def delete_record_extra_grade_minibar():  
-    id_value=json.loads(request.data)['id']
-    id_value.append(0)
-    id_value=tuple(id_value)
     
-    try:
-        query='''UPDATE "SMB"."SMB - Extra - Grade - MiniBar" SET "active"=0 WHERE "id" in {} '''.format(id_value)
-        result=db.insert(query)
-        if result=='failed': raise ValueError
-        
-        return {"status":"success"},200
-    except:
-        return {"status":"failure"},500
+    id_value=json.loads(request.data)['id']
+    
+    
+    tablename='SMB - Extra - Grade - MiniBar'
+   
+    status=email(id_value,tablename,'delete')
+    if(status=='success'):return {"status":"success"},200
+    else: return {"status":"failure"},500
+
 
 
 @smb_app2.route('/get_record_extra_grade_minibar',methods=['GET','POST'])  
@@ -1355,17 +1349,15 @@ def  extra_profile():
 @smb_app2.route('/delete_record_extra_profile',methods=['POST','GET','DELETE'])
 @token_required
 def delete_record_extra_profile():  
-    id_value=json.loads(request.data)['id']
-    id_value.append(0)
-    id_value=tuple(id_value)
     
-    try:
-        query='''UPDATE "SMB"."SMB - Extra - Profile" SET "active"=0 WHERE "id" in {} '''.format(id_value)
-        result=db.insert(query)
-        if result=='failed' : raise ValueError
-        return {"status":"success"},200
-    except:
-        return {"status":"failure"},500
+    id_value=json.loads(request.data)['id']
+    
+    
+    tablename='SMB - Extra - Profile'
+   
+    status=email(id_value,tablename,'delete')
+    if(status=='success'):return {"status":"success"},200
+    else: return {"status":"failure"},500
 
 
 @smb_app2.route('/get_record_extra_profile',methods=['GET','POST'])   
@@ -1720,17 +1712,15 @@ def  extra_profile_minibar():
 @smb_app2.route('/delete_record_extra_profile_minibar',methods=['POST','GET','DELETE'])
 @token_required
 def delete_record_extra_profile_minibar():  
+    
     id_value=json.loads(request.data)['id']
-    id_value.append(0)
-    id_value=tuple(id_value)
-    try:
-        query='''UPDATE "SMB"."SMB - Extra - Profile - MiniBar" SET "active"=0 WHERE "id" in {} '''.format(id_value)
-        result=db.insert(query)
-        if result=='failed':raise ValueError
-        
-        return {"status":"success"},200
-    except:
-        return {"status":"failure"},500
+    
+    
+    tablename='SMB - Extra - Profile - MiniBar'
+   
+    status=email(id_value,tablename,'delete')
+    if(status=='success'):return {"status":"success"},200
+    else: return {"status":"failure"},500
 
 
 @smb_app2.route('/get_record_extra_profile_minibar',methods=['GET','POST'])       
@@ -2136,17 +2126,16 @@ def  extra_profile_minibar_iberia():
 @smb_app2.route('/delete_record_extra_profile_Iberia',methods=['POST','GET','DELETE'])
 @token_required
 def delete_record_extra_profile_Iberia():  
+   
+    
     id_value=json.loads(request.data)['id']
-    id_value.append(0)
-    id_value=tuple(id_value)
-    try:
-        query='''UPDATE "SMB"."SMB - Extra - Profile Iberia and Italy" SET "active"=0 WHERE "id" in {} '''.format(id_value)
-        result=db.insert(query)
-        if result=='failed':raise ValueError
-        
-        return {"status":"success"},200
-    except:
-        return {"status":"failure"},500
+    
+    
+    tablename='SMB - Extra - Profile Iberia and Italy'
+   
+    status=email(id_value,tablename,'delete')
+    if(status=='success'):return {"status":"success"},200
+    else: return {"status":"failure"},500
 
 
 @smb_app2.route('/get_record_extra_profile_Iberia',methods=['GET','POST'])       
@@ -2529,17 +2518,17 @@ def  extra_profile_minibar_iberia_minibar():
 
 @token_required
 def delete_record_extra_profile_Iberia_minibar():  
+    
+    
     id_value=json.loads(request.data)['id']
-    id_value.append(0)
-    id_value=tuple(id_value)
-    try:
-        query='''UPDATE "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar" SET "active"=0 WHERE "id" in {} '''.format(id_value)
-        result=db.insert(query)
-        
-        
-        return {"status":"success"},200
-    except:
-        return {"status":"failure"},500
+    
+    
+    tablename='SMB - Extra - Profile Iberia and Italy - MiniBar'
+   
+    status=email(id_value,tablename,'delete')
+    if(status=='success'):return {"status":"success"},200
+    else: return {"status":"failure"},500
+
 
 
 @smb_app2.route('/get_record_extra_profile_Iberia_minibar',methods=['GET','POST'])       

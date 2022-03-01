@@ -145,16 +145,16 @@ def  data_transport():
 @smb_app3.route('/delete_record_transport',methods=['POST','GET','DELETE'])
 @token_required
 def delete_record_transport():  
+   
     id_value=json.loads(request.data)['id']
-    id_value.append(0)
-    id_value=tuple(id_value)
-    try:
-        query='''UPDATE "SMB"."SMB - Extra - Transport Mode" SET "active"=0 WHERE "id" in {} '''.format(id_value)
-        result=db.insert(query)
-        
-        return {"status":"success"},200
-    except:
-        return {"status":"failure"},500
+    
+    
+    tablename='SMB - Extra - Transport Mode'
+   
+    status=email(id_value,tablename,'delete')
+    if(status=='success'):return {"status":"success"},200
+    else: return {"status":"failure"},500
+
 
 
 @smb_app3.route('/get_record_transport',methods=['GET','POST'])      
@@ -506,16 +506,16 @@ def  data_transport_minibar():
 @smb_app3.route('/delete_record_transport_minibar',methods=['POST','GET','DELETE'])
 @token_required
 def delete_record_transport_minibar():  
+   
     id_value=json.loads(request.data)['id']
-    id_value.append(0)
-    id_value=tuple(id_value)
-    try:
-        query='''UPDATE "SMB"."SMB - Extra - Transport Mode - MiniBar" SET "active"=0 WHERE "id" in {} '''.format(id_value)
-        result=db.insert(query)
-        
-        return {"status":"success"},200
-    except:
-        return {"status":"failure"},500
+    
+    
+    tablename='SMB - Extra - Transport Mode - MiniBar'
+   
+    status=email(id_value,tablename,'delete')
+    if(status=='success'):return {"status":"success"},200
+    else: return {"status":"failure"},500
+
 
 
 @smb_app3.route('/get_record_transport_minibar',methods=['GET','POST'])   
@@ -899,15 +899,16 @@ def  data_length_production():
 @smb_app3.route('/delete_record_length_production',methods=['POST','GET','DELETE'])
 @token_required
 def delete_record_length_production():  
+   
+    
     id_value=json.loads(request.data)['id']
-    id_value.append(0)
-    id_value=tuple(id_value)
-    try:
-        query='''UPDATE "SMB"."SMB - Extra - Length Production" SET "active"=0 WHERE "id" in {} '''.format(id_value)
-        result=db.insert(query)
-        return {"status":"success"},200
-    except:
-        return {"status":"failure"},500
+    
+    
+    tablename='SMB - Extra - Length Production'
+   
+    status=email(id_value,tablename,'delete')
+    if(status=='success'):return {"status":"success"},200
+    else: return {"status":"failure"},500
 
 
 @smb_app3.route('/get_record_length_production',methods=['GET','POST'])   
@@ -1310,16 +1311,17 @@ def  data_length_production_minibar():
 @smb_app3.route('/delete_record_length_production_minibar',methods=['POST','GET','DELETE'])
 @token_required
 def delete_record_length_production_minibar():  
+  
+    
     id_value=json.loads(request.data)['id']
-    id_value.append(0)
-    id_value=tuple(id_value)
-    try:
-        query='''UPDATE "SMB"."SMB - Extra - Length Production - MiniBar" SET "active"=0 WHERE "id" in {} '''.format(id_value)
-        result=db.insert(query)
-        
-        return {"status":"success"},200
-    except:
-        return {"status":"failure"},500
+    
+    
+    tablename='SMB - Extra - Length Production - MiniBar'
+   
+    status=email(id_value,tablename,'delete')
+    if(status=='success'):return {"status":"success"},200
+    else: return {"status":"failure"},500
+
 
 
 @smb_app3.route('/get_record_length_production_minibar',methods=['GET','POST'])   
@@ -1746,16 +1748,17 @@ def  data_length_logistic():
 @smb_app3.route('/delete_record_length_logistic',methods=['POST','GET','DELETE'])
 @token_required
 def delete_record_length_logistic():  
+   
+    
     id_value=json.loads(request.data)['id']
-    id_value.append(0)
-    id_value=tuple(id_value)
-    try:
-        query='''UPDATE "SMB"."SMB - Extra - Length Logistic" SET "active"=0 WHERE "id" in {} '''.format(id_value)
-        result=db.insert(query)
-        
-        return {"status":"success"},200
-    except:
-        return {"status":"failure"},500
+    
+    
+    tablename='SMB - Extra - Length Logistic'
+   
+    status=email(id_value,tablename,'delete')
+    if(status=='success'):return {"status":"success"},200
+    else: return {"status":"failure"},500
+
 
 
 @smb_app3.route('/get_record_length_logistic',methods=['GET','POST']) 
@@ -2162,16 +2165,17 @@ def  data_length_logistic_minibar():
 @smb_app3.route('/delete_record_length_logistic_minibar',methods=['POST','GET','DELETE'])
 @token_required
 def delete_record_length_logistic_minibar():  
+    
+    
     id_value=json.loads(request.data)['id']
-    id_value.append(0)
-    id_value=tuple(id_value)
-    try:
-        query='''UPDATE "SMB"."SMB - Extra - Length Logistic - MiniBar" SET "active"=0 WHERE "id" in {} '''.format(id_value)
-        result=db.insert(query)
-        
-        return {"status":"success"},200
-    except:
-        return {"status":"failure"},500
+    
+    
+    tablename='SMB - Extra - Length Logistic - MiniBar'
+   
+    status=email(id_value,tablename,'delete')
+    if(status=='success'):return {"status":"success"},200
+    else: return {"status":"failure"},500
+
 
 
 @smb_app3.route('/get_record_length_logistic_minibar',methods=['GET','POST'])  
