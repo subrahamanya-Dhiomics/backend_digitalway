@@ -548,6 +548,7 @@ def add_record_transport_minibar():
     query_parameters =json.loads(request.data)
     
     Product_Division =( query_parameters["Product_Division"])
+    Market_Customer=(query_parameters["Market_Customer"])
     Market_Country=(query_parameters['Market_Country'])
     Market_Customer_Group=(query_parameters['Market_Customer_Group'])
    
@@ -588,13 +589,13 @@ def add_record_transport_minibar():
    
     tablename='SMB - Extra - Transport Mode - MiniBar'    
             
-    input_tuple=(tablename,flag,username,Product_Division,Market_Country,Market_Customer_Group,Transport_Mode,Document_Item_Currency, Amount, Currency.strip("'"))
+    input_tuple=(tablename,flag,username,Product_Division,Market_Country,Market_Customer_Group,Market_Customer,Transport_Mode,Document_Item_Currency, Amount, Currency.strip("'"))
     col_tuple=("table_name",
                "flag",  
                "Username",            
               "Product Division", 
               "Market - Country",
-              "Market - Customer Group",           
+              "Market - Customer Group",   "Market - Customer",        
             "Transport Mode",
               "Document Item Currency",
               "Amount",
@@ -620,6 +621,7 @@ def update_record_transport_minibar():
         
         Product_Division =( query_parameters["Product_Division"])
         Market_Country=(query_parameters['Market_Country'])
+        Market_Customer=(query_parameters["Market_Customer"])
         Market_Customer_Group=(query_parameters['Market_Customer_Group'])
         
         
@@ -666,14 +668,14 @@ def update_record_transport_minibar():
         flag='update'
       
         tablename='SMB - Extra - Transport Mode - MiniBar'  
-        input_tuple=(tablename,id_value,sequence_id,username,Product_Division,Market_Country,Market_Customer_Group,Transport_Mode,Document_Item_Currency,Amount,Currency)
+        input_tuple=(tablename,id_value,sequence_id,username,Product_Division,Market_Country,Market_Customer_Group,Market_Customer,Transport_Mode,Document_Item_Currency,Amount,Currency)
         col_tuple=("table_name",
                "id",
                "sequence_id", 
                "Username",
               "Product Division", 
               "Market - Country",
-              "Market - Customer Group", 
+              "Market - Customer Group", "Market - Customer",
              
               "Transport Mode",
               "Document Item Currency", 
@@ -702,13 +704,13 @@ def upload_transport_minibar():
             smb_df=pd.read_excel(input_directory+f.filename,dtype=str)
             
             df=smb_df[["id","Product Division", "Market - Country",
-       "Market - Customer Group",  "Transport Mode",
+       "Market - Customer Group", "Market - Customer", "Transport Mode",
        "Document Item Currency", "Amount", "Currency","sequence_id"]]  
             df["id"]=df["id"].astype(int)
             df["sequence_id"]=df["sequence_id"].astype(int)
             
             df_main = pd.read_sql('''select "id","Product Division", "Market - Country",
-       "Market - Customer Group",  "Transport Mode",
+       "Market - Customer Group","Market - Customer",  "Transport Mode",
        "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Transport Mode - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             
             df['Currency'] = df['Currency'].str.replace("'","")
@@ -796,7 +798,7 @@ def  validate_transport_minibar():
           "Product Division",
           "Market - Country",
            "Market - Customer Group",
-           # "Market - Customer",
+            "Market - Customer",
            "Transport Mode",
            "Document Item Currency",
             "Amount", 
@@ -808,6 +810,7 @@ def  validate_transport_minibar():
           "Product_Division",
           "Market_Country",
            "Market_Customer_Group",
+           "Market_Customer",
            # "Market - Customer",
            "Transport_Mode",
            "Document_Item_Currency",
@@ -834,7 +837,7 @@ def download_transport_minibar():
             df = pd.read_sql('''select "id",sequence_id,"Product Division", 
               "Market - Country",
               "Market - Customer Group", 
-             
+             "Market - Customer",
               "Transport Mode",
               "Document Item Currency", 
               "Amount", 
@@ -1354,6 +1357,7 @@ def add_record_length_production_minibar():
     
     
     Market_Country=(query_parameters['Market_Country'])
+    Market_Customer=(query_parameters['Market_Customer'])
     
     Delivering_Mill=(query_parameters['Delivering_Mill'])
     Length=(query_parameters['Length'])
@@ -1396,12 +1400,12 @@ def add_record_length_production_minibar():
    
     tablename='SMB - Extra - Length Production - MiniBar'     
             
-    input_tuple=(tablename,flag,username,BusinessCode,Customer_Group,Market_Country,Delivering_Mill,Length,Length_From,Length_To,Document_Item_Currency, Amount, Currency.strip("'"))
+    input_tuple=(tablename,flag,username,BusinessCode,Customer_Group,Market_Customer,Market_Country,Delivering_Mill,Length,Length_From,Length_To,Document_Item_Currency, Amount, Currency.strip("'"))
     col_tuple=("table_name",
                "flag",  
                "Username",
               "BusinessCode",
-              "Customer Group",
+              "Customer Group","Market - Customer",
             "Market - Country", 
             "Delivering Mill", 
             "Length",
@@ -1430,6 +1434,7 @@ def update_record_length_production_minibar():
     query_parameters =json.loads(request.data)
     
     BusinessCode=(query_parameters['BusinessCode'])
+    Market_Customer=(query_parameters['Market_Customer'])
     Customer_Group=(query_parameters['Customer_Group'])
     
     
@@ -1486,13 +1491,13 @@ def update_record_length_production_minibar():
     tablename='SMB - Extra - Length Production - MiniBar'  
         
 
-    input_tuple=(tablename,id_value,sequence_id,username,BusinessCode,Customer_Group,Market_Country,Delivering_Mill,Length,Length_From,Length_To,Document_Item_Currency,Amount,Currency)
+    input_tuple=(tablename,id_value,sequence_id,username,BusinessCode,Customer_Group,Market_Customer,Market_Country,Delivering_Mill,Length,Length_From,Length_To,Document_Item_Currency,Amount,Currency)
     col_tuple=("table_name",
                "id","sequence_id",
         "Username",
         "BusinessCode", 
         "Customer Group",
-       
+        "Market - Customer",
         "Market - Country", 
         "Delivering Mill", 
         "Length",
@@ -1526,7 +1531,7 @@ def upload_length_production_minibar():
         try:
             smb_df=pd.read_excel(input_directory+f.filename,dtype=str)
             
-            df=smb_df[["id","BusinessCode", "Customer Group",
+            df=smb_df[["id","BusinessCode", "Customer Group","Market - Customer",
        "Market - Country", "Delivering Mill", "Length",
        "Length From", "Length To", "Document Item Currency", "Amount",
        "Currency","sequence_id"]]  
@@ -1534,7 +1539,7 @@ def upload_length_production_minibar():
             df["sequence_id"]=df["sequence_id"].astype(int)
             print(df.columns)
             
-            df_main = pd.read_sql('''select "id","BusinessCode", "Customer Group",
+            df_main = pd.read_sql('''select "id","BusinessCode", "Customer Group","Market - Customer",
       "Market - Country", "Delivering Mill", "Length",
        "Length From", "Length To", "Document Item Currency", "Amount",
        "Currency",sequence_id from "SMB"."SMB - Extra - Length Production - MiniBar" where "active"='1' order by sequence_id ''', con=con)
@@ -1626,6 +1631,7 @@ def  validate_length_production_minibar():
         "Username",
         "BusinessCode", 
         "Customer Group",
+        "Market - Customer",
        
         "Market - Country", 
         "Delivering Mill", 
@@ -1640,7 +1646,7 @@ def  validate_length_production_minibar():
             "Username",
             "BusinessCode", 
             "Customer_Group",
-            
+            "Market_Customer",
             "Market_Country", 
             "Delivering_Mill", 
             "Length",
@@ -1670,7 +1676,7 @@ def download_length_production_minibar():
         now = datetime.now()
         try:
             df = pd.read_sql('''select "id",sequence_id, "BusinessCode",
-              "Customer Group",
+              "Customer Group","Market - Customer",
             "Market - Country", 
             "Delivering Mill", 
             "Length",
@@ -2201,7 +2207,9 @@ def add_record_length_logistic_minibar():
     
     
     Market_Country=(query_parameters['Market_Country'])
+    Market_Customer=(query_parameters["Market_Customer"])
     Delivering_Mill=(query_parameters['Delivering_Mill'])
+    Customer_Group=(query_parameters["Customer_Group"])
     
     Length=(query_parameters['Length'])
     Length_From=(query_parameters['Length_From'])
@@ -2245,10 +2253,10 @@ def add_record_length_logistic_minibar():
    
     tablename='SMB - Extra - Length Logistic - MiniBar'     
             
-    input_tuple=(tablename,flag,username,Market_Country,Delivering_Mill,Length,Length_From,Length_To,Transport_Mode,Document_Item_Currency, Amount, Currency.strip("'"))
+    input_tuple=(tablename,flag,username,Customer_Group,Market_Customer,Market_Country,Delivering_Mill,Length,Length_From,Length_To,Transport_Mode,Document_Item_Currency, Amount, Currency.strip("'"))
     col_tuple=("table_name",
                "flag",  
-               "Username",
+               "Username","Customer - Group","Market - Customer",
             "Market - Country", 
             "Delivering Mill",
             "Length",
@@ -2285,6 +2293,7 @@ def update_record_length_logistic_minibar():
     Length_To=(query_parameters['Length_From'])
     Transport_Mode=(query_parameters['Transport_Mode'])
     Customer_Group=(query_parameters['Customer_Group'])
+    Market_Customer=(query_parameters["Market_Customer"])
     
     Document_Item_Currency =( query_parameters["Document_Item_Currency"])
     Amount =( query_parameters["Amount"])
@@ -2332,13 +2341,13 @@ def update_record_length_logistic_minibar():
       
     tablename='SMB - Extra - Length Logistic - MiniBar'  
         
-    input_tuple=(tablename,id_value,sequence_id,username,Customer_Group,Market_Country,Delivering_Mill,Length,Length_From,Length_To,Transport_Mode,Document_Item_Currency,Amount,Currency)
+    input_tuple=(tablename,id_value,sequence_id,username,Customer_Group,Market_Customer,Market_Country,Delivering_Mill,Length,Length_From,Length_To,Transport_Mode,Document_Item_Currency,Amount,Currency)
     col_tuple=("table_name",
                "id",
                "sequence_id", 
                "Username",
             "Customer Group", 
-          
+          "Market - Customer",
             "Market - Country", 
             "Delivering Mill", 
             "Length", 
@@ -2372,13 +2381,13 @@ def upload_length_logistic_minibar():
         try:
             smb_df=pd.read_excel(input_directory+f.filename,dtype=str)
             
-            df=smb_df[["id","Customer Group", 
+            df=smb_df[["id","Customer Group", "Market - Customer",
        "Market - Country", "Delivering Mill", "Length", "Length From",
        "Length To", "Transport Mode", "Document Item Currency", "Amount",
        "Currency","sequence_id"]]  
             df["id"]=df["id"].astype(int)
             df["sequence_id"]=df["sequence_id"].astype(int)            
-            df_main = pd.read_sql('''select "id","Customer Group",
+            df_main = pd.read_sql('''select "id","Customer Group","Market - Customer",
        "Market - Country", "Delivering Mill", "Length", "Length From",
        "Length To", "Transport Mode", "Document Item Currency", "Amount",
        "Currency",sequence_id from "SMB"."SMB - Extra - Length Logistic - MiniBar" where "active"='1' order by sequence_id ''', con=con)
@@ -2468,7 +2477,7 @@ def  validate_length_logistic_minibar():
                "id",
         "Username",
         "Customer Group", 
-       
+       "Market - Customer",
         "Market - Country", 
         "Delivering Mill", 
         "Length", 
@@ -2483,6 +2492,7 @@ def  validate_length_logistic_minibar():
                "id",
         "Username",
         "Customer_Group", 
+        "Market_Customer",
        
         "Market_Country", 
         "Delivering_Mill", 
@@ -2514,7 +2524,7 @@ def download_length_logistic_minibar():
     
         now = datetime.now()
         try:
-            df = pd.read_sql('''select "id",sequence_id, "Market - Country", 
+            df = pd.read_sql('''select "id",sequence_id,"Customer Group","Market - Customer", "Market - Country", 
             "Delivering Mill",
             "Length",
             "Length From",

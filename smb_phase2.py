@@ -478,6 +478,7 @@ def update_record_frieght_parity_minibar():
     Delivering_Mill=(query_parameters["Delivering_Mill"])
     Market_Country=(query_parameters['Market_Country'])
     Market_Customer_Group=(query_parameters['Market_Customer_Group'])
+    Market_Customer=(query_parameters['Market_Customer'])
     Zip_Code_Dest=(query_parameters['Zip_Code_Dest'])
     
     Product_Division =( query_parameters["Product_Division"])
@@ -492,8 +493,8 @@ def update_record_frieght_parity_minibar():
     tablename='SMB - Extra - Freight Parity - MiniBar'        
     
     
-    input_tuple=(tablename,id_value,sequence_id,username,Delivering_Mill,Market_Country,Zip_Code_Dest,Product_Division,Document_Item_Currency,Amount,Currency)	
-    col_tuple=("table_name","id","sequence_id","Username","Delivering Mill","Market - Country","Zip Code (Dest)","Product Division",
+    input_tuple=(tablename,id_value,sequence_id,username,Delivering_Mill,Market_Country,Market_Customer_Group,Market_Customer,Zip_Code_Dest,Product_Division,Document_Item_Currency,Amount,Currency)	
+    col_tuple=("table_name","id","sequence_id","Username","Delivering Mill","Market - Country","Market - Customer Group","Market - Customer","Zip Code (Dest)","Product Division",
 "Document Item Currency","Amount","Currency")
     
     status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
@@ -512,7 +513,7 @@ def update_record_frieght_parity_minibar():
 def add_record_frieght_parity_minibar():
     username = getpass.getuser()
     query_parameters =json.loads(request.data)
-    
+    Market_Customer=(query_parameters['Market_Customer'])
     Delivering_Mill=(query_parameters["Delivering_Mill"])
     Market_Country=(query_parameters['Market_Country'])
     Market_Customer_Group=(query_parameters['Market_Customer_Group'])
@@ -535,9 +536,9 @@ def add_record_frieght_parity_minibar():
     
     
     
-    input_tuple=(tablename,flag,username,Delivering_Mill,Market_Country,Zip_Code_Dest,Product_Division,Document_Item_Currency,Amount,Currency)	
+    input_tuple=(tablename,flag,username,Delivering_Mill,Market_Country,Market_Customer_Group,Market_Customer,Zip_Code_Dest,Product_Division,Document_Item_Currency,Amount,Currency)	
     col_tuple=("table_name","flag", "Username",
-             "Delivering Mill","Market - Country","Zip Code (Dest)","Product Division",
+             "Delivering Mill","Market - Country","Market - Customer Group","Market - Customer","Zip Code (Dest)","Product Division",
 "Document Item Currency","Amount","Currency")
     
     status=upsert(col_tuple,input_tuple,flag,tablename)
@@ -562,13 +563,13 @@ def upload_freight_parity_minibar():
             smb_df=pd.read_excel(input_directory+f.filename,dtype=str)
             
             df=smb_df[["id","Delivering Mill", "Market - Country",
-       "Market - Customer Group", "Zip Code (Dest)",
+       "Market - Customer Group", "Market - Customer","Zip Code (Dest)",
        "Product Division", "Document Item Currency", "Amount", "Currency","sequence_id"]]  
             df["id"]=df["id"].astype(int)
             df["sequence_id"]=df["sequence_id"].astype(int)
             
             df_main = pd.read_sql('''select "id","Delivering Mill", "Market - Country",
-       "Market - Customer Group","Zip Code (Dest)",
+       "Market - Customer Group","Market - Customer","Zip Code (Dest)",
        "Product Division", "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Freight Parity - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             
             df['Currency'] = df['Currency'].str.replace("'","")
@@ -605,9 +606,9 @@ def  validate_freight_parity_minibar():
     df.insert(1,'table_name',tablename)
     col_tuple=("table_name","id","sequence_id",
              "Username",
-              "Delivering Mill","Market - Country","Zip Code (Dest)","Product Division",
+              "Delivering Mill","Market - Country","Market - Customer Group","Market - Customer","Zip Code (Dest)","Product Division",
 "Document Item Currency","Amount","Currency")
-    col_list=['table_name','id','sequence_id','Username','Delivering_Mill','Market_Country','Zip_Code_Dest','Product_Division','Document_Item_Currency','Amount','Currency']
+    col_list=['table_name','id','sequence_id','Username','Delivering_Mill','Market_Country','Market_Customer_Group','Market_Customer','Zip_Code_Dest','Product_Division','Document_Item_Currency','Amount','Currency']
     
     
     id_value=[]
@@ -630,7 +631,7 @@ def download_freight_parity_minibar():
    
         now = datetime.now()
         try:
-            df = pd.read_sql('''select id,sequence_id,"Delivering Mill","Market - Customer Group","Market - Country","Zip Code (Dest)","Product Division","Document Item Currency","Amount", "Currency" from "SMB"."SMB - Extra - Freight Parity - MiniBar"  where "active"='1' order by sequence_id ''', con=con)
+            df = pd.read_sql('''select id,sequence_id,"Delivering Mill","Market - Country","Market - Customer Group","Market - Customer","Zip Code (Dest)","Product Division","Document Item Currency","Amount", "Currency" from "SMB"."SMB - Extra - Freight Parity - MiniBar"  where "active"='1' order by sequence_id ''', con=con)
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'freight_parity_minibar.xlsx'
             print(file)
@@ -1008,6 +1009,7 @@ def add_record_extra_grade_minibar():
     BusinessCode=(query_parameters["BusinessCode"])
     Customer_Group=(query_parameters["Customer_Group"]) 
     Market_Country=(query_parameters['Market_Country'])
+    Market_Customer=(query_parameters['Market_Customer'])
     Grade_Category=(query_parameters['Grade_Category'])
     Document_Item_Currency =( query_parameters["Document_Item_Currency"])
     Amount =( query_parameters["Amount"])
@@ -1040,12 +1042,13 @@ def add_record_extra_grade_minibar():
    
     tablename='SMB - Extra - Grade - MiniBar'
    
-    input_tuple=(tablename,flag,username, BusinessCode,Customer_Group,Market_Country,Grade_Category,Document_Item_Currency, Amount,Currency.strip("'"))
+    input_tuple=(tablename,flag,username, BusinessCode,Customer_Group,Market_Customer,Market_Country,Grade_Category,Document_Item_Currency, Amount,Currency.strip("'"))
     col_tuple=("table_name",
                "flag",  
                "Username",             
              "BusinessCode",
-             "Customer Group",            
+             "Customer Group", 
+             "Market - Customer",
              "Market - Country",
             	 "Grade Category",
              "Document Item Currency",
@@ -1071,6 +1074,7 @@ def update_record_extra_grade_minibar():
     query_parameters =json.loads(request.data)
     
     sequence_id=(query_parameters['sequence_id'])
+    Market_Customer=(query_parameters['Market_Customer'])
     
     
     BusinessCode=(query_parameters["BusinessCode"])
@@ -1122,7 +1126,7 @@ def update_record_extra_grade_minibar():
       
     tablename='SMB - Extra - Grade - MiniBar'     
     
-    input_tuple=(tablename,id_value,sequence_id,username,BusinessCode,Customer_Group,Market_Country,Grade_Category,Document_Item_Currency, Amount,Currency)
+    input_tuple=(tablename,id_value,sequence_id,username,BusinessCode,Customer_Group,Market_Customer,Market_Country,Grade_Category,Document_Item_Currency, Amount,Currency)
 
     col_tuple=("table_name",
                "id",
@@ -1130,6 +1134,7 @@ def update_record_extra_grade_minibar():
               "Username",
               "BusinessCode",
               "Customer Group",
+              "Market - Customer",
             
               "Market - Country",
               "Grade Category",
@@ -1158,13 +1163,13 @@ def upload_extra_grade_minibar():
          
          smb_df=pd.read_excel(input_directory+f.filename,dtype=str)
          
-         df=smb_df[["id","BusinessCode", "Customer Group",
+         df=smb_df[["id","BusinessCode", "Customer Group","Market - Customer",
       "Market - Country", "Grade Category",
        "Document Item Currency", "Amount", "Currency","sequence_id"]]  
          df["id"]=df["id"].astype(int)
          df["sequence_id"]=df["sequence_id"].astype(int)
          
-         df_main = pd.read_sql('''select "id","BusinessCode", "Customer Group",
+         df_main = pd.read_sql('''select "id","BusinessCode", "Customer Group","Market - Customer",
        "Market - Country", "Grade Category",
        "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Grade - MiniBar" where "active"='1' order by sequence_id ''', con=con)
          
@@ -1251,6 +1256,7 @@ def  validate_extra_grade_minibar():
     "Username",
     "BusinessCode", 
     "Customer Group",
+    "Market - Customer",
      
     "Market - Country", 
     "Grade Category",
@@ -1262,7 +1268,7 @@ def  validate_extra_grade_minibar():
     "Username",
     "BusinessCode", 
     "Customer_Group",
-    
+    "Market_Customer",
     "Market_Country", 
     "Grade_Category",
     "Document_Item_Currency", 
@@ -1289,7 +1295,7 @@ def  validate_extra_grade_minibar():
 def download_extra_grade_minibar():
         now = datetime.now()
         try:
-            df = pd.read_sql('''select id,sequence_id,"BusinessCode","Grade Category","Market - Country","Document Item Currency","Customer Group","Amount", "Currency" from "SMB"."SMB - Extra - Grade - MiniBar" where "active"='1' order by sequence_id ''', con=con)
+            df = pd.read_sql('''select id,sequence_id,"BusinessCode","Customer Group","Market - Customer","Market - Country","Grade Category","Document Item Currency","Amount", "Currency" from "SMB"."SMB - Extra - Grade - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'extra_grade_minibar.xlsx'
             print(file)
@@ -1756,6 +1762,7 @@ def add_record_extra_profile_minibar():
     
     BusinessCode=(query_parameters["BusinessCode"])
     Customer_Group=(query_parameters['Customer_Group'])
+    Market_Customer=(query_parameters['Market_Customer'])
    
     Market_Country=(query_parameters['Market_Country'])
     
@@ -1798,12 +1805,13 @@ def add_record_extra_profile_minibar():
    
     tablename='SMB - Extra - Profile - MiniBar'     
    
-    input_tuple=(tablename,flag,username,BusinessCode,Customer_Group,Market_Country,Product_Level_04,Product_Level_05,Product_Level_02,Delivering_Mill,Document_Item_Currency, Amount, Currency.strip("'"))
+    input_tuple=(tablename,flag,username,BusinessCode,Customer_Group,Market_Customer,Market_Country,Product_Level_04,Product_Level_05,Product_Level_02,Delivering_Mill,Document_Item_Currency, Amount, Currency.strip("'"))
     col_tuple=("table_name",
                "flag",  
                "Username",             
              "BusinessCode",
              "Customer Group",
+             "Market_Customer",
                 "Market - Country", 
                 "Product Level 04", 
                 "Product Level 05",
@@ -1838,6 +1846,7 @@ def update_record_extra_profile_minibar():
     Customer_Group=(query_parameters['Customer_Group'])
     
     Market_Country=(query_parameters['Market_Country'])
+    Market_Customer=(query_parameters['Market_Customer'])
     
     Product_Level_04=(query_parameters['Product_Level_04'])
     Product_Level_05=(query_parameters['Product_Level_05'])
@@ -1891,11 +1900,11 @@ def update_record_extra_profile_minibar():
       
     tablename='SMB - Extra - Profile - MiniBar'  
     
-    input_tuple=(tablename,id_value,sequence_id,username,BusinessCode,Customer_Group,Market_Country,Product_Level_04,Product_Level_05,Product_Level_02,Delivering_Mill,Document_Item_Currency,Amount,Currency)
+    input_tuple=(tablename,id_value,sequence_id,username,BusinessCode,Customer_Group,Market_Customer,Market_Country,Product_Level_04,Product_Level_05,Product_Level_02,Delivering_Mill,Document_Item_Currency,Amount,Currency)
     col_tuple=("table_name","id","sequence_id", "Username",
             "BusinessCode",
             "Customer Group",
-       
+       "Market - Customer",
         "Market - Country", 
         "Product Level 04",
         "Product Level 05", 
@@ -1926,14 +1935,14 @@ def upload_extra_profile_minibar():
         
             smb_df=pd.read_excel(input_directory+f.filename,dtype=str)
             
-            df=smb_df[["id","BusinessCode", "Customer Group",
+            df=smb_df[["id","BusinessCode", "Customer Group","Market - Customer",
        "Market - Country", "Product Level 04",
        "Product Level 05", "Product Level 02", "Delivering Mill",
        "Document Item Currency", "Amount", "Currency","sequence_id"]]  
             df["id"]=df["id"].astype(int)
             df["sequence_id"]=df["sequence_id"].astype(int)
             
-            df_main = pd.read_sql('''select "id","BusinessCode", "Customer Group",
+            df_main = pd.read_sql('''select "id","BusinessCode", "Customer Group","Market - Customer",
      "Market - Country", "Product Level 04",
        "Product Level 05", "Product Level 02", "Delivering Mill",
        "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Profile - MiniBar" where "active"='1' order by sequence_id ''', con=con)
@@ -2026,6 +2035,7 @@ def  validate_extra_profile_minibar():
         "BusinessCode", 
         "Customer Group",
        
+        "Market - Customer",
         "Market - Country", 
         "Product Level 04",
         "Product Level 05", 
@@ -2040,7 +2050,7 @@ def  validate_extra_profile_minibar():
         "Username",
         "BusinessCode", 
         "Customer_Group",
-        
+        "Market_Customer",
         "Market_Country", 
         "Product_Level_04",
         "Product_Level_05", 
@@ -2069,7 +2079,7 @@ def download_extra_profile_minibar():
     
         now = datetime.now()
         try:
-            df = pd.read_sql('''select id,sequence_id,"BusinessCode","Market - Country","Product Level 04","Product Level 05","Product Level 02","Delivering Mill","Customer Group","Document Item Currency","Amount", "Currency" from "SMB"."SMB - Extra - Profile - MiniBar" where "active"='1' order by sequence_id ''', con=con)
+            df = pd.read_sql('''select id,sequence_id,"BusinessCode","Customer Group","Market - Customer","Market - Country","Product Level 04","Product Level 05","Product Level 02","Delivering Mill","Document Item Currency","Amount", "Currency" from "SMB"."SMB - Extra - Profile - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'extra_profile_minibar.xlsx'
             print(file)
@@ -2561,7 +2571,7 @@ def add_record_extra_profile_Iberia_minibar():
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     query_parameters =json.loads(request.data)
-    
+    Market_Customer=query_parameters(["Market_Customer"])
     BusinessCode=(query_parameters["BusinessCode"])
     Market_Country=(query_parameters['Market_Country'])
     Market_Customer_Group=(query_parameters['Market_Customer_Group'])
@@ -2609,13 +2619,14 @@ def add_record_extra_profile_Iberia_minibar():
    
     tablename='SMB - Extra - Profile Iberia and Italy - MiniBar'     
    
-    input_tuple=(tablename,flag,username,BusinessCode,Market_Country,Market_Customer_Group,Delivering_Mill,Product_Level_02,Product_Level_05,Document_Item_Currency, Amount, Currency.strip("'"))
+    input_tuple=(tablename,flag,username,BusinessCode,Market_Country,Market_Customer_Group,Market_Customer,Delivering_Mill,Product_Level_02,Product_Level_05,Document_Item_Currency, Amount, Currency.strip("'"))
     col_tuple=("table_name",
                "flag",  
                "Username",             
              "BusinessCode",
             "Market - Country",
             "Market - Customer Group",
+            "Market_Customer",
             "Delivering Mill",
             "Product Level 02",
             "Product Level 05",
@@ -2639,13 +2650,14 @@ def update_record_extra_profile_Iberia_minibar():
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     query_parameters =json.loads(request.data)
-    
+    print(query_parameters)
     BusinessCode=(query_parameters["BusinessCode"])
     Market_Country=(query_parameters['Market_Country'])
     Market_Customer_Group=(query_parameters['Market_Customer_Group'])
    
     Delivering_Mill=(query_parameters['Delivering_Mill'])
     Product_Level_02=(query_parameters['Product_Level_02'])
+    Market_Customer=query_parameters["Market_Customer"]
     Product_Level_05=(query_parameters['Product_Level_05'])
     id_value=(query_parameters['id_value'])
     Document_Item_Currency =( query_parameters["Document_Item_Currency"])
@@ -2694,7 +2706,7 @@ def update_record_extra_profile_Iberia_minibar():
       
     tablename='SMB - Extra - Profile Iberia and Italy - MiniBar'  
     
-    input_tuple=(tablename,id_value,sequence_id,username,BusinessCode,Market_Country,Market_Customer_Group,Delivering_Mill,Product_Level_02,Product_Level_05,Document_Item_Currency,Amount,Currency)
+    input_tuple=(tablename,id_value,sequence_id,username,BusinessCode,Market_Country,Market_Customer_Group,Market_Customer,Delivering_Mill,Product_Level_02,Product_Level_05,Document_Item_Currency,Amount,Currency)
     col_tuple=("table_name",
                "id",
                "sequence_id", 
@@ -2702,7 +2714,7 @@ def update_record_extra_profile_Iberia_minibar():
                 "BusinessCode", 
                 "Market - Country",
                 "Market - Customer Group", 
-                
+                "Market - Customer",
                 "Delivering Mill",
                 "Product Level 02", 
                 "Product Level 05", 
@@ -2734,7 +2746,7 @@ def upload_extra_profile_Iberia_minibar():
             smb_df=pd.read_excel(input_directory+f.filename,dtype=str)
             
             df=smb_df[["id","BusinessCode", "Market - Country",
-       "Market - Customer Group", "Delivering Mill",
+       "Market - Customer Group","Market - Customer", "Delivering Mill",
        "Product Level 02", "Product Level 05", "Document Item Currency",
        "Amount", "Currency","sequence_id"]]  
             df["id"]=df["id"].astype(int)
@@ -2742,7 +2754,7 @@ def upload_extra_profile_Iberia_minibar():
             
             
             df_main = pd.read_sql('''select "id","BusinessCode", "Market - Country",
-       "Market - Customer Group",  "Delivering Mill",
+       "Market - Customer Group", "Market - Customer", "Delivering Mill",
        "Product Level 02", "Product Level 05", "Document Item Currency",
        "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             
@@ -2831,6 +2843,7 @@ def  validate_extra_profile_Iberia_minibar():
         "BusinessCode", 
         "Market - Country",
         "Market - Customer Group", 
+        "Market - Customer",
       
         "Delivering Mill",
         "Product Level 02", 
@@ -2843,13 +2856,14 @@ def  validate_extra_profile_Iberia_minibar():
                "sequence_id",
               "Username",
             "BusinessCode", 
-            "Market - Country",
-            "Market - Customer Group", 
+            "Market_Country",
+            "Market_Customer_Group", 
+            "Market_Customer",
             
-            "Delivering Mill",
-            "Product Level 02", 
-            "Product Level 05", 
-            "Document Item Currency",
+            "Delivering_Mill",
+            "Product_Level_02", 
+            "Product_Level_05", 
+            "Document_Item_Currency",
             "Amount", 
             "Currency"]
     
@@ -2870,7 +2884,7 @@ def  validate_extra_profile_Iberia_minibar():
 def download_extra_profile_Iberia_minibar():
         now = datetime.now()
         try:
-            df = pd.read_sql('''select id,sequence_id,"BusinessCode","Market - Country","Delivering Mill","Product Level 02","Product Level 05","Document Item Currency","Market - Customer Group","Amount", "Currency" from "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar" where "active"='1' order by sequence_id ''', con=con)
+            df = pd.read_sql('''select id,sequence_id,"BusinessCode","Market - Country","Market - Customer Group","Market - Customer","Delivering Mill","Product Level 02","Product Level 05","Document Item Currency","Amount", "Currency" from "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'extra_profile_Iberia_minibar.xlsx'
             print(file)
