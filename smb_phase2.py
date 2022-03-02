@@ -29,56 +29,19 @@ from smb_phase1 import token_required
 from smb_phase1 import upsert
 from smb_phase1 import email
 
-
+from smb_phase1 import Database
+from smb_phase1 import con 
 
 engine = create_engine('postgresql://postgres:ocpphase01@ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com:5432/offertool')
      
 
-class Database:
-    host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com'  # your host
-    user='postgres'      # usernames
-    password='ocpphase01'
-    
-    db='offertool'
-   
-    def __init__(self):
-            print('Connection Opened')
-            self.connection = psycopg2.connect(dbname=self.db,user=self.user,password=self.password,host=self.host)
-           
-   
-    def insert(self, query):
-            print('inside insert')
-            var = ''
-            try:
-                self.cursor = self.connection.cursor()
-#                print("HEY")
-                var = self.cursor.execute(query)
-                print(str(var))
-                self.connection.commit()
-            except:
-                self.connection.rollback()
-            finally:
-                self.cursor.close()
-                print('Cursor closed')
-   
-            return(var)
-
-    def query(self, query):
-        try:
-            self.cursor = self.connection.cursor()
-            print('inside query')
-            self.cursor.execute(query)
-            return self.cursor.fetchall()
-        finally:
-            self.cursor.close()
-            print('Cursor closed')
                
  
 smb_app2 = Blueprint('smb_app2', __name__)
 
 CORS(smb_app2)
 
-db=Database()
+
 
 # download_path="/home/ubuntu/mega_dir/"
 # input_directory="/home/ubuntu/mega_dir/"
@@ -90,10 +53,7 @@ input_directory="C:/Users/Administrator/Documents/"
 
 
 
-
-con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
-
-
+db=Database()
 # Login page
 
 
@@ -2560,7 +2520,7 @@ def add_record_extra_profile_Iberia_minibar():
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     query_parameters =json.loads(request.data)
-    Market_Customer=query_parameters(["Market_Customer"])
+    Market_Customer=query_parameters["Market_Customer"]
     BusinessCode=(query_parameters["BusinessCode"])
     Market_Country=(query_parameters['Market_Country'])
     Market_Customer_Group=(query_parameters['Market_Customer_Group'])
@@ -2615,7 +2575,7 @@ def add_record_extra_profile_Iberia_minibar():
              "BusinessCode",
             "Market - Country",
             "Market - Customer Group",
-            "Market_Customer",
+            "Market - Customer",
             "Delivering Mill",
             "Product Level 02",
             "Product Level 05",

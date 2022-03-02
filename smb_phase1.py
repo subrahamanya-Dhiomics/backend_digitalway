@@ -4,16 +4,16 @@ Created on Thu Oct  12 07:33:38 2021
 @author: subbu
 """
 
+
+# import section (python libraries)
+
 from flask import Blueprint
 import pandas as pd
-import time
 import json
 from flask import Flask, request, send_file, render_template, make_response,current_app
 from flask import jsonify
 from flask_cors import CORS
 from json import JSONEncoder
-from collections import OrderedDict
-from flask import Blueprint
 import psycopg2
 import shutil
 from functools import wraps
@@ -30,21 +30,23 @@ from email.mime.text import MIMEText
 
 
 
+# database connection strings ( ocpphase1 -- > offertool >SMB)
+
 engine = create_engine('postgresql://postgres:ocpphase01@ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com:5432/offertool')
+con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
 
 
+#database class for updating and fetching the data 
 class Database:
     host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com'  # your host
     user='postgres'      # usernames
-    password='ocpphase01'
-    
+    password='ocpphase01' 
     db='offertool'
-   
+    
     def __init__(self):
             print('Connection Opened')
             self.connection = psycopg2.connect(dbname=self.db,user=self.user,password=self.password,host=self.host)
-           
-   
+             
     def insert(self, query):
             print('inside insert')
             var = 'failed'
@@ -59,7 +61,6 @@ class Database:
             finally:
                 self.cursor.close()
                 print('Cursor closed')
-   
             return(var)
 
     def query(self, query):
@@ -72,11 +73,22 @@ class Database:
             self.cursor.close()
             print('Cursor closed')
                
+
+    
  
+# flsk app declaration 
+
 smb_app1 = Blueprint('smb_app1', __name__)
 CORS(smb_app1)
 db=Database()
 
+
+#user defined functions section 
+# 1)token generation
+# 2)tuple to string (return columns in string)
+# 3)upsert ( to upsert the changed data into a master table)
+# 4)move records ( to move the data from master to main and main to history)
+# 5)email ( to send an email with html template )
 
 
 def token_required(func):
@@ -94,10 +106,6 @@ def token_required(func):
              return {"msg":"Invalid token;"}
         return func(*args, **kwargs)
     return decorated
-
-
-
-
 
 def tuple_to_string(col_tuple):
     columnstr=''' '''
@@ -143,11 +151,10 @@ def move_records(tablename,col_tuple,value_tuple,flag,id_value=None,sequence_id=
     al_columnstr=tuple_to_string(tuple(col_list))
     
     
-   
+    # case for updating the record
+    
     if(flag=='update'):
-        
-        
-        
+        # moving the records to history from main table
         query1=''' INSERT INTO "SMB"."{}_History"({})
         SELECT 
         
@@ -156,23 +163,19 @@ def move_records(tablename,col_tuple,value_tuple,flag,id_value=None,sequence_id=
          FROM "SMB"."{}"
         WHERE "id" ={} '''.format(tablename,al_columnstr,al_columnstr,tablename,id_value)
         
-        print(query1)
+        # sequence_id logic
         sequence_initial=db.query(''' select sequence_id from "SMB"."{}" where id={} and active=1 '''.format(tablename,id_value) )[0][0]
-        print(sequence_initial)
-        print("***********")
         vacant_check=0
         try:
          vacant_check=db.query('''select active from "SMB"."{}" where sequence_id={} '''.format(tablename,sequence_id))[0][0]
         except:
           pass
-            
+     
         if(vacant_check==1):
-             
             sequence_final=int(sequence_id)
             if(sequence_final<sequence_initial):
                 id_array=db.query(''' select id from "SMB"."{}" where sequence_id >={} and sequence_id<{} and active=1 order by sequence_id '''.format(tablename,sequence_final,sequence_initial))
                 id_array=list(sum(id_array,()))
-                print(id_array)
                 for i in  id_array:
                  qr1= ''' UPDATE "SMB"."{}" SET sequence_id=sequence_id+1 where id={}  and active=1 '''.format(tablename,i)
                  print(qr1)
@@ -185,28 +188,21 @@ def move_records(tablename,col_tuple,value_tuple,flag,id_value=None,sequence_id=
                  db.insert(qr2)
                 
         
-        
+        # updating the record in main table 
         query2= ''' UPDATE "SMB"."{}" SET ({})= {} where id={}  '''.format(tablename,columnstr,value_tuple,id_value)
+        print(query1)
         print(query2)
-        
         db.insert(query1)
         status=db.insert(query2)
-        # try:
-        #     auto_update=''' update "SMB"."{}"  set sequence_id={} where id={} '''.format(tablename,seq_id,auto_id) 
-        #     print(auto_update)
-        #     db.insert(auto_update)
-        # except:
-        #     pass
-        
+    
         if(status!='failed'):
             db.insert(''' delete from "SMB"."SMB_Aproval" where id={} '''.format(id_value))
             status='success'
+        return status
       
         
-        
-        return status
+    # case for adding the record
     if(flag=='add'):
-         
         query='''INSERT INTO "SMB"."{}"(
              
             {})
@@ -241,9 +237,7 @@ def email(id_value,tablename,flag='change'):
          html = f.read()
         
         html=html.format(tablename,'subbu',id_value,encoded_id,tablename,flag)
-       
-        
-        
+
         part = MIMEText(html, 'html')
         msg.attach(part)
         server = smtplib.SMTP('smtp.gmail.com',587)
@@ -254,20 +248,15 @@ def email(id_value,tablename,flag='change'):
         server.close()
         return 'success'
    
-  
-        
-        
-# download_path="/home/ubuntu/mega_dir/"
-# input_directory="/home/ubuntu/mega_dir/"
 
-download_path="C:/Users/Administrator/Documents/"
-input_directory="C:/Users/Administrator/Documents/"
+# delcaring the paths
+
+download_path=input_directory="C:/Users/Administrator/Documents/"
+# download_path=input_directory="/home/ubuntu/mega_dir/"
 
 
 
-con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
-
-
+# llist of generinc api's works for all 21 tables
      
 @smb_app1.route('/aproval_data',methods=['GET','POST'])
 def aproval_data():
@@ -290,15 +279,14 @@ def aproval_data():
     for i in removals:
         lis.remove(i)
         
-    
+        
     if(flag=='delete'):
         query=''' select * from "SMB"."{}" where id in {} and active=1 '''.format(tablename,id_tuple)
         df=pd.read_sql(query,con)
         df.insert(0,"flag",flag)
         data=json.loads(df.to_json(orient='records'))
         return {"data":data,"lis":lis},200
-        
-        
+
     else:
   
         query='''select * from "SMB"."SMB_Aproval" where tableid in {} and table_name='{}' '''.format(id_tuple,tablename)
@@ -374,20 +362,7 @@ def reject_records():
     return {"status":"success"},200
     
 
-
-@smb_app1.route('/delete_record_baseprice',methods=['POST','GET','DELETE'])
-@token_required
-
-def delete_record():  
-    id_value=json.loads(request.data)['id']
-    
-    
-    tablename='SMB - Base Price - Category Addition'
-   
-    status=email(id_value,tablename,'delete')
-    if(status=='success'):return {"status":"success"},200
-    else: return {"status":"failure"},500
-    
+# normal apis for crud operations * 21
 
 @smb_app1.route('/Base_Price_Data',methods=['GET','POST'])
 @token_required
@@ -498,6 +473,21 @@ def update_record1():
         
         if(email_status=='success'): return {"status":"success"},200
         else: return {"status":"failure"},500
+
+
+@smb_app1.route('/delete_record_baseprice',methods=['POST','GET','DELETE'])
+@token_required
+
+def delete_record():  
+    id_value=json.loads(request.data)['id']
+    
+    
+    tablename='SMB - Base Price - Category Addition'
+   
+    status=email(id_value,tablename,'delete')
+    if(status=='success'):return {"status":"success"},200
+    else: return {"status":"failure"},500
+    
 
 
 

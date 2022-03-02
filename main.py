@@ -5,24 +5,18 @@ Created on Wed Oct 20 09:56:42 2021
 """
 from flask import Flask, request, jsonify, make_response, request, render_template, session, flash,current_app
 import jwt
-
 import json
 import psycopg2
 from smb_phase1 import Database
 from flask_cors import CORS
-
-
 from Alloy_scrap import scrap_app
 from smb_phase1 import smb_app1
 from smb_phase2 import smb_app2
 from smb_phase3 import smb_app3
 from smb_history import smb_history
 from taskbar1 import taskbar1
-
 import pandas as pd
-
 from user_management import user_management_app
-
 from taskbar_invoice import taskbar_invoice_app
 
 

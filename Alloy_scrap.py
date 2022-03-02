@@ -109,52 +109,44 @@ def upload_files():
  
         f =request.files["filename"]
         table_1=[{}]
-        now = datetime.now()
         today = date.today()
-       
         f.save(input_path+f.filename)
-        status=''
+     
         
         stock_df = pd.read_excel(input_path +f.filename)
         try:   
-            
+            # filtering only hamburg and duisburg data
             stock_df=stock_df[(stock_df['Mill']=='Duisburg') | (stock_df['Mill']=='Hamburg')]
             
-            stock_df_columns=list(stock_df.columns)
-    
+            # selecting and renaming the columns
+            data1=stock_df[['Month/Year', 'Monthly Alloy Surcharge','Customer ID','Internal Grade','Mill']]
+            data1=data1.rename(columns={"Month/Year": "Month_year", "Monthly Alloy Surcharge": "Amount","Customer ID":"Customer_ID","Internal Grade":"Internal_Grade"})
+        
+            # adding required columns with constant values
             VKORG="0300"
             DST_CH="02"
             DIV="02"
             COND_TYPE="Z133"
-            data1=stock_df[['Month/Year', 'Monthly Alloy Surcharge','Customer ID','Internal Grade','Mill']]
-            
-            data1=data1.rename(columns={"Month/Year": "Month_year", "Monthly Alloy Surcharge": "Amount","Customer ID":"Customer_ID","Internal Grade":"Internal_Grade"})
-        
-            # data1= data1["Month_year"].dt.strftime("%y%m")
-    
             data1.insert(0,'VKORG',str(VKORG))
             data1.insert(1,'COND_TYPE',str(COND_TYPE))
             data1.insert(2,'DST_CH',str(DST_CH))
             data1.insert(3,'DIV',str(DIV))
             data1['VKORG'][data1.Mill == "Hamburg"] ="0400"
+            
+            
+            # filling the zeros & dropping the null values
             data1=data1.dropna()
-                
             data1['Internal_Grade']=data1["Internal_Grade"].astype(str)
-           
             data1['Internal_Grade']=data1['Internal_Grade'].apply(lambda x: x.zfill(4))
            
-            # pending_wire=data1[data1.isna().any(axis=1)]
-           
-            # Path("C:/Users/Administrator/Documents/Non_processed").mkdir(parents=True, exist_ok=True)
-            # pending_wire.to_csv(Non_processed+'/'+f.filename+'.csv')
-             
-           
-            data1=data1.dropna()
+            # filtering only current month and next month data
+            
             data1['Month_year']=data1['Month_year'].astype(str)
             data1["Month_year"] =data1["Month_year"].str.replace("_", "")
-           
             data1['Month_year'] = data1['Month_year'].str.split('.').str[0]
             data1=data1[(pd.to_datetime(data1['Month_year'], format='%Y%m')) >=today.strftime('%Y-%m') ]
+            
+            # final data
             table_1 = data1.to_json(orient='records')
            
             return  {"data":table_1,"filename":f.filename},200
@@ -163,7 +155,66 @@ def upload_files():
             return {"status":"failure"},500
         
        
-       
+
+               
+@scrap_app.route('/Alloy_wire_validate',methods=['GET','POST'])
+def validate_files1():
+    
+    username = getpass.getuser()
+    now = datetime.now()
+    today = date.today()
+    
+    
+    query_parameters = json.loads(request.data)
+    filename=(query_parameters["filename"])
+    wire =( query_parameters["wire"])
+    
+    
+    wire_df=pd.DataFrame(wire)
+    wire_df.rename(columns={'Monthly_Deviation':'Monthly Deviation'})
+    out_df=wire_df.copy()
+    wire_df.drop(['Mill'],axis=1,inplace=True)
+    
+    cur.execute('rollback')
+    cur.execute('select max("Batch_ID") from alloy_surcharge.alloy_surcharge_wire;')
+    max_id=cur.fetchall()
+    if(max_id[0][0] == None):
+            Batch_ID=1
+    else:
+            Batch_ID=((max_id[0][0])+1)      
+    dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
+    wire_df.insert(0,'filename',filename)
+    wire_df.insert(0,'Batch_ID',Batch_ID)
+    wire_df.insert(1,'Username',username)
+    wire_df.insert(2,'date_time',dt_string)
+    wire_df.to_sql('alloy_surcharge_wire',con=engine, schema='alloy_surcharge',if_exists='append', index=False)
+    
+    date_time= today.strftime("%Y%m%d")
+    counter=str(Batch_ID)
+    cond_type="Z133"
+    sales_org={"Duisburg":"0300","Hamburg":"0400"}
+    
+    for i in sales_org:
+      if(i=="Duisburg"):
+          filename=date_time+counter+'_'+cond_type+'_'+sales_org["Duisburg"]+'.csv'
+          file_path=csv_out_path+filename
+          df1=out_df[out_df['Mill']=='Duisburg']
+          df1.to_csv(file_path, index = False)
+          funUpload(file_path,filename)
+      else:
+          filename=date_time+counter+'_'+cond_type+'_'+sales_org["Hamburg"]+'.csv'
+          file_path=csv_out_path+filename
+          df2=out_df[out_df['Mill']=='Hamburg']
+          df2.to_csv(file_path, index = False)
+          funUpload(file_path,filename)
+    
+    
+    print("Done File: Upload to SFTP")
+    
+    return {"message":"success"},200
+   
+
+     
          
        
             
@@ -292,64 +343,6 @@ def upload_files_scrap ():
         except:
             return  json.dumps({"data":table_3,"filename":f.filename})
  
-               
-@scrap_app.route('/Alloy_wire_validate',methods=['GET','POST'])
-def validate_files1():
-    
-    username = getpass.getuser()
-    now = datetime.now()
-    today = date.today()
-    
-    
-    query_parameters = json.loads(request.data)
-    filename=(query_parameters["filename"])
-    wire =( query_parameters["wire"])
-    
-    wire_df=pd.DataFrame(wire)
-    wire_df.rename(columns={'Monthly_Deviation':'Monthly Deviation'})
-    out_df=wire_df.copy()
-    wire_df.drop(['Mill'],axis=1,inplace=True)
-    
-    cur.execute('rollback')
-    cur.execute('select max("Batch_ID") from alloy_surcharge.alloy_surcharge_wire;')
-    max_id=cur.fetchall()
-    if(max_id[0][0] == None):
-            Batch_ID=1
-    else:
-            Batch_ID=((max_id[0][0])+1)      
-    dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
-    wire_df.insert(0,'filename',filename)
-    wire_df.insert(0,'Batch_ID',Batch_ID)
-    wire_df.insert(1,'Username',username)
-    wire_df.insert(2,'date_time',dt_string)
-    wire_df.to_sql('alloy_surcharge_wire',con=engine, schema='alloy_surcharge',if_exists='append', index=False)
-    
-    date_time= today.strftime("%Y%m%d")
-    counter=str(Batch_ID)
-    cond_type="Z133"
-    sales_org={"Duisburg":"0300","Hamburg":"0400"}
-    
-    for i in sales_org:
-      if(i=="Duisburg"):
-          filename=date_time+counter+'_'+cond_type+'_'+sales_org["Duisburg"]+'.csv'
-          file_path=csv_out_path+filename
-          df1=out_df[out_df['Mill']=='Duisburg']
-          df1.to_csv(file_path, index = False)
-          funUpload(file_path,filename)
-      else:
-          filename=date_time+counter+'_'+cond_type+'_'+sales_org["Hamburg"]+'.csv'
-          file_path=csv_out_path+filename
-          df2=out_df[out_df['Mill']=='Hamburg']
-          df2.to_csv(file_path, index = False)
-          funUpload(file_path,filename)
-    
-    
-    print("Done File: Upload to SFTP")
-    
-    return {"message":"success"},200
-   
-
-
 
 @scrap_app.route('/Alloy_billet_validate',methods=['GET','POST'])
 def validate_files2():
