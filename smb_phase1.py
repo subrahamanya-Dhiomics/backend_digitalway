@@ -44,35 +44,34 @@ class Database:
     db='offertool'
     
     def __init__(self):
-            print('Connection Opened')
+            
             self.connection = psycopg2.connect(dbname=self.db,user=self.user,password=self.password,host=self.host)
              
     def insert(self, query):
-            print('inside insert')
+           
             var = 'failed'
             try:
                 self.cursor = self.connection.cursor()
 #                print("HEY")
                 var = self.cursor.execute(query)
-                print(str(var))
+               
                 self.connection.commit()
             except:
                 self.connection.rollback()
             finally:
                 self.cursor.close()
-                print('Cursor closed')
+               
             return(var)
 
     def query(self, query):
         try:
             self.cursor = self.connection.cursor()
-            print('inside query')
+           
             self.cursor.execute(query)
             return self.cursor.fetchall()
         finally:
             self.cursor.close()
-            print('Cursor closed')
-               
+           
 
     
  
@@ -107,28 +106,128 @@ def token_required(func):
         return func(*args, **kwargs)
     return decorated
 
+
+
+
 def tuple_to_string(col_tuple):
     columnstr=''' '''
     for i in col_tuple:
              if(i!=col_tuple[-1]):  columnstr+=''' "{}",'''.format(i)
              else: columnstr+=''' "{}" '''.format(i)   
     return columnstr
+
+
+
     
+def test(col_tuple,input_tuple,id_value,tablename):
+   
+    sequence_id=''
+    col_tuple=list(col_tuple)
+    input_tuple=list(input_tuple)
+    lis=["table_name","id","Username"]
+    
+    for n in lis:   
+     col_tuple.remove(n)
+   
+    input_tuple.pop(0)
+    input_tuple.pop(0)
+    input_tuple.pop(1)
+        
+    tag=False
+    columnstr=tuple_to_string(col_tuple)
+    
+    query=''' select {} from "SMB"."{}" where id={} '''.format(columnstr,tablename,id_value)
+    
+    
+    
+    dat=list(db.query(query)[0])
+    
+    if(dat[0]!=input_tuple[0]):
+    
+        tag=False
+        sequence_id=input_tuple[0]
+        
+        dat.pop(0)
+        input_tuple.pop(0)
+        if(input_tuple==dat):
+            tag=True
+    
+    
+    return {"tag":tag,"seq":sequence_id}
+            
+
+def move_direct(tablename,id_value,sequence_id):
+    
+        print("inside move_direct")
+        
+    
+      # sequence_id logic
+        sequence_initial=db.query(''' select sequence_id from "SMB"."{}" where id={} and active=1 '''.format(tablename,id_value) )[0][0]
+        vacant_check=0
+        try:
+         vacant_check=db.query('''select active from "SMB"."{}" where sequence_id={} '''.format(tablename,sequence_id))[0][0]
+        except:
+          pass
+     
+        if(vacant_check==1):
+            sequence_final=int(sequence_id)
+            if(sequence_final<sequence_initial):
+                id_array=db.query(''' select id from "SMB"."{}" where sequence_id >={} and sequence_id<{} and active=1 order by sequence_id '''.format(tablename,sequence_final,sequence_initial))
+                id_array=list(sum(id_array,()))
+                for i in  id_array:
+                 qr1= ''' UPDATE "SMB"."{}" SET sequence_id=sequence_id+1 where id={}  and active=1 '''.format(tablename,i)
+                 print(qr1)
+                 db.insert(qr1)
+            else:
+                id_array=db.query(''' select id from "SMB"."{}" where sequence_id >{} and sequence_id<={} and active=1 order by sequence_id '''.format(tablename,sequence_initial,sequence_final))
+                id_array=list(sum(id_array,()))
+                for j in  id_array:
+                 qr2= ''' UPDATE "SMB"."{}" SET sequence_id=sequence_id-1 where id={} and active=1 '''.format(tablename,j)
+                 db.insert(qr2)
+        query2= ''' UPDATE "SMB"."{}" SET sequence_id={} where id={}  '''.format(tablename,sequence_id,id_value)
+        
+        db.insert(query2)
+        
+        return True
+       
+    
+    
+            
+        
+         
+        
+        
+        
+   
+    
+
 def upsert(col_tuple=None,input_tuple=None,flag='update',tablename=None,id_value=None):
         querystr=''' '''
         columnstr=tuple_to_string(col_tuple)
         tableid=''
         
         
-        if(flag=='update'):
-            check=db.query(''' select exists(select 1  from "SMB"."SMB_Aproval" where id={} and table_name='{}') '''.format(id_value,tablename))[0][0]
-            if check and check!='failed':querystr=''' UPDATE "SMB"."SMB_Aproval" SET ({})= {} where id={} and table_name='{}' '''.format(columnstr,input_tuple,id_value,tablename)
-            else: querystr='''INSERT INTO "SMB"."SMB_Aproval" ({}) VALUES{}; '''.format(columnstr,input_tuple)
-             
-            status=db.insert(querystr)
-            print(querystr)
-            tableid=db.query(''' select max(tableid) from "SMB"."SMB_Aproval" where id={} and table_name='{}' '''.format(id_value,tablename))[0][0]
+       
         
+        if(flag=='update'):
+            
+            
+            test_case=test(col_tuple,input_tuple,id_value,tablename)
+             
+            print(test_case)
+            
+            if(test_case['tag']==True):
+               stat=move_direct(tablename,id_value,test_case['seq'])
+               status='move_direct'
+            else:
+                check=db.query(''' select exists(select 1  from "SMB"."SMB_Aproval" where id={} and table_name='{}') '''.format(id_value,tablename))[0][0]
+                if check and check!='failed':querystr=''' UPDATE "SMB"."SMB_Aproval" SET ({})= {} where id={} and table_name='{}' '''.format(columnstr,input_tuple,id_value,tablename)
+                else: querystr='''INSERT INTO "SMB"."SMB_Aproval" ({}) VALUES{}; '''.format(columnstr,input_tuple)
+                 
+                status=db.insert(querystr)
+                print(querystr)
+                tableid=db.query(''' select max(tableid) from "SMB"."SMB_Aproval" where id={} and table_name='{}' '''.format(id_value,tablename))[0][0]
+            
         if(flag=='add'):
             querystr=''' Insert into  "SMB"."SMB_Aproval"  ({}) VALUES{}'''.format(columnstr,input_tuple)
            
@@ -137,11 +236,14 @@ def upsert(col_tuple=None,input_tuple=None,flag='update',tablename=None,id_value
             
             tableid=db.query(''' select max(tableid) from "SMB"."SMB_Aproval" where table_name='{}' and flag='add' '''.format(tablename) )[0][0]
         
+        
+        
      
-        if status!='failed' : status='success'
+        if status!='failed' and status!='move_direct'  : status='success'
         return {"status":status,"tableid":tableid}
     
 def move_records(tablename,col_tuple,value_tuple,flag,id_value=None,sequence_id=None):
+    
     querystr=''' '''
     columnstr=tuple_to_string(col_tuple)
     
@@ -150,6 +252,10 @@ def move_records(tablename,col_tuple,value_tuple,flag,id_value=None,sequence_id=
     col_list.remove("aprover1")
     al_columnstr=tuple_to_string(tuple(col_list))
     
+    
+    print("***************")
+    print(col_tuple)
+    print(value_tuple)
     
     # case for updating the record
     
@@ -471,7 +577,7 @@ def update_record1():
         
         
         
-        if(email_status=='success'): return {"status":"success"},200
+        if(email_status=='success' or status['status']=='move_direct'): return {"status":"success"},200
         else: return {"status":"failure"},500
 
 
@@ -509,6 +615,9 @@ def add_record1():
     Currency =( query_parameters["Currency"])
     Document_Item_Currency =( query_parameters["Document_Item_Currency"])
     flag='add'
+    
+    
+    
     
     tablename='SMB - Base Price - Category Addition'
     # id_value=db.query('''select "SMB".get_max_id('"SMB"."SMB - Base Price - Category Addition"')''')[0][0]+1
@@ -734,44 +843,9 @@ def update_record_category_minibar():
         sequence_id=(query_parameters['sequence_id'])
         id_value=(query_parameters['id_value'])
         Market_Customer=(query_parameters['Market_Customer'])
-    
-        # try:
         
-        #     query1='''INSERT INTO "SMB"."SMB - Base Price - Category Addition - MiniBar_History" 
-        #     SELECT 
-          #   "id","Username",now(),"BusinessCode",
-          #     "Customer Group",
-          #     "Market - Customer",
-          #     "Market - Country",
-        	 # "Beam Category",
-          #   "Document Item Currency",
-          #   "Amount",
-          #   "Currency"  
-        #     FROM "SMB"."SMB - Base Price - Category Addition - MiniBar"
-        #     WHERE "id"={} '''.format(id_value)
-        #     result=db.insert(query1)
-        #     if result=='failed' :raise ValueError
         
-        #     query2='''UPDATE "SMB"."SMB - Base Price - Category Addition - MiniBar"
-        #     SET 
-        #    "Username"='{0}',
-        #    "BusinessCode"='{1}',
-        #    "Customer Group"='{2}',
-          	   
-        #    "Market - Country"='{3}',
-        #    "Beam Category"='{4}',
-        #    "Document Item Currency"='{5}',
-        #    "Amount"='{6}',
-        #    "Currency"=''{7}'',
-        #    "updated_on"='{8}',sequence_id= {9}
-        #     WHERE "id"={10} '''.format(username,BusinessCode,Customer_Group,Market_Country,Beam_Category,Document_Item_Currency,Amount,Currency,date_time,sequence_id,id_value)
-        #     print(query2)
-            
-        #     result1=db.insert(query2)
-        #     if result1=='failed' :raise ValueError
-            
-        #     return {"status":"success"},200
-        # except: {"status":"failure"},500
+        
         flag='update'
       
         tablename='SMB - Base Price - Category Addition - MiniBar'     
@@ -796,7 +870,7 @@ def update_record_category_minibar():
         
         
         
-        if(email_status=='success'): return {"status":"success"},200
+        if(email_status=='success' or status['status']=='move_direct'): return {"status":"success"},200
         else: return {"status":"failure"},500
    
 
@@ -813,10 +887,10 @@ def add_record_mini():
     
     BusinessCode=(query_parameters['BusinessCode'])
     Customer_Group=(query_parameters["Customer_Group"])
-   
-    Market_Country =( query_parameters["Market_Country"])
-    Beam_Category=(query_parameters["Beam_Category"])
     
+    Market_Country =( query_parameters["Market_Country"])
+    
+    Beam_Category=(query_parameters["Beam_Category"])
     Market_Customer=(query_parameters["Market_Customer"])
     
     
@@ -828,6 +902,7 @@ def add_record_mini():
     
     flag='add'
    
+    
     tablename='SMB - Base Price - Category Addition - MiniBar'     
    
     input_tuple=(tablename,flag,username, BusinessCode,Customer_Group,Market_Customer,  Market_Country,Beam_Category,Document_Item_Currency, Amount,Currency)
@@ -1091,7 +1166,7 @@ def update_record_incoterm():
         
         
         
-        if(email_status=='success'): return {"status":"success"},200
+        if(email_status=='success' or status['status']=='move_direct'): return {"status":"success"},200
         else: return {"status":"failure"},500
    
 
@@ -1374,8 +1449,9 @@ def add_record_extra_certificate():
     status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
     if(status['status']=='success'):email_status=email([status['tableid']],tablename)
     
-    if(email_status=='success'):return {"status":"success"},200
-
+    if(email_status=='success' or status['status']=='move_direct'): return {"status":"success"},200
+    else: return {"status":"failure"},500
+   
     
         
 @smb_app1.route('/add_record_extra_certificate',methods=['GET','POST'])
@@ -1417,6 +1493,9 @@ def smb_add_certificate():
 "Currency")
     
     status=upsert(col_tuple,input_tuple,flag,tablename)
+    
+    print(status)
+    print("##")
     if(status['status']=='success'): email_status=email([status['tableid']],tablename)
     
     if(email_status=='success'): return {"status":"success"},200
@@ -1657,8 +1736,9 @@ def update_record_extra_certificate_minibar():
     status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
     if(status['status']=='success'):email_status=email([status['tableid']],tablename)
 
-    if(email_status=='success'): return {"status":"success"},200
-    
+    if(email_status=='success' or status['status']=='move_direct'): return {"status":"success"},200
+    else: return {"status":"failure"},500
+   
     
     
      
@@ -1933,8 +2013,9 @@ def update_record_delivery_mill():
     status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
     if(status['status']=='success'):email_status=email([status['tableid']],tablename)
     
-    if(email_status=='success'):return {"status":"success"},200
-
+    if(email_status=='success' or status['status']=='move_direct'): return {"status":"success"},200
+    else: return {"status":"failure"},500
+   
     
        
 
@@ -2222,8 +2303,9 @@ def update_record_delivery_mill_minibar():
         
     status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
     if(status['status']=='success'):email_status=email([status['tableid']],tablename)
-    if(email_status=='success'): return {"status":"success"},200
+    if(email_status=='success' or status['status']=='move_direct'): return {"status":"success"},200
     else: return {"status":"failure"},500
+   
     
        
 

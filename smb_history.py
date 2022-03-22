@@ -108,11 +108,12 @@ def  download_delivery_mill_minibar_history():
         df.columns = df.columns.str.replace(' ', '_')
         
         df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer_Group":"Market_Customer_Group","Market_-_Customer":"Market_Customer"},inplace=True)
+        df['updated_on'] = df['updated_on'].astype('datetime64[s]')
         df['updated_on']=pd.to_datetime(df['updated_on'])
         df['updated_on']=df['updated_on'].astype(str)
-        
-        # df['updated_on'] = df['updated_on'].dt.strftime('%d/%m/%Y')
        
+        print(df['updated_on'])
+        
         if(search_string!="all" and search_string!=None):
                       df=df[df.eq(search_string).any(1)]
         
@@ -120,7 +121,8 @@ def  download_delivery_mill_minibar_history():
         
         return {"data":table,"totalCount":count},200         
     except:
-        return {"statuscode":500,"msg":"failure"},500
+        return {"statuscode":500,"msg":"failure"},500       
+
     
 
 @smb_history.route('/history_delivering_mill',methods=['GET'])
@@ -173,8 +175,10 @@ def download_base_price_history():
         df.columns = df.columns.str.replace(' ', '_')
         
         df.rename(columns={"Market_-_Country":"Market_Country"},inplace=True)
+        df['updated_on'] = df['updated_on'].astype('datetime64[s]')
         df['updated_on']=pd.to_datetime(df['updated_on'])
         df['updated_on']=df['updated_on'].astype(str)
+       
         print(df['updated_on'])
         
         if(search_string!="all" and search_string!=None):
@@ -206,8 +210,11 @@ def download_base_price_minibar_history():
         df.columns = df.columns.str.replace(' ', '_')
         
         df.rename(columns={"Market_-_Customer":"Market_Customer"},inplace=True)
+        df['updated_on'] = df['updated_on'].astype('datetime64[s]')
         df['updated_on']=pd.to_datetime(df['updated_on'])
         df['updated_on']=df['updated_on'].astype(str)
+       
+        print(df['updated_on'])
         
         if(search_string!="all" and search_string!=None):
                       df=df[df.eq(search_string).any(1)]
@@ -217,6 +224,7 @@ def download_base_price_minibar_history():
         return {"data":table,"totalCount":count},200         
     except:
         return {"statuscode":500,"msg":"failure"},500       
+   
 
 
 
@@ -238,8 +246,11 @@ def download_base_price_Incoterm_Exceptions_History():
         df.columns = df.columns.str.replace(' ', '_')
         
         df.rename(columns={"Market_-_Country":"Market_Country"},inplace=True)
+        df['updated_on'] = df['updated_on'].astype('datetime64[s]')
         df['updated_on']=pd.to_datetime(df['updated_on'])
         df['updated_on']=df['updated_on'].astype(str)
+       
+        # print(df['updated_on'])
         
         if(search_string!="all" and search_string!=None):
                       df=df[df.eq(search_string).any(1)]
@@ -248,7 +259,8 @@ def download_base_price_Incoterm_Exceptions_History():
         
         return {"data":table,"totalCount":count},200         
     except:
-        return {"statuscode":500,"msg":"failure"},500   
+        return {"statuscode":500,"msg":"failure"},500       
+ 
     
 
 
@@ -300,8 +312,11 @@ def download_Extra_Certificate_miniBar_History():
         df.columns = df.columns.str.replace(' ', '_')
         
         df.rename(columns={"Market_-_Customer":"Market_Customer","Market_-_Country":"Market_Country"},inplace=True)
+        df['updated_on'] = df['updated_on'].astype('datetime64[s]')
         df['updated_on']=pd.to_datetime(df['updated_on'])
         df['updated_on']=df['updated_on'].astype(str)
+       
+        # print(df['updated_on'])
         
         if(search_string!="all" and search_string!=None):
                       df=df[df.eq(search_string).any(1)]
@@ -311,7 +326,7 @@ def download_Extra_Certificate_miniBar_History():
         return {"data":table,"totalCount":count},200         
     except:
         return {"statuscode":500,"msg":"failure"},500       
-    
+
 
 
 
@@ -334,8 +349,11 @@ def download_Extra_Freight_Parity_History():
         df.columns = df.columns.str.replace(' ', '_')
         
         df.rename(columns={"Market_-_Country":"Market_Country"},inplace=True)
+        df['updated_on'] = df['updated_on'].astype('datetime64[s]')
         df['updated_on']=pd.to_datetime(df['updated_on'])
         df['updated_on']=df['updated_on'].astype(str)
+       
+        # print(df['updated_on'])
         
         if(search_string!="all" and search_string!=None):
                       df=df[df.eq(search_string).any(1)]
@@ -345,7 +363,7 @@ def download_Extra_Freight_Parity_History():
         return {"data":table,"totalCount":count},200         
     except:
         return {"statuscode":500,"msg":"failure"},500       
-    
+
 
 
 
@@ -368,8 +386,11 @@ def download_Extra_Freight_Parity_MiniBar_History():
         df.columns = df.columns.str.replace(' ', '_')
         
         df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer_Group":"Market_Customer_Group","Market_-_Customer":"Market_Customer"},inplace=True)
+        df['updated_on'] = df['updated_on'].astype('datetime64[s]')
         df['updated_on']=pd.to_datetime(df['updated_on'])
         df['updated_on']=df['updated_on'].astype(str)
+       
+        # print(df['updated_on'])
         
         if(search_string!="all" and search_string!=None):
                       df=df[df.eq(search_string).any(1)]
@@ -379,6 +400,7 @@ def download_Extra_Freight_Parity_MiniBar_History():
         return {"data":table,"totalCount":count},200         
     except:
         return {"statuscode":500,"msg":"failure"},500       
+    
     
 
 
@@ -403,8 +425,11 @@ def download_Extra_Grade_History():
         df.columns = df.columns.str.replace(' ', '_')
         
         df.rename(columns={"Market_-_Country":"Market_Country"},inplace=True)
+        df['updated_on'] = df['updated_on'].astype('datetime64[s]')
         df['updated_on']=pd.to_datetime(df['updated_on'])
         df['updated_on']=df['updated_on'].astype(str)
+       
+        # print(df['updated_on'])
         
         if(search_string!="all" and search_string!=None):
                       df=df[df.eq(search_string).any(1)]
@@ -414,8 +439,6 @@ def download_Extra_Grade_History():
         return {"data":table,"totalCount":count},200         
     except:
         return {"statuscode":500,"msg":"failure"},500       
-    
-
 
 
 
@@ -437,8 +460,11 @@ def download_Extra_Grade_MiniBar_History():
         df.columns = df.columns.str.replace(' ', '_')
         
         df.rename(columns={"Market_-_Customer":"Market_Customer","Market_-_Country":"Market_Country"},inplace=True)
+        df['updated_on'] = df['updated_on'].astype('datetime64[s]')
         df['updated_on']=pd.to_datetime(df['updated_on'])
         df['updated_on']=df['updated_on'].astype(str)
+       
+        # print(df['updated_on'])
         
         if(search_string!="all" and search_string!=None):
                       df=df[df.eq(search_string).any(1)]
@@ -448,7 +474,6 @@ def download_Extra_Grade_MiniBar_History():
         return {"data":table,"totalCount":count},200         
     except:
         return {"statuscode":500,"msg":"failure"},500       
-    
 
 
 
@@ -471,8 +496,11 @@ def download_Extra_Length_Logistic_History():
         df.columns = df.columns.str.replace(' ', '_')
         
         df.rename(columns={"Market_-_Country":"Market_Country"},inplace=True)
+        df['updated_on'] = df['updated_on'].astype('datetime64[s]')
         df['updated_on']=pd.to_datetime(df['updated_on'])
         df['updated_on']=df['updated_on'].astype(str)
+       
+        # print(df['updated_on'])
         
         if(search_string!="all" and search_string!=None):
                       df=df[df.eq(search_string).any(1)]
@@ -482,7 +510,6 @@ def download_Extra_Length_Logistic_History():
         return {"data":table,"totalCount":count},200         
     except:
         return {"statuscode":500,"msg":"failure"},500       
-    
 
 
 
@@ -505,8 +532,11 @@ def download_Extra_Length_Logistic_MiniBar_History():
         df.columns = df.columns.str.replace(' ', '_')
         
         df.rename(columns={"Market_-_Customer":"Market_Customer","Market_-_Country":"Market_Country"},inplace=True)
+        df['updated_on'] = df['updated_on'].astype('datetime64[s]')
         df['updated_on']=pd.to_datetime(df['updated_on'])
         df['updated_on']=df['updated_on'].astype(str)
+       
+        # print(df['updated_on'])
         
         if(search_string!="all" and search_string!=None):
                       df=df[df.eq(search_string).any(1)]
@@ -516,7 +546,7 @@ def download_Extra_Length_Logistic_MiniBar_History():
         return {"data":table,"totalCount":count},200         
     except:
         return {"statuscode":500,"msg":"failure"},500       
-    
+
 
 
 
@@ -539,8 +569,11 @@ def download_Extra_Length_Production_History():
         df.columns = df.columns.str.replace(' ', '_')
         
         df.rename(columns={"Market_-_Country":"Market_Country"},inplace=True)
+        df['updated_on'] = df['updated_on'].astype('datetime64[s]')
         df['updated_on']=pd.to_datetime(df['updated_on'])
         df['updated_on']=df['updated_on'].astype(str)
+       
+        # print(df['updated_on'])
         
         if(search_string!="all" and search_string!=None):
                       df=df[df.eq(search_string).any(1)]
@@ -550,7 +583,7 @@ def download_Extra_Length_Production_History():
         return {"data":table,"totalCount":count},200         
     except:
         return {"statuscode":500,"msg":"failure"},500       
-    
+
 
 
 
@@ -573,8 +606,11 @@ def download_Extra_Length_Production_MiniBar_History():
         df.columns = df.columns.str.replace(' ', '_')
         
         df.rename(columns={"Market_-_Customer":"Market_Customer","Market_-_Country":"Market_Country"},inplace=True)
+        df['updated_on'] = df['updated_on'].astype('datetime64[s]')
         df['updated_on']=pd.to_datetime(df['updated_on'])
         df['updated_on']=df['updated_on'].astype(str)
+       
+        # print(df['updated_on'])
         
         if(search_string!="all" and search_string!=None):
                       df=df[df.eq(search_string).any(1)]
@@ -584,6 +620,7 @@ def download_Extra_Length_Production_MiniBar_History():
         return {"data":table,"totalCount":count},200         
     except:
         return {"statuscode":500,"msg":"failure"},500       
+ 
     
 
 
@@ -607,8 +644,11 @@ def download_Extra_Profile_History():
         df.columns = df.columns.str.replace(' ', '_')
         
         df.rename(columns={"Market_-_Country":"Market_Country"},inplace=True)
+        df['updated_on'] = df['updated_on'].astype('datetime64[s]')
         df['updated_on']=pd.to_datetime(df['updated_on'])
         df['updated_on']=df['updated_on'].astype(str)
+       
+        # print(df['updated_on'])
         
         if(search_string!="all" and search_string!=None):
                       df=df[df.eq(search_string).any(1)]
@@ -618,6 +658,7 @@ def download_Extra_Profile_History():
         return {"data":table,"totalCount":count},200         
     except:
         return {"statuscode":500,"msg":"failure"},500       
+    
     
 
 
@@ -641,8 +682,11 @@ def download_Extra_Profile_MiniBar_History():
         df.columns = df.columns.str.replace(' ', '_')
         
         df.rename(columns={"Market_-_Customer":"Market_Customer","Market_-_Country":"Market_Country"},inplace=True)
+        df['updated_on'] = df['updated_on'].astype('datetime64[s]')
         df['updated_on']=pd.to_datetime(df['updated_on'])
         df['updated_on']=df['updated_on'].astype(str)
+       
+        # print(df['updated_on'])
         
         if(search_string!="all" and search_string!=None):
                       df=df[df.eq(search_string).any(1)]
@@ -652,6 +696,7 @@ def download_Extra_Profile_MiniBar_History():
         return {"data":table,"totalCount":count},200         
     except:
         return {"statuscode":500,"msg":"failure"},500       
+
     
 
 
@@ -675,8 +720,11 @@ def download_Extra_Profile_Iberia_And_Italy_History():
         df.columns = df.columns.str.replace(' ', '_')
         
         df.rename(columns={"Market_-_Country":"Market_Country"},inplace=True)
+        df['updated_on'] = df['updated_on'].astype('datetime64[s]')
         df['updated_on']=pd.to_datetime(df['updated_on'])
         df['updated_on']=df['updated_on'].astype(str)
+       
+        # print(df['updated_on'])
         
         if(search_string!="all" and search_string!=None):
                       df=df[df.eq(search_string).any(1)]
@@ -686,6 +734,7 @@ def download_Extra_Profile_Iberia_And_Italy_History():
         return {"data":table,"totalCount":count},200         
     except:
         return {"statuscode":500,"msg":"failure"},500       
+     
     
 
 
@@ -709,8 +758,11 @@ def download_Extra_Profile_Iberia_And_Italy_MiniBar_History():
         df.columns = df.columns.str.replace(' ', '_')
         
         df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer_Group":"Market_Customer_Group","Market_-_Customer":"Market_Customer"},inplace=True)
+        df['updated_on'] = df['updated_on'].astype('datetime64[s]')
         df['updated_on']=pd.to_datetime(df['updated_on'])
         df['updated_on']=df['updated_on'].astype(str)
+       
+        # print(df['updated_on'])
         
         if(search_string!="all" and search_string!=None):
                       df=df[df.eq(search_string).any(1)]
@@ -720,6 +772,7 @@ def download_Extra_Profile_Iberia_And_Italy_MiniBar_History():
         return {"data":table,"totalCount":count},200         
     except:
         return {"statuscode":500,"msg":"failure"},500       
+       
     
 
 
@@ -743,8 +796,11 @@ def download_Extra_Transport_Mode_History():
         df.columns = df.columns.str.replace(' ', '_')
         
         df.rename(columns={"Market_-_Country":"Market_Country"},inplace=True)
+        df['updated_on'] = df['updated_on'].astype('datetime64[s]')
         df['updated_on']=pd.to_datetime(df['updated_on'])
         df['updated_on']=df['updated_on'].astype(str)
+       
+        # print(df['updated_on'])
         
         if(search_string!="all" and search_string!=None):
                       df=df[df.eq(search_string).any(1)]
@@ -754,7 +810,7 @@ def download_Extra_Transport_Mode_History():
         return {"data":table,"totalCount":count},200         
     except:
         return {"statuscode":500,"msg":"failure"},500       
-    
+
 
 
 
@@ -777,8 +833,11 @@ def download_Extra_Transport_Mode_MiniBar_History():
         df.columns = df.columns.str.replace(' ', '_')
         
         df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer_Group":"Market_Customer_Group","Market_-_Customer":"Market_Customer"},inplace=True)
+        df['updated_on'] = df['updated_on'].astype('datetime64[s]')
         df['updated_on']=pd.to_datetime(df['updated_on'])
         df['updated_on']=df['updated_on'].astype(str)
+       
+        # print(df['updated_on'])
         
         if(search_string!="all" and search_string!=None):
                       df=df[df.eq(search_string).any(1)]
@@ -788,6 +847,7 @@ def download_Extra_Transport_Mode_MiniBar_History():
         return {"data":table,"totalCount":count},200         
     except:
         return {"statuscode":500,"msg":"failure"},500       
+     
     
 
 

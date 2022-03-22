@@ -32,7 +32,7 @@ import random
 import pysftp
 from base64 import decodebytes
 import paramiko
-
+import pymssql
  
 scrap_app = Blueprint('scrap_app', __name__)
 
@@ -42,8 +42,14 @@ con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',
 cur = con.cursor()
 
 
+consql = pymssql.connect(
+    host = "ocpphasesql1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com",
+    user = "admin",
+    password = "ocpphasesql1"
+    ,database='OCPPhasePostgresProd'
+    )
 
-csv_out_path="C:/Users/Administrator/Documents/Input_files"
+csv_out_path="C:/Users/Administrator/Documents/findout/"
 input_path="C:/Users/Administrator/Documents/Input_files"
 
 engine = create_engine('postgresql://postgres:ocpphase01@ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com:5432/offertool')
@@ -106,7 +112,11 @@ def funUpload(fileToUpload,filename):
 
 @scrap_app.route('/Alloy_wire_upload',methods=['GET','POST'])
 def upload_files():
- 
+    
+        data01=pd.DataFrame()
+        ds=''
+        data02=pd.DataFrame()
+       
         f =request.files["filename"]
         table_1=[{}]
         today = date.today()
@@ -114,45 +124,151 @@ def upload_files():
      
         
         stock_df = pd.read_excel(input_path +f.filename)
-        try:   
+         
             # filtering only hamburg and duisburg data
-            stock_df=stock_df[(stock_df['Mill']=='Duisburg') | (stock_df['Mill']=='Hamburg')]
-            
-            # selecting and renaming the columns
-            data1=stock_df[['Month/Year', 'Monthly Alloy Surcharge','Customer ID','Internal Grade','Mill']]
-            data1=data1.rename(columns={"Month/Year": "Month_year", "Monthly Alloy Surcharge": "Amount","Customer ID":"Customer_ID","Internal Grade":"Internal_Grade"})
+        stock_df=stock_df[(stock_df['Mill']=='Duisburg') | (stock_df['Mill']=='Hamburg')]
         
-            # adding required columns with constant values
-            VKORG="0300"
-            DST_CH="02"
-            DIV="02"
-            COND_TYPE="Z133"
-            data1.insert(0,'VKORG',str(VKORG))
-            data1.insert(1,'COND_TYPE',str(COND_TYPE))
-            data1.insert(2,'DST_CH',str(DST_CH))
-            data1.insert(3,'DIV',str(DIV))
-            data1['VKORG'][data1.Mill == "Hamburg"] ="0400"
+        # selecting and renaming the columns
+        data1=stock_df[['Month/Year', 'Monthly Alloy Surcharge','Customer ID','Internal Grade','Mill']]
+        data1=data1.rename(columns={"Month/Year": "Month_year", "Monthly Alloy Surcharge": "Amount","Customer ID":"Customer_ID","Internal Grade":"Internal_Grade"})
+    
+        # adding required columns with constant values
+        VKORG="0300"
+        DST_CH="02"
+        DIV="02"
+        COND_TYPE="Z133"
+        data1.insert(0,'VKORG',str(VKORG))
+        data1.insert(1,'COND_TYPE',str(COND_TYPE))
+        data1.insert(2,'DST_CH',str(DST_CH))
+        data1.insert(3,'DIV',str(DIV))
+        data1['VKORG'][data1.Mill == "Hamburg"] ="0400"
+        
+        
+        # filling the zeros & dropping the null values
+        data1=data1.dropna()
+        data1['Internal_Grade']=data1["Internal_Grade"].astype(str)
+        
+        
+        data1['Internal_Grade']=data1['Internal_Grade'].apply(lambda x: x.zfill(4))
+       
+        # filtering only current month and next month data
+        
+        data1['Month_year']=data1['Month_year'].astype(str)
+        data1["Month_year"] =data1["Month_year"].str.replace("_", "")
+        data1['Month_year'] = data1['Month_year'].str.split('.').str[0]
+        
+        # data1=data1[(pd.to_datetime(data1['Month_year'], format='%Y%m')) == '2022-02' ]
+        
+        
+        
+        
+        df=pd.read_sql('select * from dbo.ordertoofferV2',con=consql)
+        
+        data1['Customer_ID']=data1['Customer_ID'].astype(str,errors='ignore')
+        data1['Internal_Grade']=data1['Internal_Grade'].astype(str)
+        df['grade']=df['grade'].astype(str)
+        df['accountcode']=df['accountcode'].astype(str)
+        
+        
+     
+        df['frompriceperiod'] = pd.to_datetime(df['frompriceperiod'])
+        df['topriceperiod'] = pd.to_datetime(df['topriceperiod'])
+        
+        columns=['OFFER_ALLOY','OFFER_EFF_PR','OFFER_ALLOY_NUMBER','OFFER_ EFF_PR _NUMBER']
+        
+        n=[9,10,11,12]
+        for i in range(0,len(columns)):
+          data1.insert(n[i],columns[i],'')
+    
+        
+        for mon in range(2):
             
-            
-            # filling the zeros & dropping the null values
-            data1=data1.dropna()
-            data1['Internal_Grade']=data1["Internal_Grade"].astype(str)
-            data1['Internal_Grade']=data1['Internal_Grade'].apply(lambda x: x.zfill(4))
+            if(mon==0):   
+               ds=''
+               ds=data1[(pd.to_datetime(data1['Month_year'], format='%Y%m')) == today.strftime('%Y-%m')]
+            if(mon==1):
+                ds=''
+                ds=data1[(pd.to_datetime(data1['Month_year'], format='%Y%m')) > today.strftime('%Y-%m')]
+        
+        
+            data=df.merge(ds,left_on=['accountcode','grade'],right_on=['Customer_ID','Internal_Grade'])
+            data=data[   ((pd.to_datetime(data['Month_year'], format='%Y%m')) >= (pd.to_datetime(data['frompriceperiod'], format='%Y%m'))  )  &  ((pd.to_datetime(data['Month_year'], format='%Y%m')) <=(pd.to_datetime(data['topriceperiod'], format='%Y%m')))]
+            data=data[['accountcode','pricemodel','offerid','Month_year','grade','frompriceperiod','topriceperiod']]
            
-            # filtering only current month and next month data
-            
-            data1['Month_year']=data1['Month_year'].astype(str)
-            data1["Month_year"] =data1["Month_year"].str.replace("_", "")
-            data1['Month_year'] = data1['Month_year'].str.split('.').str[0]
-            data1=data1[(pd.to_datetime(data1['Month_year'], format='%Y%m')) >=today.strftime('%Y-%m') ]
-            
-            # final data
-            table_1 = data1.to_json(orient='records')
+            data['pricemodel']=data['pricemodel'].astype(float,errors='ignore')
+            data['pricemodel']=data['pricemodel'].astype(int,errors='ignore')
+            data['pricemodel'] = data['pricemodel']. replace(np.nan, None)
+            data['offerid']=data['offerid'].astype(int,errors='ignore')
            
-            return  {"data":table_1,"filename":f.filename},200
+            
+            a=[]
+            
+            
+            for i in list(data.index):
+                   customer_id=data['accountcode'][i]
+                   internal_grade=data['grade'][i]
+                   pricemodel=data['pricemodel'][i]
+                   offerid=data['offerid'][i]
+            
+                   for ind in list(ds.index):
+                    
+                     if (ds['Customer_ID'][ind]==customer_id and ds['Internal_Grade'][ind]==internal_grade):
+                        if(data['pricemodel'][i]  in (2,4,5,7,None)):
+                           
+                           if(offerid not in a):
+                              print(ind)
+                              if(ds['OFFER_ALLOY'][ind]==''):
+                                ds['OFFER_ALLOY'][ind]= 1
+                                ds['OFFER_ALLOY_NUMBER'][ind]= ds['OFFER_ALLOY_NUMBER'][ind]+str(offerid)
+                              else:
+                                ds['OFFER_ALLOY'][ind]= ds['OFFER_ALLOY'][ind]+1
+                                ds['OFFER_ALLOY_NUMBER'][ind]= ds['OFFER_ALLOY_NUMBER'][ind]+'_'+str(offerid)   
+                              a.append(offerid)
+                    
+                        if(data['pricemodel'][i] in (1,3,6,8)):
+                           if(offerid not in a):
+                            print(ind)
+                            
+                            if(ds['OFFER_ EFF_PR _NUMBER'][ind]==''):
+                             ds['OFFER_ EFF_PR _NUMBER'][ind]= ds['OFFER_ EFF_PR _NUMBER'][ind]+str(offerid)
+                             ds['OFFER_EFF_PR'][ind]= 1
+                            else:
+                               ds['OFFER_ EFF_PR _NUMBER'][ind]= ds['OFFER_ EFF_PR _NUMBER'][ind]+'_'+str(offerid)
+                               ds['OFFER_EFF_PR'][ind]= ds['OFFER_EFF_PR'][ind]+1
+                            a.append(offerid)
+            if(mon==0):
+                data01=ds
+            if(mon==1):
+                data02=ds
+                
+      
+         
+        d = pd.concat([data01,data02],    # Combine vertically
+                          ignore_index = True,
+                          sort = False)
+        d=d.replace('', 0)
+        table_1 = d.to_json(orient='records')
+        return {"data":table_1,"filename":f.filename},200
+                        
+        
+             
+        
+        
+                      
+        
+        
+        
+            
+        
+        
+              
 
-        except:
-            return {"status":"failure"},500
+
+
+
+
+
+            
         
        
 
@@ -187,7 +303,7 @@ def validate_files1():
     wire_df.insert(0,'Batch_ID',Batch_ID)
     wire_df.insert(1,'Username',username)
     wire_df.insert(2,'date_time',dt_string)
-    wire_df.to_sql('alloy_surcharge_wire',con=engine, schema='alloy_surcharge',if_exists='append', index=False)
+    # wire_df.to_sql('alloy_surcharge_wire',con=engine, schema='alloy_surcharge',if_exists='append', index=False)
     
     date_time= today.strftime("%Y%m%d")
     counter=str(Batch_ID)
@@ -199,13 +315,17 @@ def validate_files1():
           filename=date_time+counter+'_'+cond_type+'_'+sales_org["Duisburg"]+'.csv'
           file_path=csv_out_path+filename
           df1=out_df[out_df['Mill']=='Duisburg']
+          df1.drop(['Mill'],axis=1,inplace=True)
+          
           df1.to_csv(file_path, index = False)
           funUpload(file_path,filename)
       else:
           filename=date_time+counter+'_'+cond_type+'_'+sales_org["Hamburg"]+'.csv'
           file_path=csv_out_path+filename
           df2=out_df[out_df['Mill']=='Hamburg']
+          df2.drop(['Mill'],axis=1,inplace=True)
           df2.to_csv(file_path, index = False)
+          print("hello")
           funUpload(file_path,filename)
     
     
@@ -375,7 +495,7 @@ def validate_files2():
         billet_df.insert(0,'Batch_ID',Batch_ID)
         billet_df.insert(1,'Username',username)
         billet_df.insert(2,'date_time',dt_string)
-        billet_df.to_sql('alloy_surcharge_billet',con=engine, schema='alloy_surcharge',if_exists='append', index=False)
+        # billet_df.to_sql('alloy_surcharge_billet',con=engine, schema='alloy_surcharge',if_exists='append', index=False)
         
         date_time= today.strftime("%Y%m%d")
         counter=str(Batch_ID)
