@@ -33,15 +33,17 @@ from email.mime.text import MIMEText
 # database connection strings ( ocpphase1 -- > offertool >SMB)
 
 engine = create_engine('postgresql://postgres:ocpphase01@ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com:5432/offertool')
-con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
 
+con = psycopg2.connect(dbname='offertool',user='pgadmin',password='Sahara_17',host='offertool2-qa.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
 
 #database class for updating and fetching the data 
 class Database:
-    host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com'  # your host
-    user='postgres'      # usernames
-    password='ocpphase01' 
+    host='offertool2-qa.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com'  # your host
+    user='pgadmin'      # usernames
+    password='Sahara_17' 
     db='offertool'
+    
+    
     
     def __init__(self):
             
@@ -116,7 +118,11 @@ def tuple_to_string(col_tuple):
              else: columnstr+=''' "{}" '''.format(i)   
     return columnstr
 
-
+def highlight_col(x):
+    r = 'background-color: grey'
+    df1 = pd.DataFrame('', index=x.index, columns=x.columns)
+    df1.loc[:,['id']] = r
+    return df1
 
     
 def test(col_tuple,input_tuple,id_value,tablename):
@@ -243,7 +249,6 @@ def upsert(col_tuple=None,input_tuple=None,flag='update',tablename=None,id_value
         return {"status":status,"tableid":tableid}
     
 def move_records(tablename,col_tuple,value_tuple,flag,id_value=None,sequence_id=None):
-    
     querystr=''' '''
     columnstr=tuple_to_string(col_tuple)
     
@@ -388,9 +393,14 @@ def aproval_data():
         
     if(flag=='delete'):
         query=''' select * from "SMB"."{}" where id in {} and active=1 '''.format(tablename,id_tuple)
+        
         df=pd.read_sql(query,con)
         df.insert(0,"flag",flag)
+        df['updated_on'] = df['updated_on'].astype('datetime64[s]')
+        df['updated_on']=pd.to_datetime(df['updated_on'])
+        df['updated_on']=df['updated_on'].astype(str)
         data=json.loads(df.to_json(orient='records'))
+        
         return {"data":data,"lis":lis},200
 
     else:
@@ -402,6 +412,9 @@ def aproval_data():
         
         df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer_Group":"Market_Customer_Group","Zip_Code_(Dest)":"Zip_Code_Dest"},inplace=True)
         df.dropna(axis=1, how='all',inplace=True)
+        df['updated_on'] = df['updated_on'].astype('datetime64[s]')
+        df['updated_on']=pd.to_datetime(df['updated_on'])
+        df['updated_on']=df['updated_on'].astype(str)
         data=json.loads(df.to_json(orient='records'))
         
         return {"data":data,"lis":lis},200
@@ -653,11 +666,11 @@ def  SMB_upload():
             
             smb_df=pd.read_excel(input_directory+f.filename,dtype=str)
             
-            df=smb_df[['id','BusinessCode','Market - Country','Product Division','Product Level 02','Document Item Currency', 'Amount', 'Currency','sequence_id']]  
+            df=smb_df[['id','BusinessCode','Market - Country','Product Division','Product Level 02','Document Item Currency', 'Amount', 'Currency']]  
             df['id']=df['id'].astype(int)
-            df['sequence_id']=df['sequence_id'].astype(int)
             
-            df_main = pd.read_sql('''select "id","BusinessCode","Market - Country","Product Division","Product Level 02","Document Item Currency", "Amount", "Currency" ,sequence_id from "SMB"."SMB - Base Price - Category Addition" where "active"='1' order by "id" ''', con=con)
+            
+            df_main = pd.read_sql('''select "id","BusinessCode","Market - Country","Product Division","Product Level 02","Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Base Price - Category Addition" where "active"='1' order by "id" ''', con=con)
             
             
             df['Currency'] = df['Currency'].str.replace("'","")
@@ -678,7 +691,15 @@ def  SMB_upload():
             
             return {"data":table},200
 
-
+def fun_ignore_sequence_id(df,tablename):
+     
+     id_tuple=list(df['id'])
+     id_tuple.append(0)
+     sequence_id=db.query(''' select sequence_id from "SMB"."{}" where id in {} '''.format(tablename,tuple(id_tuple)))
+     df.insert(0,'sequence_id',list(sum(sequence_id, ())))
+     
+     return df
+         
 
 @smb_app1.route('/Base_Price_validate', methods=['GET','POST'])
 @token_required
@@ -692,7 +713,12 @@ def  SMB_validate():
     email_status=''
     df.insert(0,'Username',username)
     
+    
+    
+   
+    
     tablename='SMB - Base Price - Category Addition' 
+    df=fun_ignore_sequence_id(df,tablename)
     flag='update'  
     df.insert(1,'table_name',tablename)
     col_tuple=("table_name","id","sequence_id",
@@ -705,6 +731,7 @@ def  SMB_validate():
              "Amount",
              "Currency")
     col_list=['table_name','id','sequence_id','Username','BusinessCode','Market_Country','Product_Division','Product_Level_02','Document_Item_Currency', 'Amount', 'Currency']
+    
     
     
     id_value=[]
@@ -737,9 +764,10 @@ def SMB_baseprice_download1():
              "Currency" from "SMB"."SMB - Base Price - Category Addition" where "active"='1' order by sequence_id ''', con=con)
         
         t=now.strftime("%d-%m-%Y-%H-%M-%S")
+        
         file=download_path+t+'baseprice_category_addition.xlsx'
         
-        
+        df=df.style.apply(highlight_col, axis=None)
         df.to_excel(file,index=False)
         
         return send_file(file, as_attachment=True)
@@ -1017,7 +1045,7 @@ def SMB_baseprice_catecory_minibar_download():
    
         now = datetime.now()
         try:
-            print("hi")
+           
             df = pd.read_sql('''select "id",sequence_id, "BusinessCode",
               "Customer Group",
               "Market - Customer",
@@ -1233,13 +1261,12 @@ def  SMB_upload_baseprice_incoterm():
          
          df=smb_df[["id","Market - Country", "Customer Group",
     "Incoterm1", "Product Division", "Beam Category", "Delivering Mill",
-    "Document Item Currency", "Amount", "Currency","sequence_id"]]  
+    "Document Item Currency", "Amount", "Currency"]]  
          df["id"]=df["id"].astype(int)
-         df["sequence_id"]=df["sequence_id"].astype(int)
-         
+        
          df_main = pd.read_sql('''select "id","Market - Country", "Customer Group",
     "Incoterm1", "Product Division", "Beam Category", "Delivering Mill",
-    "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Base Price - Incoterm Exceptions" where "active"='1' order by sequence_id ''', con=con)
+    "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Base Price - Incoterm Exceptions" where "active"='1' order by sequence_id ''', con=con)
          
          df['Currency'] = df['Currency'].str.replace("'","")
          df3 = df.merge(df_main, how='left', indicator=True)
@@ -1270,7 +1297,8 @@ def  SMB_validate_baseprice_incoterm():
     
     
     
-    tablename='SMB - Base Price - Incoterm Exceptions'     
+    tablename='SMB - Base Price - Incoterm Exceptions'   
+    df=fun_ignore_sequence_id(df,tablename)
        
     flag='update'  
     df.insert(1,'table_name',tablename)
@@ -1306,9 +1334,9 @@ def SMB_baseprice_download_incoterm():
    
         now = datetime.now()
         try:
-            df = pd.read_sql('''select "id","sequence_id","Market - Country",
-	        "Product Division",
-                "Incoterm1",
+            df = pd.read_sql('''select "id","sequence_id","Market - Country","Customer Group",
+	        
+                "Incoterm1","Product Division",
 		"Customer Group",
 		"Beam Category",
 		"Delivering Mill",
@@ -1317,6 +1345,8 @@ def SMB_baseprice_download_incoterm():
            
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'incoterm.xlsx'
+            
+            df=df.style.apply(highlight_col, axis=None)
             print(file)
             df.to_excel(file,index=False)
             
@@ -1520,14 +1550,13 @@ def  Upload_extra_certificate():
             
             df=smb_df[['id',"BusinessCode", "Certificate",
        "Grade Category", "Market - Country", "Delivering Mill",
-       "Document Item Currency", "Amount", "Currency","sequence_id"]]  
+       "Document Item Currency", "Amount", "Currency"]]  
             df["id"]=df["id"].astype(int)
-            df["sequence_id"]=df["sequence_id"].astype(int)
             
             
             df_main = pd.read_sql('''select "id","BusinessCode", "Certificate",
        "Grade Category", "Market - Country", "Delivering Mill",
-       "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Certificate" where "active"='1' order by sequence_id ''', con=con)
+       "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Certificate" where "active"='1' order by sequence_id ''', con=con)
             
             df['Currency'] = df['Currency'].str.replace("'","")
             df3 = df.merge(df_main, how='left', indicator=True)
@@ -1565,6 +1594,7 @@ def  validate_extra_certificate():
     flag='update'  
     
     df.insert(1,'table_name',tablename)
+    df=fun_ignore_sequence_id(df,tablename)
     
     
     col_tuple=("table_name","id","sequence_id",
@@ -1612,6 +1642,8 @@ def download_extra_certificate():
           
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'extra_certificate.xlsx'
+            
+            df=df.style.apply(highlight_col, axis=None)
             print(file)
             df.to_excel(file,index=False)
             
@@ -1801,13 +1833,13 @@ def  Upload_extra_certificate_minibar():
             
             df=smb_df[["id","BusinessCode", "Customer Group","Market - Customer",
         "Market - Country", "Certificate",
-       "Grade Category", "Document Item Currency", "Amount", "Currency","sequence_id"]]  
+       "Grade Category", "Document Item Currency", "Amount", "Currency"]]  
             df["id"]=df["id"].astype(int)
-            df["sequence_id"]=df["sequence_id"].astype(int)
+            
             
             df_main = pd.read_sql('''select "id","BusinessCode", "Customer Group","Market - Customer",
        "Market - Country", "Certificate",
-       "Grade Category", "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Certificate - MiniBar" where "active"='1' order by sequence_id ''', con=con)
+       "Grade Category", "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Certificate - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             
             df['Currency'] = df['Currency'].str.replace("'","")
             
@@ -1841,6 +1873,7 @@ def  validate_extra_certificate_minibar():
     
              
     tablename='SMB - Extra - Certificate - MiniBar'
+    df=fun_ignore_sequence_id(df,tablename)
     
     flag='update'  
     
@@ -1875,11 +1908,12 @@ def  download_extra_certificate_minibar():
    
         now = datetime.now()
         try:
-            df = pd.read_sql('''select "id",sequence_id,"BusinessCode","Certificate","Market - Country",
-"Grade Category","Customer Group","Market - Customer","Document Item Currency","Amount","Currency" from "SMB"."SMB - Extra - Certificate - MiniBar" where "active"='1' order by sequence_id ''', con=con)
+            df = pd.read_sql('''select "id",sequence_id,"BusinessCode","Customer Group","Market - Customer","Market - Country","Certificate",
+"Grade Category","Document Item Currency","Amount","Currency" from "SMB"."SMB - Extra - Certificate - MiniBar" where "active"='1' order by sequence_id ''', con=con)
            
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'extra_certificate_minibar.xlsx'
+            df=df.style.apply(highlight_col, axis=None)
             print(file)
             df.to_excel(file,index=False)
             
@@ -2083,13 +2117,12 @@ def upload_delivery_mill():
             
             df=smb_df[["id","BusinessCode", "Market - Country",
        "Delivering Mill", "Product Division", "Beam Category",
-       "Document Item Currency", "Amount", "Currency","sequence_id"]]  
+       "Document Item Currency", "Amount", "Currency"]]  
             df["id"]=df["id"].astype(int)
-            df["sequence_id"]=df["sequence_id"].astype(int)
-            
+           
             df_main = pd.read_sql('''select "id","BusinessCode", "Market - Country",
        "Delivering Mill", "Product Division", "Beam Category",
-       "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Delivery Mill" where "active"='1' order by sequence_id ''', con=con)
+       "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Delivery Mill" where "active"='1' order by sequence_id ''', con=con)
             
             df['Currency'] = df['Currency'].str.replace("'","")
             df3 = df.merge(df_main, how='left', indicator=True)
@@ -2126,6 +2159,7 @@ def  validate_delivery_mill():
     df.insert(0,'Username',username)
     
     tablename='SMB - Extra - Delivery Mill'
+    df=fun_ignore_sequence_id(df,tablename)
     flag='update'  
     
     df.insert(1,'table_name',tablename)
@@ -2363,13 +2397,13 @@ def upload_delivery_mill_minibar():
             
             df=smb_df[["id","Market - Country",
        "Market - Customer Group", "Market - Customer", "Delivering Mill",
-       "Product Division", "Document Item Currency", "Amount", "Currency","sequence_id"]]  
+       "Product Division", "Document Item Currency", "Amount", "Currency"]]  
             df["id"]=df["id"].astype(int)
-            df["sequence_id"]=df["sequence_id"].astype(int)
+           
             
             df_main = pd.read_sql('''select "id","Market - Country",
        "Market - Customer Group","Market - Customer", "Delivering Mill",
-       "Product Division", "Document Item Currency", "Amount", "Currency","sequence_id" from "SMB"."SMB - Extra - Delivery Mill - MiniBar" where "active"='1' order by sequence_id ''', con=con)
+       "Product Division", "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Delivery Mill - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             
             df['Currency'] = df['Currency'].str.replace("'","")
             
@@ -2405,6 +2439,7 @@ def  validate_delivery_mill_minibar():
     df.insert(1,'date_time',date_time)
     
     tablename='SMB - Extra - Delivery Mill - MiniBar'
+    df=fun_ignore_sequence_id(df,tablename)
     flag='update'  
    
     df.insert(1,'table_name',tablename)
@@ -2420,7 +2455,7 @@ def  validate_delivery_mill_minibar():
     id_value=[]
  
     df=df[ col_list]
-   
+    
     for i in range(0,len(df)):
         status=upsert(col_tuple,tuple(df.loc[i]),flag,tablename,df['id'][i])
         id_value.append(status['tableid'])
@@ -2441,6 +2476,8 @@ def  download_delivery_mill_minibar():
             
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'delivery_mill_minibar.xlsx'
+            
+            df=df.style.apply(highlight_col, axis=None)
             print(file)
             df.to_excel(file,index=False)
             

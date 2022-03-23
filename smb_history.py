@@ -28,52 +28,14 @@ from sqlalchemy import create_engine
 import getpass
 from datetime import datetime,date
 
+from smb_phase1 import con
 
 
+from smb_phase1 import Database
 
 engine = create_engine('postgresql://postgres:ocpphase01@ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com:5432/offertool')
      
 
-class Database:
-    host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com'  # your host
-    user='postgres'      # usernames
-    password='ocpphase01'
-    
-    db='offertool'
-   
-    def __init__(self):
-            print('Connection Opened')
-            self.connection = psycopg2.connect(dbname=self.db,user=self.user,password=self.password,host=self.host)
-           
-   
-    def insert(self, query):
-            print('inside insert')
-            var = 'failed'
-            try:
-                self.cursor = self.connection.cursor()
-#                print("HEY")
-                var = self.cursor.execute(query)
-                print(str(var))
-                self.connection.commit()
-            except:
-                self.connection.rollback()
-            finally:
-                self.cursor.close()
-                print('Cursor closed')
-   
-            return(var)
-
-    def query(self, query):
-        try:
-            self.cursor = self.connection.cursor()
-            print('inside query')
-            self.cursor.execute(query)
-            return self.cursor.fetchall()
-        finally:
-            self.cursor.close()
-            print('Cursor closed')
-               
- 
 smb_history = Blueprint('smb_history', __name__)
 
 CORS(smb_history)
@@ -84,9 +46,6 @@ input_directory="C:/Users/Administrator/Documents/SMB_INPUT/"
 
 
 #download_path='C:/SMB/smb_download/'
-
-con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
-
 
 
 

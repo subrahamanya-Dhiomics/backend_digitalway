@@ -32,6 +32,10 @@ from smb_phase1 import email
 from smb_phase1 import Database
 from smb_phase1 import con
 
+from smb_phase1 import highlight_col
+
+from smb_phase1 import fun_ignore_sequence_id
+
 
 engine = create_engine('postgresql://postgres:ocpphase01@ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com:5432/offertool')
      
@@ -268,10 +272,10 @@ def update_record_transport():
     
     status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
     if(status['status']=='success'):email_status=email([status['tableid']],tablename)
-    if(email_status=='success'): return {"status":"success"},200
+    if(email_status=='success' or status['status']=='move_direct'): return {"status":"success"},200
     else: return {"status":"failure"},500
-     
-
+   
+    
 
    
 @smb_app3.route('/upload_transport', methods=['GET','POST'])
@@ -287,12 +291,12 @@ def upload_transport():
             smb_df=pd.read_excel(input_directory+f.filename,dtype=str)
             
             df=smb_df[["id","Product Division", "Market - Country",
-       "Transport Mode", "Document Item Currency", "Amount", "Currency","sequence_id"]]  
+       "Transport Mode", "Document Item Currency", "Amount", "Currency"]]  
             df["id"]=df["id"].astype(int)
-            df["sequence_id"]=df["sequence_id"].astype(int)
+            
             
             df_main = pd.read_sql('''select "id","Product Division", "Market - Country",
-       "Transport Mode", "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Transport Mode" where "active"='1' order by sequence_id ''', con=con)
+       "Transport Mode", "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Transport Mode" where "active"='1' order by sequence_id ''', con=con)
             
             df['Currency'] = df['Currency'].str.replace("'","")
             df3 = df.merge(df_main, how='left', indicator=True)
@@ -367,6 +371,7 @@ def  validate_transport():
     # except:
     #     return {"status":"failure"},500
     tablename='SMB - Extra - Transport Mode'
+    df=fun_ignore_sequence_id(df,tablename)
     df.insert(0,"table_name",tablename)
     flag='update'
     col_tuple=("table_name",
@@ -412,6 +417,7 @@ def download_transport():
            
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'extra_transport_mode.xlsx'
+            df=df.style.apply(highlight_col, axis=None)
             print(file)
             df.to_excel(file,index=False)
             
@@ -644,10 +650,13 @@ def update_record_transport_minibar():
         email_status=''
         
         status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
-        if(status['status']=='success'):email_status=email([status['tableid']],tablename)  
+        if(status['status']=='success'):email_status=email([status['tableid']],tablename)
         
-        if(email_status=='success'):return {"status":"success"}         
         
+        
+        if(email_status=='success' or status['status']=='move_direct'): return {"status":"success"},200
+        else: return {"status":"failure"},500
+
         
 @smb_app3.route('/upload_transport_minibar', methods=['GET','POST'])
 @token_required
@@ -663,13 +672,13 @@ def upload_transport_minibar():
             
             df=smb_df[["id","Product Division", "Market - Country",
        "Market - Customer Group", "Market - Customer", "Transport Mode",
-       "Document Item Currency", "Amount", "Currency","sequence_id"]]  
+       "Document Item Currency", "Amount", "Currency"]]  
             df["id"]=df["id"].astype(int)
-            df["sequence_id"]=df["sequence_id"].astype(int)
+            
             
             df_main = pd.read_sql('''select "id","Product Division", "Market - Country",
        "Market - Customer Group","Market - Customer",  "Transport Mode",
-       "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Transport Mode - MiniBar" where "active"='1' order by sequence_id ''', con=con)
+       "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Transport Mode - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             
             df['Currency'] = df['Currency'].str.replace("'","")
             df3 = df.merge(df_main, how='left', indicator=True)
@@ -745,6 +754,9 @@ def  validate_transport_minibar():
     # except:
     #     return {"status":"failure"},500
     tablename='SMB - Extra - Transport Mode - MiniBar'
+    df=fun_ignore_sequence_id(df,tablename)
+    
+    
     df.insert(1,"table_name",tablename)
     
     flag='update'
@@ -803,6 +815,7 @@ def download_transport_minibar():
            
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'transport_mode_minibar.xlsx'
+            df=df.style.apply(highlight_col, axis=None)
             print(file)
             df.to_excel(file,index=False)
             
@@ -1044,9 +1057,12 @@ def update_record_length_production():
         
     status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
     if(status['status']=='success'):email_status=email([status['tableid']],tablename)
-    
-    if(email_status=='success'):return {"status":"success"},200
-    
+        
+        
+        
+    if(email_status=='success' or status['status']=='move_direct'): return {"status":"success"},200
+    else: return {"status":"failure"},500
+
      
 
    
@@ -1064,13 +1080,13 @@ def upload_length_production():
             
             df=smb_df[["id","BusinessCode", "Country Group",
        "Market - Country", "Delivering Mill", "Length", "Length From",
-       "Length To", "Document Item Currency", "Amount", "Currency","sequence_id"]]  
+       "Length To", "Document Item Currency", "Amount", "Currency"]]  
             df["id"]=df["id"].astype(int)
-            df["sequence_id"]=df["sequence_id"].astype(int)
+            
             
             df_main = pd.read_sql('''select "id","BusinessCode", "Country Group",
        "Market - Country", "Delivering Mill", "Length", "Length From",
-       "Length To", "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Length Production" where "active"='1' order by sequence_id ''', con=con)
+       "Length To", "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Length Production" where "active"='1' order by sequence_id ''', con=con)
             
             df['Currency'] = df['Currency'].str.replace("'","")
             
@@ -1146,6 +1162,7 @@ def  validate_length_production():
     # except:
     #     return {"status":"failure"},500
     tablename='SMB - Extra - Length Production'
+    df=fun_ignore_sequence_id(df,tablename)
     flag='update' 
     df.insert(0,"tablename",tablename)
 
@@ -1211,6 +1228,8 @@ def download_length_production():
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             # file=download_path+t+'length_production_minibar.xlsx'
             file=download_path+t+'length_production.xlsx'
+            
+            df=df.style.apply(highlight_col, axis=None)
             print(file)
             df.to_excel(file,index=False)
             
@@ -1472,9 +1491,12 @@ def update_record_length_production_minibar():
         
     status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
     if(status['status']=='success'):email_status=email([status['tableid']],tablename)
-    
-    if(email_status=='success'):return {"status":"success"},200
-     
+        
+        
+        
+    if(email_status=='success' or status['status']=='move_direct'): return {"status":"success"},200
+    else: return {"status":"failure"},500
+
 
        
     
@@ -1494,15 +1516,14 @@ def upload_length_production_minibar():
             df=smb_df[["id","BusinessCode", "Customer Group","Market - Customer",
        "Market - Country", "Delivering Mill", "Length",
        "Length From", "Length To", "Document Item Currency", "Amount",
-       "Currency","sequence_id"]]  
+       "Currency"]]  
             df["id"]=df["id"].astype(int)
-            df["sequence_id"]=df["sequence_id"].astype(int)
-            print(df.columns)
+           
             
             df_main = pd.read_sql('''select "id","BusinessCode", "Customer Group","Market - Customer",
       "Market - Country", "Delivering Mill", "Length",
        "Length From", "Length To", "Document Item Currency", "Amount",
-       "Currency",sequence_id from "SMB"."SMB - Extra - Length Production - MiniBar" where "active"='1' order by sequence_id ''', con=con)
+       "Currency" from "SMB"."SMB - Extra - Length Production - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             df['Currency'] = df['Currency'].str.replace("'","")
             
             df3 = df.merge(df_main, how='left', indicator=True)
@@ -1582,6 +1603,7 @@ def  validate_length_production_minibar():
     # except:
     #     return {"status":"failure"},500
     tablename='SMB - Extra - Length Production - MiniBar'
+    df=fun_ignore_sequence_id(df,tablename)
     flag='update'  
         
     df.insert(1,'table_name',tablename)
@@ -1648,6 +1670,7 @@ def download_length_production_minibar():
            
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'length_production_minibar.xlsx'
+            df=df.style.apply(highlight_col, axis=None)
             print(file)
             df.to_excel(file,index=False)
             
@@ -1905,7 +1928,11 @@ def update_record_length_logistic():
         
     status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
     if(status['status']=='success'):email_status=email([status['tableid']],tablename)
-     
+        
+        
+        
+    if(email_status=='success' or status['status']=='move_direct'): return {"status":"success"},200
+    else: return {"status":"failure"},500
 
     
    
@@ -1923,13 +1950,13 @@ def upload_length_logistic():
             
             df=smb_df[["id","Country Group", "Market - Country",
        "Delivering Mill", "Length", "Length From", "Length To",
-       "Transport Mode", "Document Item Currency", "Amount", "Currency","sequence_id"]]  
+       "Transport Mode", "Document Item Currency", "Amount", "Currency"]]  
             df["id"]=df["id"].astype(int)
-            df["sequence_id"]=df["sequence_id"].astype(int)
+           
             
             df_main = pd.read_sql('''select "id","Country Group", "Market - Country",
        "Delivering Mill", "Length", "Length From", "Length To",
-       "Transport Mode", "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Length Logistic" where "active"='1' order by sequence_id ''', con=con)
+       "Transport Mode", "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Length Logistic" where "active"='1' order by sequence_id ''', con=con)
             
             df['Currency'] = df['Currency'].str.replace("'","")
             df3 = df.merge(df_main, how='left', indicator=True)
@@ -2000,6 +2027,7 @@ def  validate_length_logistic():
         #  return {"status":"success"},200
         
     tablename='SMB - Extra - Length Logistic'
+    df=fun_ignore_sequence_id(df,tablename)
     flag='update'  
     
     df.insert(0,'table_name',tablename)
@@ -2065,6 +2093,8 @@ def download_length_logistic():
            
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'length_logistic.xlsx'
+            
+            df=df.style.apply(highlight_col, axis=None)
             print(file)
             df.to_excel(file,index=False)
             
@@ -2323,11 +2353,13 @@ def update_record_length_logistic_minibar():
         
     status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
     if(status['status']=='success'):email_status=email([status['tableid']],tablename)
-    
-    if(email_status=='success'): return {"status":"success"},200
-     
+        
+        
+        
+    if(email_status=='success' or status['status']=='move_direct'): return {"status":"success"},200
+    else: return {"status":"failure"},500
 
-    
+
    
 @smb_app3.route('/upload_length_logistic_minibar', methods=['GET','POST'])
 @token_required
@@ -2344,13 +2376,13 @@ def upload_length_logistic_minibar():
             df=smb_df[["id","Customer Group", "Market - Customer",
        "Market - Country", "Delivering Mill", "Length", "Length From",
        "Length To", "Transport Mode", "Document Item Currency", "Amount",
-       "Currency","sequence_id"]]  
+       "Currency"]]  
             df["id"]=df["id"].astype(int)
-            df["sequence_id"]=df["sequence_id"].astype(int)            
+              
             df_main = pd.read_sql('''select "id","Customer Group","Market - Customer",
        "Market - Country", "Delivering Mill", "Length", "Length From",
        "Length To", "Transport Mode", "Document Item Currency", "Amount",
-       "Currency",sequence_id from "SMB"."SMB - Extra - Length Logistic - MiniBar" where "active"='1' order by sequence_id ''', con=con)
+       "Currency" from "SMB"."SMB - Extra - Length Logistic - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             
             df['Currency'] = df['Currency'].str.replace("'","")
             df3 = df.merge(df_main, how='left', indicator=True)
@@ -2428,6 +2460,7 @@ def  validate_length_logistic_minibar():
     # except:
     #     return {"status":"failure"},500
     tablename='SMB - Extra - Length Logistic - MiniBar'
+    df=fun_ignore_sequence_id(df,tablename)
     df.insert(1,'table_name',tablename)
     flag='update'  
     # df.insert(1,'table_name',tablename)   
@@ -2496,6 +2529,7 @@ def download_length_logistic_minibar():
            
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'length_logistic_minibar.xlsx'
+            df=df.style.apply(highlight_col, axis=None)
             print(file)
             df.to_excel(file,index=False)
             

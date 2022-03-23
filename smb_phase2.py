@@ -16,6 +16,10 @@ from json import JSONEncoder
 from functools import wraps
 from collections import OrderedDict
 from flask import Blueprint
+
+
+from smb_phase1 import fun_ignore_sequence_id
+
 import psycopg2
 
 import shutil
@@ -31,6 +35,9 @@ from smb_phase1 import email
 
 from smb_phase1 import Database
 from smb_phase1 import con 
+
+
+from smb_phase1 import highlight_col
 
 engine = create_engine('postgresql://postgres:ocpphase01@ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com:5432/offertool')
      
@@ -179,7 +186,7 @@ def update_record_frieght_parity():
     
     
     
-    if(email_status=='success'): return {"status":"success"},200
+    if(email_status=='success' or status['status']=='move_direct'): return {"status":"success"},200
     else: return {"status":"failure"},500
 
 
@@ -244,13 +251,13 @@ def upload_freight_parity():
             
             df=smb_df[["id","Delivering Mill", "Market - Country",
        "Zip Code (Dest)", "Product Division", "Document Item Currency",
-       "Amount", "Currency","sequence_id"]]  
+       "Amount", "Currency"]]  
             df["id"]=df["id"].astype(int)
-            df["sequence_id"]=df["sequence_id"].astype(int)
+            
             
             df_main = pd.read_sql('''select "id","Delivering Mill", "Market - Country",
        "Zip Code (Dest)", "Product Division", "Document Item Currency",
-       "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Freight Parity" where "active"='1' order by sequence_id ''', con=con)
+       "Amount", "Currency" from "SMB"."SMB - Extra - Freight Parity" where "active"='1' order by sequence_id ''', con=con)
             df['Currency'] = df['Currency'].str.replace("'","")
             
             df3 = df.merge(df_main, how='left', indicator=True)
@@ -282,7 +289,8 @@ def  validate_freight_parity():
     
              
        
-    tablename='SMB - Extra - Freight Parity'        
+    tablename='SMB - Extra - Freight Parity'
+    df=fun_ignore_sequence_id(df,tablename)        
    
     
     flag='update'  
@@ -326,6 +334,7 @@ def download_freight_parity():
             df = pd.read_sql('''select  "id",sequence_id,"Delivering Mill","Market - Country","Zip Code (Dest)","Product Division","Document Item Currency","Amount", "Currency" from "SMB"."SMB - Extra - Freight Parity" where "active"='1' order by sequence_id ''', con=con)
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'freight_parity.xlsx'
+            df=df.style.apply(highlight_col, axis=None)
             print(file)
             df.to_excel(file,index=False)
             
@@ -460,7 +469,7 @@ def update_record_frieght_parity_minibar():
     
     
     
-    if(email_status=='success'): return {"status":"success"},200
+    if(email_status=='success' or status['status']=='move_direct'): return {"status":"success"},200
     else: return {"status":"failure"},500
 
 
@@ -522,13 +531,12 @@ def upload_freight_parity_minibar():
             
             df=smb_df[["id","Delivering Mill", "Market - Country",
        "Market - Customer Group", "Market - Customer","Zip Code (Dest)",
-       "Product Division", "Document Item Currency", "Amount", "Currency","sequence_id"]]  
+       "Product Division", "Document Item Currency", "Amount", "Currency"]]  
             df["id"]=df["id"].astype(int)
-            df["sequence_id"]=df["sequence_id"].astype(int)
             
             df_main = pd.read_sql('''select "id","Delivering Mill", "Market - Country",
        "Market - Customer Group","Market - Customer","Zip Code (Dest)",
-       "Product Division", "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Freight Parity - MiniBar" where "active"='1' order by sequence_id ''', con=con)
+       "Product Division", "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Freight Parity - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             
             df['Currency'] = df['Currency'].str.replace("'","")
             df3 = df.merge(df_main, how='left', indicator=True)
@@ -558,7 +566,8 @@ def  validate_freight_parity_minibar():
     email_status=''
     df.insert(0,'Username',username)
     
-    tablename='SMB - Extra - Freight Parity - MiniBar'        
+    tablename='SMB - Extra - Freight Parity - MiniBar'    
+    df=fun_ignore_sequence_id(df,tablename)    
      
     flag='update'  
     df.insert(1,'table_name',tablename)
@@ -592,6 +601,7 @@ def download_freight_parity_minibar():
             df = pd.read_sql('''select id,sequence_id,"Delivering Mill","Market - Country","Market - Customer Group","Market - Customer","Zip Code (Dest)","Product Division","Document Item Currency","Amount", "Currency" from "SMB"."SMB - Extra - Freight Parity - MiniBar"  where "active"='1' order by sequence_id ''', con=con)
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'freight_parity_minibar.xlsx'
+            df=df.style.apply(highlight_col, axis=None)
             print(file)
             df.to_excel(file,index=False)
             
@@ -722,7 +732,7 @@ def update_record_extra_grade():
     
     
     
-    if(email_status=='success'): return {"status":"success"},200
+    if(email_status=='success' or status['status']=='move_direct'): return {"status":"success"},200
     else: return {"status":"failure"},500
 
 
@@ -786,14 +796,14 @@ def upload_extra_grade():
             
             df=smb_df[["id","BusinessCode", "Grade Category",
        "Country Group", "Market - Country", "Product Division",
-       "Document Item Currency", "Amount", "Currency","sequence_id"]]  
+       "Document Item Currency", "Amount", "Currency"]]  
             df["id"]=df["id"].astype(int)
-            df["sequence_id"]=df["sequence_id"].astype(int)
+           
             df['Currency'] = df['Currency'].str.replace("'","")
             
             df_main = pd.read_sql('''select "id","BusinessCode", "Grade Category",
        "Country Group", "Market - Country", "Product Division",
-       "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Grade" where "active"='1' order by sequence_id ''', con=con)
+       "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Grade" where "active"='1' order by sequence_id ''', con=con)
             
             
             df3 = df.merge(df_main, how='left', indicator=True)
@@ -824,6 +834,7 @@ def  validate_extra_grade():
     df.insert(0,'Username',username)
     
     tablename='SMB - Extra - Grade'  
+    df=fun_ignore_sequence_id(df,tablename)
     flag='update'  
     df.insert(1,'table_name',tablename)
     col_tuple=("table_name","id","sequence_id",
@@ -863,6 +874,7 @@ def download_extra_grade():
        "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Grade" where "active"='1' order by sequence_id ''', con=con)
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'extra_grade.xlsx'
+            df=df.style.apply(highlight_col, axis=None)
             print(file)
             df.to_excel(file,index=False)
             
@@ -1100,8 +1112,10 @@ def update_record_extra_grade_minibar():
     status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
     if(status['status']=='success'):email_status=email([status['tableid']],tablename)      
         
-    if(email_status=='success'): return {"status":"success"},200
+    
+    if(email_status=='success' or status['status']=='move_direct'): return {"status":"success"},200
     else: return {"status":"failure"},500
+
 
     
    
@@ -1119,13 +1133,13 @@ def upload_extra_grade_minibar():
          
          df=smb_df[["id","BusinessCode", "Customer Group","Market - Customer",
       "Market - Country", "Grade Category",
-       "Document Item Currency", "Amount", "Currency","sequence_id"]]  
+       "Document Item Currency", "Amount", "Currency"]]  
          df["id"]=df["id"].astype(int)
-         df["sequence_id"]=df["sequence_id"].astype(int)
+         
          
          df_main = pd.read_sql('''select "id","BusinessCode", "Customer Group","Market - Customer",
        "Market - Country", "Grade Category",
-       "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Grade - MiniBar" where "active"='1' order by sequence_id ''', con=con)
+       "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Grade - MiniBar" where "active"='1' order by sequence_id ''', con=con)
          
          df['Currency'] = df['Currency'].str.replace("'","")
          df3 = df.merge(df_main, how='left', indicator=True)
@@ -1199,6 +1213,7 @@ def  validate_extra_grade_minibar():
     # except:
     #     return {"status":"failure"},500
     tablename='SMB - Extra - Grade - MiniBar'
+    df=fun_ignore_sequence_id(df,tablename)
     flag='update'  
     
     df.insert(1,'table_name',tablename)
@@ -1252,6 +1267,7 @@ def download_extra_grade_minibar():
             df = pd.read_sql('''select id,sequence_id,"BusinessCode","Customer Group","Market - Customer","Market - Country","Grade Category","Document Item Currency","Amount", "Currency" from "SMB"."SMB - Extra - Grade - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'extra_grade_minibar.xlsx'
+            df=df.style.apply(highlight_col, axis=None)
             print(file)
             df.to_excel(file,index=False)
             
@@ -1454,11 +1470,14 @@ def update_record_extra_profile():
     email_status=''
     
     status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
-    if(status['status']=='success'):email_status=email([status['tableid']],tablename)      
+    if(status['status']=='success'):email_status=email([status['tableid']],tablename)
         
-    if(email_status=='success'): return {"status":"success"},200
+        
+        
+    if(email_status=='success' or status['status']=='move_direct'): return {"status":"success"},200
     else: return {"status":"failure"},500
-    
+
+
     
 
    
@@ -1477,15 +1496,15 @@ def upload_extra_profile():
             df=smb_df[["id","BusinessCode", "Market - Country",
        "Product Division", "Product Level 04", "Product Level 05",
        "Product Level 02", "Delivering Mill", "Document Item Currency",
-       "Amount", "Currency","sequence_id"]]  
+       "Amount", "Currency"]]  
             df["id"]=df["id"].astype(int)
-            df["sequence_id"]=df["sequence_id"].astype(int)
+            
             
             
             df_main = pd.read_sql('''select "id","BusinessCode", "Market - Country",
        "Product Division", "Product Level 04", "Product Level 05",
        "Product Level 02", "Delivering Mill", "Document Item Currency",
-       "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Profile" where "active"='1' order by sequence_id ''', con=con)
+       "Amount", "Currency" from "SMB"."SMB - Extra - Profile" where "active"='1' order by sequence_id ''', con=con)
             
             
             df['Currency'] = df['Currency'].str.replace("'","")
@@ -1563,6 +1582,7 @@ def  validate_extra_profile():
     # except:
     #     return {"status":"failure"},500
     tablename='SMB - Extra - Profile'
+    df=fun_ignore_sequence_id(df,tablename)
     flag='update'  
     
     # df.insert(1,'table_name',tablename)
@@ -1615,6 +1635,8 @@ def download_extra_profile():
             df = pd.read_sql('''select "id",sequence_id,"BusinessCode","Market - Country","Product Division","Product Level 04","Product Level 05","Product Level 02","Delivering Mill","Document Item Currency","Amount", "Currency" from "SMB"."SMB - Extra - Profile" where "active"='1' order by sequence_id ''', con=con)
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'extra_profile.xlsx'
+            
+            df=df.style.apply(highlight_col, axis=None)
             print(file)
             df.to_excel(file,index=False)
             
@@ -1869,7 +1891,10 @@ def update_record_extra_profile_minibar():
         
     status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
     if(status['status']=='success'):email_status=email([status['tableid']],tablename)
-    if(email_status=='success'): return {"status":"success"},200
+    
+    if(email_status=='success' or status['status']=='move_direct'): return {"status":"success"},200
+    else: return {"status":"failure"},500
+
 
     
    
@@ -1888,14 +1913,13 @@ def upload_extra_profile_minibar():
             df=smb_df[["id","BusinessCode", "Customer Group","Market - Customer",
        "Market - Country", "Product Level 04",
        "Product Level 05", "Product Level 02", "Delivering Mill",
-       "Document Item Currency", "Amount", "Currency","sequence_id"]]  
+       "Document Item Currency", "Amount", "Currency"]]  
             df["id"]=df["id"].astype(int)
-            df["sequence_id"]=df["sequence_id"].astype(int)
             
             df_main = pd.read_sql('''select "id","BusinessCode", "Customer Group","Market - Customer",
      "Market - Country", "Product Level 04",
        "Product Level 05", "Product Level 02", "Delivering Mill",
-       "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Profile - MiniBar" where "active"='1' order by sequence_id ''', con=con)
+       "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Profile - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             
             
             df['Currency'] = df['Currency'].str.replace("'","")
@@ -1974,6 +1998,7 @@ def  validate_extra_profile_minibar():
     # except:
     #     return {"status":"failure"},500
     tablename="SMB - Extra - Profile - MiniBar"
+    df=fun_ignore_sequence_id(df,tablename)
     flag='update'  
         
     df.insert(1,'table_name',tablename)
@@ -2032,6 +2057,8 @@ def download_extra_profile_minibar():
             df = pd.read_sql('''select id,sequence_id,"BusinessCode","Customer Group","Market - Customer","Market - Country","Product Level 04","Product Level 05","Product Level 02","Delivering Mill","Document Item Currency","Amount", "Currency" from "SMB"."SMB - Extra - Profile - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'extra_profile_minibar.xlsx'
+            
+            df=df.style.apply(highlight_col, axis=None)
             print(file)
             df.to_excel(file,index=False)
             
@@ -2267,8 +2294,11 @@ def update_record_extra_profile_Iberia():
     status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
     if(status['status']=='success'):email_status=email([status['tableid']],tablename)
 
-    if(email_status=='success'):return {"status":"success"},200
     
+    if(email_status=='success' or status['status']=='move_direct'): return {"status":"success"},200
+    else: return {"status":"failure"},500
+
+
     
     
     
@@ -2287,14 +2317,14 @@ def upload_extra_profile_Iberia():
             
             df=smb_df[["id","BusinessCode", "Market - Country",
        "Delivering Mill", "Product Level 02", "Product Level 05",
-       "Document Item Currency", "Amount", "Currency","sequence_id"]]  
+       "Document Item Currency", "Amount", "Currency"]]  
             df["id"]=df["id"].astype(int)
-            df["sequence_id"]=df["sequence_id"].astype(int)
+            
             
             
             df_main = pd.read_sql('''select "id","BusinessCode", "Market - Country",
        "Delivering Mill", "Product Level 02", "Product Level 05",
-       "Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Profile Iberia and Italy" where "active"='1' order by sequence_id ''', con=con)
+       "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Profile Iberia and Italy" where "active"='1' order by sequence_id ''', con=con)
             
             df['Currency'] = df['Currency'].str.replace("'","")
             df3 = df.merge(df_main, how='left', indicator=True)
@@ -2370,6 +2400,7 @@ def  validate_extra_profile_Iberia():
     # except:
     #     return {"status":"failure"},500
     tablename='SMB - Extra - Profile Iberia and Italy'
+    df=fun_ignore_sequence_id(df,tablename)
     flag='update'  
     
     df.insert(1,'table_name',tablename)
@@ -2420,6 +2451,7 @@ def download_extra_profile_Iberia():
             df = pd.read_sql('''select "id",sequence_id,"BusinessCode","Market - Country","Delivering Mill","Product Level 02","Product Level 05","Document Item Currency","Amount", "Currency" from "SMB"."SMB - Extra - Profile Iberia and Italy" where "active"='1' order by sequence_id ''', con=con)
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'extra_profile_Iberia.xlsx'
+            df=df.style.apply(highlight_col, axis=None)
             print(file)
             df.to_excel(file,index=False)
             
@@ -2677,7 +2709,10 @@ def update_record_extra_profile_Iberia_minibar():
     status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
     if(status['status']=='success'):email_status=email([status['tableid']],tablename)
     
-    if(email_status=='success'):return {"status":"success"},200
+    
+    if(email_status=='success' or status['status']=='move_direct'): return {"status":"success"},200
+    else: return {"status":"failure"},500
+
 
      
 
@@ -2697,15 +2732,15 @@ def upload_extra_profile_Iberia_minibar():
             df=smb_df[["id","BusinessCode", "Market - Country",
        "Market - Customer Group","Market - Customer", "Delivering Mill",
        "Product Level 02", "Product Level 05", "Document Item Currency",
-       "Amount", "Currency","sequence_id"]]  
+       "Amount", "Currency"]]  
             df["id"]=df["id"].astype(int)
-            df["sequence_id"]=df["sequence_id"].astype(int)
+            
             
             
             df_main = pd.read_sql('''select "id","BusinessCode", "Market - Country",
        "Market - Customer Group", "Market - Customer", "Delivering Mill",
        "Product Level 02", "Product Level 05", "Document Item Currency",
-       "Amount", "Currency",sequence_id from "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar" where "active"='1' order by sequence_id ''', con=con)
+       "Amount", "Currency" from "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             
             
             df['Currency'] = df['Currency'].str.replace("'","")
@@ -2782,6 +2817,7 @@ def  validate_extra_profile_Iberia_minibar():
     # except:
     #     return {"status":"failure"},500
     tablename='SMB - Extra - Profile Iberia and Italy - MiniBar'
+    df=fun_ignore_sequence_id(df,tablename)
     
     flag='update'
     df.insert(1,'table_name',tablename)
@@ -2836,6 +2872,8 @@ def download_extra_profile_Iberia_minibar():
             df = pd.read_sql('''select id,sequence_id,"BusinessCode","Market - Country","Market - Customer Group","Market - Customer","Delivering Mill","Product Level 02","Product Level 05","Document Item Currency","Amount", "Currency" from "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar" where "active"='1' order by sequence_id ''', con=con)
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'extra_profile_Iberia_minibar.xlsx'
+            
+            df=df.style.apply(highlight_col, axis=None)
             print(file)
             df.to_excel(file,index=False)
             
