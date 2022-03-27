@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Wed Oct 20 09:56:42 2021
-@author: subbu
-"""
+
 from flask import Flask, request, jsonify, make_response, request, render_template, session, flash,current_app
 import jwt
 import json
@@ -19,7 +16,7 @@ import pandas as pd
 from user_management import user_management_app
 from taskbar_invoice import taskbar_invoice_app
 
-
+from SMB_Generic import generic
 
 
 app = Flask(__name__)
@@ -39,7 +36,7 @@ app.register_blueprint(taskbar_invoice_app)
 app.register_blueprint(smb_history)
 
 
-
+app.register_blueprint(generic)
 
 con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
 cursor=con.cursor()

@@ -213,6 +213,7 @@ def upsert(col_tuple=None,input_tuple=None,flag='update',tablename=None,id_value
         tableid=''
         
         
+        
        
         
         if(flag=='update'):
@@ -258,9 +259,6 @@ def move_records(tablename,col_tuple,value_tuple,flag,id_value=None,sequence_id=
     al_columnstr=tuple_to_string(tuple(col_list))
     
     
-    print("***************")
-    print(col_tuple)
-    print(value_tuple)
     
     # case for updating the record
     
@@ -408,13 +406,16 @@ def aproval_data():
         query='''select * from "SMB"."SMB_Aproval" where tableid in {} and table_name='{}' '''.format(id_tuple,tablename)
         print(query)
         df=pd.read_sql(query,con=con)
-    
+       
         
         df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer_Group":"Market_Customer_Group","Zip_Code_(Dest)":"Zip_Code_Dest"},inplace=True)
         df.dropna(axis=1, how='all',inplace=True)
-        df['updated_on'] = df['updated_on'].astype('datetime64[s]')
-        df['updated_on']=pd.to_datetime(df['updated_on'])
-        df['updated_on']=df['updated_on'].astype(str)
+        try:
+            df['updated_on'] = df['updated_on'].astype('datetime64[s]')
+            df['updated_on']=pd.to_datetime(df['updated_on'])
+            df['updated_on']=df['updated_on'].astype(str)
+        except:
+            pass
         data=json.loads(df.to_json(orient='records'))
         
         return {"data":data,"lis":lis},200
@@ -427,6 +428,8 @@ def aprove_records():
     df=pd.DataFrame(data["data"])
     tablename=data['tablename']
     email=data['email']
+    
+    print(data)
     
     if(df['flag'][0]=='delete'):
             id_value=list(df['id'])
@@ -453,13 +456,13 @@ def aprove_records():
             except:pass
             
             if(flag=='update'):
-             df2=df.drop(['tableid','flag','updated_on'], axis = 1)
+             df2=df.drop(['tableid','flag','updated_on','status','table_name'], axis = 1)
              col_tuple=tuple(list(df2.columns))
              value_tuple=tuple(df2.loc[i])
              status=move_records(tablename,col_tuple,value_tuple,flag,id_value,sequence_id)
            
             else:
-               df2=df.drop(['tableid','flag','updated_on'], axis = 1)
+               df2=df.drop(['tableid','flag','updated_on','status','table_name'], axis = 1)
                col_tuple=tuple(list(df2.columns))
                value_tuple=tuple(df2.loc[i])
                status=move_records(tablename,col_tuple,value_tuple,flag,tableid)

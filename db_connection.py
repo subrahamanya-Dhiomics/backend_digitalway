@@ -14,3 +14,6 @@ con = pymssql.connect(
     )
 
 df=pd.read_sql('select * from dbo.ordertoofferV2',con=con)
+
+
+

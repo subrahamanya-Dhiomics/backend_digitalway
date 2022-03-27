@@ -141,7 +141,9 @@ def upload_files():
         data1.insert(1,'COND_TYPE',str(COND_TYPE))
         data1.insert(2,'DST_CH',str(DST_CH))
         data1.insert(3,'DIV',str(DIV))
+        
         data1['VKORG'][data1.Mill == "Hamburg"] ="0400"
+        data1['DST_CH'][data1.Mill == "Hamburg"] ="07"
         
         
         # filling the zeros & dropping the null values
@@ -303,7 +305,9 @@ def validate_files1():
     wire_df.insert(0,'Batch_ID',Batch_ID)
     wire_df.insert(1,'Username',username)
     wire_df.insert(2,'date_time',dt_string)
-    # wire_df.to_sql('alloy_surcharge_wire',con=engine, schema='alloy_surcharge',if_exists='append', index=False)
+    
+    wire_df.to_csv('wire_df.csv')
+    wire_df.to_sql('alloy_surcharge_wire',con=engine, schema='alloy_surcharge',if_exists='append', index=False)
     
     date_time= today.strftime("%Y%m%d")
     counter=str(Batch_ID)
@@ -495,7 +499,7 @@ def validate_files2():
         billet_df.insert(0,'Batch_ID',Batch_ID)
         billet_df.insert(1,'Username',username)
         billet_df.insert(2,'date_time',dt_string)
-        # billet_df.to_sql('alloy_surcharge_billet',con=engine, schema='alloy_surcharge',if_exists='append', index=False)
+        billet_df.to_sql('alloy_surcharge_billet',con=engine, schema='alloy_surcharge',if_exists='append', index=False)
         
         date_time= today.strftime("%Y%m%d")
         counter=str(Batch_ID)
@@ -637,10 +641,7 @@ def history():
         if(search_string !=None and search_string !="all"):
             
             filtered_data=df[df.eq(search_string).any(1)] 
-            print(df)
-            print(search_string)
-            print(filtered_data)
-            print("********************************")
+            
             filtered_data=json.loads(filtered_data.to_json(orient='records'))
         else:
             filtered_data=json.loads(df.to_json(orient='records'))

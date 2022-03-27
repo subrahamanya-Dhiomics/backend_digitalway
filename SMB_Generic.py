@@ -25,7 +25,8 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-from smb_phase1 import upsert,email
+from smb_phase1 import upsert,email,tuple_to_string,fun_ignore_sequence_id
+
 
 
 
@@ -73,19 +74,21 @@ class Database:
             self.cursor.close()
  
 # File Path 
-download_path=input_directory="C:/Users/Administrator/Documents/New 6 SMB Xl-Files/"   
+download_path=input_directory="C:/Users/Administrator/Documents/"  
  
 # flsk app declaration 
-generic = Flask(__name__)
+generic = Blueprint('generic', __name__)
 CORS(generic)
 db=Database()
+
+
 
 # Generic List
 @generic.route('/generic_list',methods=['GET','POST'])
 def generic_list():
     search_string=request.args.get("search_string")
-    tablename = request.args.get("tablename")
-    tablename=tablename.replace("*","&")
+    tablename = request.args.get("table_name")
+    
    
     limit=request.args.get("limit",type=int)
     offset=request.args.get("offset",type=int)
@@ -105,7 +108,6 @@ def generic_list():
     count=db.query('select count(*) from "SMB"."{}" where "active"=1 '.format(tablename))[0][0]
     df.columns = df.columns.str.replace(' ', '_')
     
-    print("*************** ",query)
     if(search_string!="all" and search_string!=None):
                   df=df[df.eq(search_string).any(1)]
     
@@ -117,8 +119,8 @@ def generic_list():
 @generic.route('/generic_get',methods=['GET','POST'])   
 def generic_get():
     id_value=request.args.get('id')  
-    tablename = request.args.get('tablename')
-    tablename = tablename.replace("*","&")
+    tablename = request.args.get('table_name')
+   
     
     query='''select * from "SMB"."{}" where "id"={} '''.format(tablename,id_value)
     
@@ -131,89 +133,266 @@ def generic_get():
     except:
         return {"status":"failure"},500
     
-# Add New Data
+    
+@generic.route('/generic_download',methods=['GET'])
+def  generic_download():
+        tablename = request.args.get('table_name')
+       
+        now = datetime.now()
+        col_df=pd.read_sql(''' select * from "SMB"."{}" where "active"='1' order by sequence_id  '''.format(tablename),con)
+        constant_cols=['id','sequence_id']
+        
+        rm_col = ['Username','active','aprover1','aprover2','aprover3','updated_on']
+        col_df.drop(axis=1,columns=rm_col,inplace=True)
+        
+        cols=list(col_df.columns)
+        for col in constant_cols: cols.remove(col)
+        
+        col_df=col_df[constant_cols+cols]
+        t=now.strftime("%d-%m-%Y-%H-%M-%S")
+        file=download_path+ t + tablename + '.xlsx'
+        col_df.to_excel(file,index=False)
+        
+        return send_file(file, as_attachment=True)
+    
+    
+    
+    
+    
+@generic.route('/generic_delete',methods=['POST','GET','DELETE'])
+def generic_delete():  
+    id_value  = json.loads(request.data)['id'][1:]
+    
+    print(id_value)
+    print("****")
+    tablename = json.loads(request.data)['id'][0]
+    
+   
+   
+    status=email(id_value,tablename,'delete')
+    
+    if(status=='success'):return {"status":"success"},200
+    else: return {"status":"failure"},500
+   
+    
+    
+    return {'table ':tablename,'id ':id_value}
+    
 @generic.route('/generic_add',methods=['POST'])
 def generic_add():
     username = getpass.getuser()
     data = json.loads(request.data)
-    tablename = data['tablename']
-    tablename = tablename.replace("*","&")
+    tablename = data['table_name']
+   
     flag='add'
+    del data['table_name']
     
-    col_df=pd.read_sql(''' select * from "SMB"."{}"'''.format(tablename),con)
-    rm_col = ['id','active','aprover1','aprover2','aprover3','updated_on']
-    col_df.drop(axis=1,columns=rm_col,inplace=True)
-    col_df=list(col_df)
-    col_tuple = ["tablename","flag"]
-    col_tuple.extend(col_df)
-    col_tuple = tuple(col_tuple)
+    lis = [n.replace('_', ' ') for n in list(data.keys())]
+    col_tuple=tuple(["flag","Username","table_name"]+lis)
     
-    value = data.values()
-    value = list(value)
-    input_tuple = [tablename,flag,username]
-    input_tuple.extend(value)
-    input_tuple.pop(-1)
-    input_tuple = tuple(input_tuple)
+    input_tuple=tuple([flag,username,tablename]+list(data.values()))
+    
+    status=upsert(col_tuple,input_tuple,flag,tablename)
+    if(status['status']=='success'): email_status=email([status['tableid']],tablename)
+    
+    if(email_status=='success'): return {"status":"success"},200
+    else: return {"status":"failure"},500
+    
+
+
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+# Add New Data
+
+    
+    
+    
+    
+    
+    
+    # col_df=pd.read_sql(''' select * from "SMB"."{}"'''.format(tablename),con)
+    # rm_col = ['id','active','aprover1','aprover2','aprover3','updated_on']
+    # col_df.drop(axis=1,columns=rm_col,inplace=True)
+    # col_df=list(col_df)
+    # col_tuple = ["tablename","flag"]
+    # col_tuple.extend(col_df)
+    # col_tuple = tuple(col_tuple)
+    
+    # value = data.values()
+    # value = list(value)
+    # input_tuple = [tablename,flag,username]
+    # input_tuple.extend(value)
+    # input_tuple.pop(-1)
+    # input_tuple = tuple(input_tuple)
         
     # status=upsert(col_tuple,input_tuple,flag,tablename)
     # if(status['status']=='success'): email_status=email([status['tableid']],tablename)
     
     # if(email_status=='success'): return {"status":"success"},200
     # else: return {"status":"failure"},500
-    
-    return {'col ':col_tuple,'in ':input_tuple}
-    
+  
     
 # Delete Data 
-@generic.route('/generic_delete',methods=['POST','GET','DELETE'])
-def generic_delete():  
-    id_value  = json.loads(request.data)['id'][1:]
-    tablename = json.loads(request.data)['id'][0]
-    tablename = tablename.replace("*","&")
-   
-    # status=email(id_value,tablename,'delete')
-    # if(status=='success'):return {"status":"success"},200
-    # else: return {"status":"failure"},500
-    
-    return {'table ':tablename,'id ':id_value}
+
 
 # Download Data
-@generic.route('/generic_download',methods=['GET'])
-def  generic_download():
-        tablename = request.args.get('tablename')
-        tablename = tablename.replace("*","&")
-        now = datetime.now()
-        
-        col_df=pd.read_sql(''' select * from "SMB"."{}"'''.format(tablename),con)
-        rm_col = ['Username','active','aprover1','aprover2','aprover3','updated_on']
-        col_df.drop(axis=1,columns=rm_col,inplace=True)
-        df=col_df
-        
-        ls=list(df.columns)
-        # ls = ls[-1:] + ls[:-1]
-        df=df[ls]
-        
-        t=now.strftime("%d-%m-%Y-%H-%M-%S")
-        file=download_path+ t + tablename + '.xlsx'
-        df.to_excel(file,index=False)
-        
-        return send_file(file, as_attachment=True)
+
        
 # File Upload
 @generic.route('/generic_upload', methods=['GET','POST'])
 def generic_upload():
-        f=request.files['filename']
-        f.save(input_directory+f.filename)
-        tablename = f.filename
-        print(tablename)
-        smb_df=pd.read_excel(input_directory+f.filename,dtype=str)
-        smb_df.columns = smb_df.columns.str.replace(" ","_")
-        smb_df.rename(columns={'Business_Code' :'BusinessCode','Unit_of_Quantity':'UnitOf_Quantity'},inplace=True)
-        data = json.loads(smb_df.to_json(orient='records'))
+            f=request.files['filename']
+            f.save(input_directory+f.filename)
+            tablename = f.filename
+            
+                
+       
+            df=pd.read_excel(input_directory+f.filename,dtype=str)
+            df['id'] = df['id'].astype(int)
+          
+            df.drop(axis=1,columns=['sequence_id'],inplace=True)
+            
+            
+            colstr=tuple_to_string(tuple(df.columns))
+            
+            query=''' select {} from "SMB"."{}" where "active"='1' order by sequence_id  '''.format(colstr,tablename)
+            print(query)
+            df_main=pd.read_sql(query,con)
+            
+           
+            df['Currency'] = df['Currency'].str.replace("'","")
+            
+            df3 = df.merge(df_main, how='left', indicator=True)
+            df3=df3[df3['_merge']=='left_only']
+            
+            df3.drop(['_merge'],axis=1,inplace=True)
+            
+            table=json.loads(df3.to_json(orient='records'))
+           
+            return {"data":table},200
         
-        return {"data":data},200
+        
+@generic.route('/generic_validate',methods=['GET','POST'])
+def generic_validate():
+    json_data=json.loads(request.data)
+    username = getpass.getuser() 
+    now = datetime.now()
+    date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
+    print(json_data)
+    
+    df=pd.DataFrame(json_data["billet"]) 
+    
+    tablename=json_data['table_name']
+    
+    
+      
+    df.insert(0,'Username',username)
+    df.insert(1,'table_name',tablename)
+    
+    
+    
+    
+    df=fun_ignore_sequence_id(df,tablename)        
+   
+    cols=list(df.columns)
+    rm_col=["table_name","id","sequence_id","Username"]
+    for c in rm_col:
+        cols.remove(c)
+    
+    df=df[rm_col+cols]
+    
+    flag='update'  
+    
+    
+    col_tuple=tuple(df.columns)
+    id_value=[]
+  
+  
+    
+    for i in range(0,len(df)):
+        status=upsert(col_tuple,tuple(df.loc[i]),flag,tablename,df['id'][i])
+        id_value.append(status['tableid'])
+        
+    if(status['status']=='success'):
+        email_status=email(id_value,tablename)
+        print("mail_sent")
+  
+    return {"status":"success"},200
+       
+            
+       #      df=smb_df[["id","Delivering Mill", "Market - Country",
+       # "Zip Code (Dest)", "Product Division", "Document Item Currency",
+       # "Amount", "Currency"]]  
+            
+       #      df["id"]=df["id"].astype(int)
+            
+            
+       #      df_main = pd.read_sql('''select "id","Delivering Mill", "Market - Country",
+       # "Zip Code (Dest)", "Product Division", "Document Item Currency",
+       # "Amount", "Currency" from "SMB"."SMB - Extra - Freight Parity" where "active"='1' order by sequence_id ''', con=con)
+       #      df['Currency'] = df['Currency'].str.replace("'","")
+            
+       #      df3 = df.merge(df_main, how='left', indicator=True)
+       #      df3=df3[df3['_merge']=='left_only']
+            
+       #      df3.columns = df3.columns.str.replace(' ', '_')
+       #      df3.rename(columns={"Market_-_Country":"Market_Country","Zip_Code_(Dest)":"Zip_Code_Dest"},inplace=True)
+        
+       #      df3.drop(['_merge'],axis=1,inplace=True)
+            
+       #      table=json.loads(df3.to_json(orient='records'))
+            
+       #      return {"data":table},200
+       
+    
+    
+    
+    
+    
+    
 
 # Update data
+
 @generic.route('/generic_update',methods=['POST'])
 def generic_update():
     
@@ -221,21 +400,34 @@ def generic_update():
     username = getpass.getuser()
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
+    
+    
     data = dict(json.loads(request.data))
-    tablename=data['tablename'] = data['tablename'].replace("*","&")
+
+    tablename=data['table_name']
+    id_value=data['id_value']
+    flag='update'
+    df=pd.DataFrame([data])
+  
+    rm_col=["table_name","id_value","sequence_id","Username"]
+    for k in rm_col:
+       del data[k]
     
-    col_df=pd.read_sql(''' select * from "SMB"."{}"'''.format(tablename),con)
-    rm_col = ['Username','active','aprover1','aprover2','aprover3','updated_on']
-    col_df.drop(axis=1,columns=rm_col,inplace=True)
-    col_df=list(col_df)
-    col_df.append("tablename")
-    col_df = col_df[-1:] + col_df[:-1]
-    col_tuple = tuple(col_df)
+    df=df[rm_col+list(data.keys())]
     
-    value = list(data.values())
-    value = value[-1:] + value[:-1]
-    input_tuple = tuple(value)
+    db_cols=[n.replace('_', ' ') for n in list(data.keys())]
+    col_tuple=["table_name","id","sequence_id","Username"] + db_cols
+    input_tuple=tuple(df.loc[0])
     
-    return {'col_tuple':col_tuple,'in_tuple':input_tuple}
+    status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
+    if(status['status']=='success'):email_status=email([status['tableid']],tablename)
     
-generic.run()
+    
+    
+    if(email_status=='success' or status['status']=='move_direct'): return {"status":"success"},200
+    else: return {"status":"failure"},500
+    
+
+
+
+
