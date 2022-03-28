@@ -146,7 +146,8 @@ def web_api():
              return {"data":df_json,"status":"sucess"}
          except:
              return {"status":"invalid request"}
-       
+
+        
  
 if __name__ == '__main__':
     # app.run(host='172.16.4.190')

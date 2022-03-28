@@ -254,7 +254,8 @@ def move_records(tablename,col_tuple,value_tuple,flag,id_value=None,sequence_id=
     columnstr=tuple_to_string(col_tuple)
     
     col_list=list(col_tuple)
-    col_list.append("Username")
+    if("Username" not in col_list):
+     col_list.append("Username")
     col_list.remove("aprover1")
     al_columnstr=tuple_to_string(tuple(col_list))
     
@@ -454,12 +455,19 @@ def aprove_records():
                 id_value=df['id'][i]
                 sequence_id=df['sequence_id'][i]
                 
-            except:pass
+            except:
+                pass
             
             if(flag=='update'):
              df2=df.drop(['tableid','flag','updated_on','status','table_name'], axis = 1)
              col_tuple=tuple(list(df2.columns))
              value_tuple=tuple(df2.loc[i])
+             print(col_tuple)
+             print(tablename)
+             print(value_tuple)
+             print(id_value)
+             print(sequence_id)
+             print("******")
              status=move_records(tablename,col_tuple,value_tuple,flag,id_value,sequence_id)
            
             else:

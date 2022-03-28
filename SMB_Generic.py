@@ -384,10 +384,44 @@ def generic_validate():
        #      return {"data":table},200
        
     
+
+@generic.route('/generic_history',methods=['POST','GET'])
+def generic_history():
     
+    search_string=request.args.get("search_string")
+    table_name=request.args.get('table_name')
     
+    limit=request.args.get("limit",type=int)
+    offset=request.args.get("offset",type=int)
     
+    # pagination logic
+    lowerLimit=offset*limit 
+    upperLimit=lowerLimit+limit
+ 
+    # fetching the data from database and filtering    
+   
+    df = pd.read_sql('''select * from "SMB"."{}_History"   OFFSET {} LIMIT {}'''.format(table_name,lowerLimit,upperLimit), con=con)
+    count=db.query('select count(*) from "SMB"."{}_History" '.format(table_name))[0][0]
+    df.columns = df.columns.str.replace(' ', '_')
     
+    df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer_Group":"Market_Customer_Group","Market_-_Customer":"Market_Customer"},inplace=True)
+    df['updated_on'] = df['updated_on'].astype('datetime64[s]')
+    df['updated_on']=pd.to_datetime(df['updated_on'])
+    df['updated_on']=df['updated_on'].astype(str)
+   
+    # print(df['updated_on'])
+    
+    if(search_string!="all" and search_string!=None):
+                  df=df[df.eq(search_string).any(1)]
+    
+    table=json.loads(df.to_json(orient='records'))
+    
+    return {"data":table,"totalCount":count},200         
+   
+    
+
+
+
     
 
 # Update data
@@ -423,6 +457,7 @@ def generic_update():
     print(input_tuple)
     print("*****")
     
+    email_status=''
     
     status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
     if(status['status']=='success'):email_status=email([status['tableid']],tablename)
@@ -431,7 +466,6 @@ def generic_update():
     
     if(email_status=='success' or status['status']=='move_direct'): return {"status":"success"},200
     else: return {"status":"failure"},500
-    
 
 
 
