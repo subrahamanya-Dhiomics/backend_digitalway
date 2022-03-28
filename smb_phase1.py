@@ -431,6 +431,7 @@ def aprove_records():
     
     print(data)
     
+    
     if(df['flag'][0]=='delete'):
             id_value=list(df['id'])
             id_value.append(0)

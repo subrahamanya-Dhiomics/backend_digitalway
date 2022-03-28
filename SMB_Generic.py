@@ -234,9 +234,8 @@ def generic_add():
     
     
     
-    
-    
-    
+
+
     
     
     
@@ -418,6 +417,12 @@ def generic_update():
     db_cols=[n.replace('_', ' ') for n in list(data.keys())]
     col_tuple=["table_name","id","sequence_id","Username"] + db_cols
     input_tuple=tuple(df.loc[0])
+    
+    
+    print(col_tuple)
+    print(input_tuple)
+    print("*****")
+    
     
     status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
     if(status['status']=='success'):email_status=email([status['tableid']],tablename)
