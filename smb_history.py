@@ -45,9 +45,6 @@ db=Database()
 input_directory="C:/Users/Administrator/Documents/SMB_INPUT/"
 
 
-#download_path='C:/SMB/smb_download/'
-
-
 
 @smb_history.route('/history_delivering_mill_MiniBar',methods=['GET'])
 def  download_delivery_mill_minibar_history():
@@ -307,7 +304,7 @@ def download_Extra_Freight_Parity_History():
         count=db.query('select count(*) from "SMB"."SMB - Extra - Freight Parity_History"')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
-        df.rename(columns={"Market_-_Country":"Market_Country"},inplace=True)
+        df.rename(columns={"Market_-_Country":"Market_Country","Zip_Code_(Dest)":"Zip_Code_Dest"},inplace=True)
         df['updated_on'] = df['updated_on'].astype('datetime64[s]')
         df['updated_on']=pd.to_datetime(df['updated_on'])
         df['updated_on']=df['updated_on'].astype(str)

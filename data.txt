@@ -1,1 +1,0 @@
-b'{"tableId":"2","data": {"BusinessCode":"*","Certificate":"*","Grade Category":"*","Market - Country":"*","Delivering Mill":"*","Document Item Currency":"*"}}'

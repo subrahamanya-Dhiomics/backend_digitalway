@@ -38,19 +38,21 @@ scrap_app = Blueprint('scrap_app', __name__)
 
 CORS(scrap_app)
 
-con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
+con = psycopg2.connect(dbname='offertool',user='pgadmin',password='Sahara_17',host='offertool2-qa.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
 cur = con.cursor()
 
 
-consql = pymssql.connect(
-    host = "ocpphasesql1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com",
-    user = "admin",
-    password = "ocpphasesql1"
-    ,database='OCPPhasePostgresProd'
-    )
 
-csv_out_path="C:/Users/Administrator/Documents/findout/"
-input_path="C:/Users/Administrator/Documents/Input_files"
+
+consql = psycopg2.connect(dbname='offertool',user='pgadmin',password='Sahara_17',host='offertool2-qa.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
+
+
+
+# csv_out_path="C:/Users/Administrator/Documents/"
+# input_path="C:/Users/Administrator/Documents/"
+
+# csv_out_path="/home/ubuntu/mega_dir/"
+# input_path="/home/ubuntu/mega_dir/"
 
 engine = create_engine('postgresql://postgres:ocpphase01@ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com:5432/offertool')
 
@@ -164,7 +166,8 @@ def upload_files():
         
         
         
-        df=pd.read_sql('select * from dbo.ordertoofferV2',con=consql)
+        df=pd.read_sql('select * from offertool.ordertoofferV2',con=consql)
+        
         
         data1['Customer_ID']=data1['Customer_ID'].astype(str,errors='ignore')
         data1['Internal_Grade']=data1['Internal_Grade'].astype(str)
@@ -194,7 +197,10 @@ def upload_files():
         
         
             data=df.merge(ds,left_on=['accountcode','grade'],right_on=['Customer_ID','Internal_Grade'])
+            
+            
             data=data[   ((pd.to_datetime(data['Month_year'], format='%Y%m')) >= (pd.to_datetime(data['frompriceperiod'], format='%Y%m'))  )  &  ((pd.to_datetime(data['Month_year'], format='%Y%m')) <=(pd.to_datetime(data['topriceperiod'], format='%Y%m')))]
+            
             data=data[['accountcode','pricemodel','offerid','Month_year','grade','frompriceperiod','topriceperiod']]
            
             data['pricemodel']=data['pricemodel'].astype(float,errors='ignore')

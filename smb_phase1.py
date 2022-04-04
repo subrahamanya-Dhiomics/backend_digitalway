@@ -84,6 +84,18 @@ CORS(smb_app1)
 db=Database()
 
 
+def get_required_columns(cols):
+    rem=['aprover1','aprover2','aprover3','sequence_id','active']
+    
+    for r in rem:
+        try:
+         cols.remove(r)
+        except:
+            pass
+    return  cols
+def move_deleted_record():
+    return 'dsf'
+
 #user defined functions section 
 # 1)token generation
 # 2)tuple to string (return columns in string)
@@ -98,7 +110,7 @@ def token_required(func):
     def decorated(*args, **kwargs):
         #token = request.args.get('token')
         #if 'x-access-token' in request.headers:
-        token = request.headers['x-access-token']        
+        token = request.headers['x-access-token']  
        
         try:
             data = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=["HS256"])
@@ -126,7 +138,9 @@ def highlight_col(x):
 
     
 def test(col_tuple,input_tuple,id_value,tablename):
-   
+    
+    print(col_tuple)
+    print(input_tuple)
     sequence_id=''
     col_tuple=list(col_tuple)
     input_tuple=list(input_tuple)
@@ -144,9 +158,9 @@ def test(col_tuple,input_tuple,id_value,tablename):
     
     query=''' select {} from "SMB"."{}" where id={} '''.format(columnstr,tablename,id_value)
     
-    
-    
+   
     dat=list(db.query(query)[0])
+    
     
     if(dat[0]!=input_tuple[0]):
     
@@ -313,27 +327,30 @@ def move_records(tablename,col_tuple,value_tuple,flag,id_value=None,sequence_id=
         
     # case for adding the record
     if(flag=='add'):
+        
+        print(columnstr)
+        print(value_tuple)
+        print("*******")
         query='''INSERT INTO "SMB"."{}"(
              
             {})
              VALUES{};'''.format(tablename,columnstr,value_tuple)
-        print(query)
+        
         status=db.insert(query)
         if(status!='failed'):
             db.insert(''' delete from "SMB"."SMB_Aproval" where tableid={} '''.format(id_value))
-            status='success'
-        
+            status='success'     
         return status
     
 
-def email(id_value,tablename,flag='change'):  
+def email(id_value,tablename,flag='change',username='admin'):  
           
        
         
         encoded_id = cryptocode.encrypt(str(id_value),current_app.config["mypassword"])
         ## And then to decode it:
         
-        approver='subrahamanya.shetty@dhiomics.com'
+        approver='arriluceaz@gmail.com'
         mail_from='''subrahamanya@digitalway-lu.com'''
         
        
@@ -343,10 +360,10 @@ def email(id_value,tablename,flag='change'):
         msg['To'] = approver
         #print(user)
         html=''
-        with open('email_aproval.html', 'r') as f:
+        with open('/home/ubuntu/SMBPricingAPI/backend_digitalway/email_aproval.html', 'r') as f:
          html = f.read()
         
-        html=html.format(tablename,'subbu',id_value,encoded_id,tablename,flag)
+        html=html.format(tablename,username,id_value,encoded_id,tablename,flag)
 
         part = MIMEText(html, 'html')
         msg.attach(part)
@@ -361,8 +378,8 @@ def email(id_value,tablename,flag='change'):
 
 # delcaring the paths
 
-download_path=input_directory="C:/Users/Administrator/Documents/"
-# download_path=input_directory="/home/ubuntu/mega_dir/"
+# download_path=input_directory="C:/Users/Administrator/Documents/"
+download_path=input_directory="/home/ubuntu/mega_dir/"
 
 
 
@@ -434,15 +451,28 @@ def aprove_records():
     
     
     if(df['flag'][0]=='delete'):
+        
+           
             id_value=list(df['id'])
             id_value.append(0)
             id_value=tuple(id_value)
                         
             query='''UPDATE "SMB"."{}" SET "active"=0 WHERE "id" in {} '''.format(tablename,id_value)
+            result=db.insert(query)
+            df=pd.read_sql('''select * from "SMB"."{}" limit 1'''.format(tablename),con)
+            cols=get_required_columns(list(df.columns))
+            
+            col_string=tuple_to_string(tuple(cols))
+            
+            query='''insert into "SMB"."{}_History"({}) select {} from 
+"SMB"."{}" where "id" in {} '''.format(tablename,col_string,col_string,tablename,id_value)
             print(query)
+            
+            
             result=db.insert(query)
             
             return {"status":"success"},200
+        
         
         
     else:
@@ -462,16 +492,15 @@ def aprove_records():
              df2=df.drop(['tableid','flag','updated_on','status','table_name'], axis = 1)
              col_tuple=tuple(list(df2.columns))
              value_tuple=tuple(df2.loc[i])
-             print(col_tuple)
-             print(tablename)
-             print(value_tuple)
-             print(id_value)
-             print(sequence_id)
-             print("******")
+           
              status=move_records(tablename,col_tuple,value_tuple,flag,id_value,sequence_id)
            
             else:
                df2=df.drop(['tableid','flag','updated_on','status','table_name'], axis = 1)
+               
+               sequence_id=db.query(''' select max(sequence_id) from "SMB"."{}" where "active"=1 '''.format(tablename))[0][0]+1
+               df2.insert(0,"sequence_id",sequence_id)
+               
                col_tuple=tuple(list(df2.columns))
                value_tuple=tuple(df2.loc[i])
                status=move_records(tablename,col_tuple,value_tuple,flag,tableid)
@@ -562,7 +591,8 @@ def get_record():
 @smb_app1.route('/update_record_baseprice',methods=['POST'])
 @token_required
 def update_record1():
-        username = getpass.getuser()
+        username=request.headers['username']
+       
         now = datetime.now()
         date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
         
@@ -598,7 +628,7 @@ def update_record1():
         email_status=''
         
         status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
-        if(status['status']=='success'):email_status=email([status['tableid']],tablename)
+        if(status['status']=='success'):email_status=email([status['tableid']],tablename,username=username)
         
         
         
@@ -626,7 +656,8 @@ def delete_record():
 @smb_app1.route('/add_record_baseprice',methods=['POST'])
 @token_required
 def add_record1():
-    username = getpass.getuser()
+    username=request.headers['username']
+    
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     
@@ -717,7 +748,8 @@ def fun_ignore_sequence_id(df,tablename):
 @token_required
 def  SMB_validate():
     json_data=json.loads(request.data)
-    username = getpass.getuser() 
+    username=request.headers['username']
+     
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     
@@ -840,9 +872,6 @@ def delete_record_baseprice_mini():
     status=email(id_value,tablename,'delete')
     if(status=='success'):return {"status":"success"},200
     else: return {"status":"failure"},500
-    
-    
-
 
 
 
@@ -867,7 +896,8 @@ def get_record_minibar():
 @smb_app1.route('/update_record_baseprice_category_minibar',methods=['POST'])
 @token_required
 def update_record_category_minibar():
-        username = getpass.getuser()
+        username=request.headers['username']
+    
         now = datetime.now()
         date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
         query_parameters =json.loads(request.data) 
@@ -906,7 +936,7 @@ def update_record_category_minibar():
         email_status=''
         
         status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
-        if(status['status']=='success'):email_status=email([status['tableid']],tablename)
+        if(status['status']=='success'):email_status=email([status['tableid']],tablename,username=username)
         
         
         
@@ -920,7 +950,8 @@ def update_record_category_minibar():
 def add_record_mini():
     
     today = date.today()
-    username = getpass.getuser()
+    username=request.headers['username']
+    
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     query_parameters =json.loads(request.data)
@@ -1011,7 +1042,8 @@ def  SMB_upload_baseprice_minibar():
 @token_required
 def  SMB_validate_baseprice_minibar():
     json_data=json.loads(request.data)
-    username = getpass.getuser() 
+    username=request.headers['username']
+     
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     
@@ -1164,7 +1196,8 @@ def get_record_incoterm():
 def update_record_incoterm():
         
         today = date.today()
-        username = getpass.getuser()
+        username=request.headers['username']
+    
         now = datetime.now()
         date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
         query_parameters =json.loads(request.data)
@@ -1202,7 +1235,7 @@ def update_record_incoterm():
         email_status=''
         
         status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
-        if(status['status']=='success'):email_status=email([status['tableid']],tablename)
+        if(status['status']=='success'):email_status=email([status['tableid']],tablename,username=username)
         
         
         
@@ -1215,7 +1248,8 @@ def update_record_incoterm():
 def add_record_incoterm():
     
     today = date.today()
-    username = getpass.getuser()
+    username=request.headers['username']
+    
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     query_parameters =json.loads(request.data)
@@ -1299,7 +1333,8 @@ def  SMB_upload_baseprice_incoterm():
 @token_required
 def  SMB_validate_baseprice_incoterm():
     json_data=json.loads(request.data)
-    username = getpass.getuser() 
+    username=request.headers['username']
+     
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     
@@ -1451,7 +1486,8 @@ def get_record_extra_certificate():
 def add_record_extra_certificate():
     
     today = date.today()
-    username = getpass.getuser()
+    username=request.headers['username']
+    
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     query_parameters =json.loads(request.data)
@@ -1489,7 +1525,7 @@ def add_record_extra_certificate():
     email_status=''
         
     status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
-    if(status['status']=='success'):email_status=email([status['tableid']],tablename)
+    if(status['status']=='success'):email_status=email([status['tableid']],tablename,username=username)
     
     if(email_status=='success' or status['status']=='move_direct'): return {"status":"success"},200
     else: return {"status":"failure"},500
@@ -1500,7 +1536,8 @@ def add_record_extra_certificate():
 @token_required
 def smb_add_certificate():
     today = date.today()
-    username = getpass.getuser()
+    username=request.headers['username']
+    
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     query_parameters =json.loads(request.data)
@@ -1592,7 +1629,8 @@ def  validate_extra_certificate():
     
         
     json_data=json.loads(request.data)
-    username = getpass.getuser() 
+    username=request.headers['username']
+     
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     
@@ -1746,7 +1784,8 @@ def update_record_extra_certificate_minibar():
     
     
     today = date.today()
-    username = getpass.getuser()
+    username=request.headers['username']
+    
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     query_parameters =json.loads(request.data)
@@ -1778,7 +1817,7 @@ def update_record_extra_certificate_minibar():
     email_status=''
         
     status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
-    if(status['status']=='success'):email_status=email([status['tableid']],tablename)
+    if(status['status']=='success'):email_status=email([status['tableid']],tablename,username=username)
 
     if(email_status=='success' or status['status']=='move_direct'): return {"status":"success"},200
     else: return {"status":"failure"},500
@@ -1792,7 +1831,8 @@ def update_record_extra_certificate_minibar():
 def add_record_extra_certificate_minibar():
     
     
-    username = getpass.getuser()
+    username=request.headers['username']
+    
     
     query_parameters =json.loads(request.data)
     
@@ -1820,7 +1860,7 @@ def add_record_extra_certificate_minibar():
 "Grade Category","Customer Group","Market - Customer","Document Item Currency","Amount","Currency")
     
     status=upsert(col_tuple,input_tuple,flag,tablename)
-    if(status['status']=='success'): email_status=email([status['tableid']],tablename)
+    if(status['status']=='success'): email_status=email([status['tableid']],tablename,username=username)
     
     if(email_status=='success'): return {"status":"success"},200
     else: return {"status":"failure"},500
@@ -1875,7 +1915,8 @@ def  Upload_extra_certificate_minibar():
 @token_required
 def  validate_extra_certificate_minibar():
     json_data=json.loads(request.data)
-    username = getpass.getuser() 
+    username=request.headers['username']
+     
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     
@@ -2020,7 +2061,8 @@ def get_record_delivery_mill():
 def update_record_delivery_mill():
     
     today = date.today()
-    username = getpass.getuser()
+    username=request.headers['username']
+    
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     query_parameters =json.loads(request.data)
@@ -2057,7 +2099,7 @@ def update_record_delivery_mill():
     email_status=''
         
     status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
-    if(status['status']=='success'):email_status=email([status['tableid']],tablename)
+    if(status['status']=='success'):email_status=email([status['tableid']],tablename,username=username)
     
     if(email_status=='success' or status['status']=='move_direct'): return {"status":"success"},200
     else: return {"status":"failure"},500
@@ -2070,7 +2112,8 @@ def update_record_delivery_mill():
 def add_record_delivery_mill():
     
     
-    username = getpass.getuser()
+    username=request.headers['username']
+    
    
     query_parameters =json.loads(request.data)
     
@@ -2162,7 +2205,8 @@ def  validate_delivery_mill():
     
         
     json_data=json.loads(request.data)
-    username = getpass.getuser() 
+    username=request.headers['username']
+     
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     
@@ -2315,7 +2359,8 @@ def get_record_delivery_mill_minibar():
 def update_record_delivery_mill_minibar():
 
     today = date.today()
-    username = getpass.getuser()
+    username=request.headers['username']
+    
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     query_parameters =json.loads(request.data)
@@ -2348,7 +2393,7 @@ def update_record_delivery_mill_minibar():
     email_status=''
         
     status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
-    if(status['status']=='success'):email_status=email([status['tableid']],tablename)
+    if(status['status']=='success'):email_status=email([status['tableid']],tablename,username=username)
     if(email_status=='success' or status['status']=='move_direct'): return {"status":"success"},200
     else: return {"status":"failure"},500
    
@@ -2359,7 +2404,8 @@ def update_record_delivery_mill_minibar():
 @token_required
 def add_record_delivery_mill_minibar():
     
-    username = getpass.getuser()
+    username=request.headers['username']
+    
     
     query_parameters =json.loads(request.data)
     
@@ -2441,7 +2487,8 @@ def  validate_delivery_mill_minibar():
     
         
     json_data=json.loads(request.data)
-    username = getpass.getuser() 
+    username=request.headers['username']
+     
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     

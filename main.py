@@ -24,19 +24,17 @@ CORS(app)
 
 
 app.register_blueprint(scrap_app)
-
 app.register_blueprint(smb_app1)
-
 app.register_blueprint(smb_app2)
 app.register_blueprint(smb_app3)
 app.register_blueprint(taskbar1)
-
 app.register_blueprint(user_management_app)
 app.register_blueprint(taskbar_invoice_app)
 app.register_blueprint(smb_history)
-
-
 app.register_blueprint(generic)
+
+
+con1=psycopg2.connect(dbname='offertool',user='pgadmin',password='Sahara_17',host='offertool2-qa.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
 
 con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
 cursor=con.cursor()
@@ -90,66 +88,108 @@ def login():
         return make_response('Unable to verify',  {'WWW-Authenticate': 'Basic realm: "Authentication Failed "'}),500
 
 
+# @app.route("/SMBMinibarService",methods=['GET','POST'])
+# def web_api():
+    
+#     data=str( request.data)
+   
+#     text_file = open("data.txt", "w")
+
+
+#     text_file.write(data)
+   
+#     text_file.close()
+#     data=json.loads(request.data)
+    
+#     if(str(data)[0]=='['):
+#         data=data[0]
+    
+#     tableId = data['tableId']
+#     data=data['data']
+#     wherestr=''
+#     db.insert("rollback")
+#     query='select tablename from "SMB"."table_mapping" where id ={}'.format(tableId)
+#     tableName=db.query(query)[0][0]
+#     for i in list(data):
+#         if(data[i]=="*"):
+#             del data[i]
+            
+   
+#     k=0
+#     query='''select * from "SMB"."{}" where '''.format(tableName)
+#     for i in data:
+#         if(k==0):
+#             wherestr=wherestr +'"' + i +'"' +" = " + "'" +str(data[i])+"'"
+#             k=1
+       
+           
+#         elif(k==1):
+#             wherestr=wherestr + " and " +'"' + i +'"' +" = " + "'" +str(data[i])+"'"
+#     query=query+wherestr
+#     if(len(data)==0):
+#         query=''' select * from "SMB"."{}" '''.format(tableName)
+        
+#     query+=" order by sequence_id asc limit 1"
+#     print(query)
+#     data=db.query(query)
+       
+#     df=pd.read_sql(query,con=con)
+#     df_json=json.loads(df.to_json(orient='records'))
+           
+#     return {"data":df_json,"status":"sucess"}
+
+
 @app.route("/SMBMinibarService",methods=['GET','POST'])
 def web_api():
     
-         data=str( request.data)
-         print(data)
-         text_file = open("data.txt", "w")
+    data=str( request.data)
+   
+    text_file = open("data.txt", "w")
 
 
-         text_file.write(data)
-        
-        
-         text_file.close()
-         data=json.loads(request.data)
-         
-         if(str(data)[0]=='['):
-             data=data[0]
-         
-         tableId = data['tableId']
-         data=data['data']
-         wherestr=''
-         db.insert("rollback")
-         query='select tablename from "SMB"."table_mapping" where id ={}'.format(tableId)
-         tableName=db.query(query)[0][0]
-         for i in list(data):
-            if(data[i]=="*"):
-                del data[i]
-                 
-         try:
-             
-             
+    text_file.write(data)
+   
+    text_file.close()
+    data=json.loads(request.data)
+    
+    if(str(data)[0]=='['):
+        data=data[0]
+    
+    tableId = data['tableId']
+    data=data['data']
+    wherestr=''
+    db.insert("rollback")
+    query='select tablename from "SMB"."table_mapping" where id ={}'.format(tableId)
+    tableName=db.query(query)[0][0]
+    
+    k=0
+    query='''select * from "SMB"."{}" where '''.format(tableName)
+    for i in data:
+        if(k==0):
+            wherestr=wherestr+ "("+    '"' + i +'"'    +   " = "  +  "'" +str(data[i])+"'"   + " or " +   '"' + i +'"' + " = "+ "'"+ "*" +"'"+     ")"
+            k=1
+          
+           
+        elif(k==1):
+            wherestr=wherestr + " and " +"("+    '"' + i +'"'    +   " = "  +  "'" +str(data[i])+"'"   + " or " +   '"' + i +'"' + " = "+ "'"+ "*" +"'"+     ")"
             
-             k=0
-             query='''select * from "SMB"."{}" where '''.format(tableName)
-             for i in data:
-                 if(k==0):
-                     wherestr=wherestr +'"' + i +'"' +" = " + "'" +str(data[i])+"'"
-                     k=1
-                 if(i=="Currency"):
-                      wherestr=wherestr + " and " +'"' + i +'"' +" = " + "''" +str(data[i])+"''"
-                      k=1
-                    
-                 else:
-                     wherestr=wherestr + " and " +'"' + i +'"' +" = " + "'" +str(data[i])+"'"
-             query=query+wherestr
-             if(len(data)==0):
-                 query=''' select * from "SMB"."{}" '''.format(tableName)
-                 
-             query+=" order by sequence_id asc limit 1"
-             data=db.query(query)
-                
-             df=pd.read_sql(query,con=con)
-             df_json=json.loads(df.to_json(orient='records'))
-                    
-             return {"data":df_json,"status":"sucess"}
-         except:
-             return {"status":"invalid request"}
-
+    query=query+wherestr
+    if(len(data)==0):
+        query=''' select * from "SMB"."{}" '''.format(tableName)
+        
+    query+=" order by sequence_id asc limit 1"
+    print(query)
+    data=db.query(query)
+       
+    df=pd.read_sql(query,con=con1)
+    df_json=json.loads(df.to_json(orient='records'))
+           
+    return {"data":df_json,"status":"sucess"}
+   
+        
         
  
 if __name__ == '__main__':
-    # app.run(host='172.16.4.190')
-    app.run()
+    app.run(host='172.16.4.190')
+    # app.run()
    

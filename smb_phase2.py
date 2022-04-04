@@ -50,12 +50,12 @@ CORS(smb_app2)
 
 
 
-# download_path="/home/ubuntu/mega_dir/"
-# input_directory="/home/ubuntu/mega_dir/"
+download_path="/home/ubuntu/mega_dir/"
+input_directory="/home/ubuntu/mega_dir/"
 
 
-download_path="C:/Users/Administrator/Documents/"
-input_directory="C:/Users/Administrator/Documents/"
+# download_path="C:/Users/Administrator/Documents/"
+# input_directory="C:/Users/Administrator/Documents/"
 
 
 
@@ -148,7 +148,8 @@ def get_record_freight_parity():
 def update_record_frieght_parity():
     
     today = date.today()
-    username = getpass.getuser()
+    username=request.headers['username']
+       
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     query_parameters =json.loads(request.data)
@@ -182,7 +183,7 @@ def update_record_frieght_parity():
     email_status=''
     
     status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
-    if(status['status']=='success'):email_status=email([status['tableid']],tablename)
+    if(status['status']=='success'):email_status=email([status['tableid']],tablename,username=username)
     
     
     
@@ -196,7 +197,8 @@ def update_record_frieght_parity():
 def add_record_frieght_parity():
     
     
-    username = getpass.getuser()
+    username=request.headers['username']
+       
     
     query_parameters =json.loads(request.data)
     
@@ -228,7 +230,8 @@ def add_record_frieght_parity():
     
     
     status=upsert(col_tuple,input_tuple,flag,tablename)
-    if(status['status']=='success'): email_status=email([status['tableid']],tablename)
+    if(status['status']=='success'): email_status=email([status['tableid']],tablename,username=username)
+    
     
     if(email_status=='success'): return {"status":"success"},200
     else: return {"status":"failure"},500
@@ -279,7 +282,8 @@ def  validate_freight_parity():
     
         
     json_data=json.loads(request.data)
-    username = getpass.getuser() 
+    username=request.headers['username']
+        
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     
@@ -437,7 +441,8 @@ def update_record_frieght_parity_minibar():
     
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
-    username = getpass.getuser()
+    username=request.headers['username']
+       
     query_parameters =json.loads(request.data)
     
     sequence_id=(query_parameters['sequence_id'])
@@ -465,7 +470,7 @@ def update_record_frieght_parity_minibar():
 "Document Item Currency","Amount","Currency")
     
     status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
-    if(status['status']=='success'):email_status=email([status['tableid']],tablename)
+    if(status['status']=='success'):email_status=email([status['tableid']],tablename,username=username)
     
     
     
@@ -478,7 +483,8 @@ def update_record_frieght_parity_minibar():
 @smb_app2.route('/add_record_freight_parity_minibar',methods=['POST'])
 @token_required
 def add_record_frieght_parity_minibar():
-    username = getpass.getuser()
+    username=request.headers['username']
+       
     query_parameters =json.loads(request.data)
     Market_Customer=(query_parameters['Market_Customer'])
     Delivering_Mill=(query_parameters["Delivering_Mill"])
@@ -509,7 +515,8 @@ def add_record_frieght_parity_minibar():
 "Document Item Currency","Amount","Currency")
     
     status=upsert(col_tuple,input_tuple,flag,tablename)
-    if(status['status']=='success'): email_status=email([status['tableid']],tablename)
+    if(status['status']=='success'): email_status=email([status['tableid']],tablename,username=username)
+    
     
     if(email_status=='success'): return {"status":"success"},200
     else: return {"status":"failure"},500
@@ -558,7 +565,8 @@ def  validate_freight_parity_minibar():
     
         
     json_data=json.loads(request.data)
-    username = getpass.getuser() 
+    username=request.headers['username']
+        
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     
@@ -692,11 +700,13 @@ def get_record_extra_grade():
 def update_record_extra_grade():
     
     today = date.today()
-    username = getpass.getuser()
+    username=request.headers['username']
+       
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     query_parameters =json.loads(request.data)
-    username = getpass.getuser()
+    username=request.headers['username']
+       
     
     
     BusinessCode=(query_parameters["BusinessCode"])
@@ -728,7 +738,7 @@ def update_record_extra_grade():
     email_status=''
     
     status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
-    if(status['status']=='success'):email_status=email([status['tableid']],tablename)
+    if(status['status']=='success'):email_status=email([status['tableid']],tablename,username=username)
     
     
     
@@ -744,7 +754,8 @@ def update_record_extra_grade():
 def add_record_extra_grade():
      
     query_parameters =json.loads(request.data)
-    username = getpass.getuser()
+    username=request.headers['username']
+       
     
     
     BusinessCode=(query_parameters["BusinessCode"])
@@ -775,7 +786,8 @@ def add_record_extra_grade():
 "Currency")
     
     status=upsert(col_tuple,input_tuple,flag,tablename)
-    if(status['status']=='success'): email_status=email([status['tableid']],tablename)
+    if(status['status']=='success'): email_status=email([status['tableid']],tablename,username=username)
+    
     
     if(email_status=='success'): return {"status":"success"},200
     else: return {"status":"failure"},500
@@ -824,7 +836,8 @@ def upload_extra_grade():
 @token_required
 def  validate_extra_grade():      
     json_data=json.loads(request.data)
-    username = getpass.getuser() 
+    username=request.headers['username']
+        
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     
@@ -967,7 +980,8 @@ def get_record_extra_grade_minibar():
 def add_record_extra_grade_minibar():
     
     today = date.today()
-    username = getpass.getuser()
+    username=request.headers['username']
+       
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     query_parameters =json.loads(request.data)
@@ -1022,7 +1036,8 @@ def add_record_extra_grade_minibar():
              "Currency")
     
     status=upsert(col_tuple,input_tuple,flag,tablename)
-    if(status['status']=='success'): email_status=email([status['tableid']],tablename)
+    if(status['status']=='success'): email_status=email([status['tableid']],tablename,username=username)
+    
     
     if(email_status=='success'): return {"status":"success"},200
     else: return {"status":"failure"},500
@@ -1034,7 +1049,8 @@ def add_record_extra_grade_minibar():
 def update_record_extra_grade_minibar():
     
     today = date.today()
-    username = getpass.getuser()
+    username=request.headers['username']
+       
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     query_parameters =json.loads(request.data)
@@ -1110,7 +1126,7 @@ def update_record_extra_grade_minibar():
     email_status=''
     
     status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
-    if(status['status']=='success'):email_status=email([status['tableid']],tablename)      
+    if(status['status']=='success'):email_status=email([status['tableid']],tablename,username=username)      
         
     
     if(email_status=='success' or status['status']=='move_direct'): return {"status":"success"},200
@@ -1162,7 +1178,8 @@ def  validate_extra_grade_minibar():
     
         
     json_data=json.loads(request.data)
-    username = getpass.getuser() 
+    username=request.headers['username']
+        
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     
@@ -1361,7 +1378,8 @@ def get_record_extra_profile():
 def add_record_extra_profile():
     
     
-    username = getpass.getuser()
+    username=request.headers['username']
+       
     query_parameters =json.loads(request.data)
     
     BusinessCode=(query_parameters["BusinessCode"])
@@ -1418,7 +1436,8 @@ def add_record_extra_profile():
               "Currency")
     
     status=upsert(col_tuple,input_tuple,flag,tablename)
-    if(status['status']=='success'): email_status=email([status['tableid']],tablename)
+    if(status['status']=='success'): email_status=email([status['tableid']],tablename,username=username)
+    
     
     if(email_status=='success'): return {"status":"success"},200
     else: return {"status":"failure"},500
@@ -1429,7 +1448,8 @@ def add_record_extra_profile():
 def update_record_extra_profile():
     
     today = date.today()
-    username = getpass.getuser()
+    username=request.headers['username']
+       
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     query_parameters =json.loads(request.data)
@@ -1470,7 +1490,7 @@ def update_record_extra_profile():
     email_status=''
     
     status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
-    if(status['status']=='success'):email_status=email([status['tableid']],tablename)
+    if(status['status']=='success'):email_status=email([status['tableid']],tablename,username=username)
         
         
         
@@ -1527,7 +1547,8 @@ def  validate_extra_profile():
     
         
     json_data=json.loads(request.data)
-    username = getpass.getuser() 
+    username=request.headers['username']
+        
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     
@@ -1729,7 +1750,8 @@ def get_record_extra_profile_minibar():
 def add_record_extra_profile_minibar():
     
     
-    username = getpass.getuser()
+    username=request.headers['username']
+       
     query_parameters =json.loads(request.data)
     
     BusinessCode=(query_parameters["BusinessCode"])
@@ -1794,7 +1816,8 @@ def add_record_extra_profile_minibar():
                 "Currency")
     
     status=upsert(col_tuple,input_tuple,flag,tablename)
-    if(status['status']=='success'): email_status=email([status['tableid']],tablename)
+    if(status['status']=='success'): email_status=email([status['tableid']],tablename,username=username)
+    
     
     if(email_status=='success'): return {"status":"success"},200
     else: return {"status":"failure"},500
@@ -1806,7 +1829,8 @@ def add_record_extra_profile_minibar():
 def update_record_extra_profile_minibar():
     
     
-    username = getpass.getuser()
+    username=request.headers['username']
+       
     query_parameters =json.loads(request.data)
     
     now = datetime.now()
@@ -1890,7 +1914,7 @@ def update_record_extra_profile_minibar():
     email_status=''
         
     status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
-    if(status['status']=='success'):email_status=email([status['tableid']],tablename)
+    if(status['status']=='success'):email_status=email([status['tableid']],tablename,username=username)
     
     if(email_status=='success' or status['status']=='move_direct'): return {"status":"success"},200
     else: return {"status":"failure"},500
@@ -1942,7 +1966,8 @@ def  validate_extra_profile_minibar():
     
         
     json_data=json.loads(request.data)
-    username = getpass.getuser() 
+    username=request.headers['username']
+        
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     
@@ -2149,7 +2174,8 @@ def get_record_extra_profile_Iberia():
 def add_record_extra_profile_Iberia():
     
     today = date.today()
-    username = getpass.getuser()
+    username=request.headers['username']
+       
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     query_parameters =json.loads(request.data)
@@ -2210,7 +2236,8 @@ def add_record_extra_profile_Iberia():
               "Currency")
     
     status=upsert(col_tuple,input_tuple,flag,tablename)
-    if(status['status']=='success'): email_status=email([status['tableid']],tablename)
+    if(status['status']=='success'): email_status=email([status['tableid']],tablename,username=username)
+    
     
     if(email_status=='success'): return {"status":"success"},200
     else: return {"status":"failure"},500
@@ -2221,7 +2248,8 @@ def add_record_extra_profile_Iberia():
 def update_record_extra_profile_Iberia():
     
     today = date.today()
-    username = getpass.getuser()
+    username=request.headers['username']
+       
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     query_parameters =json.loads(request.data)
@@ -2292,7 +2320,7 @@ def update_record_extra_profile_Iberia():
     email_status=''
         
     status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
-    if(status['status']=='success'):email_status=email([status['tableid']],tablename)
+    if(status['status']=='success'):email_status=email([status['tableid']],tablename,username=username)
 
     
     if(email_status=='success' or status['status']=='move_direct'): return {"status":"success"},200
@@ -2349,7 +2377,8 @@ def  validate_extra_profile_Iberia():
     
         
     json_data=json.loads(request.data)
-    username = getpass.getuser() 
+    username=request.headers['username']
+        
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     
@@ -2548,7 +2577,8 @@ def get_record_extra_profile_Iberia_minibar():
 def add_record_extra_profile_Iberia_minibar():
     
     today = date.today()
-    username = getpass.getuser()
+    username=request.headers['username']
+       
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     query_parameters =json.loads(request.data)
@@ -2616,7 +2646,8 @@ def add_record_extra_profile_Iberia_minibar():
               "Currency")
     
     status=upsert(col_tuple,input_tuple,flag,tablename)
-    if(status['status']=='success'): email_status=email([status['tableid']],tablename)
+    if(status['status']=='success'): email_status=email([status['tableid']],tablename,username=username)
+    
     
     if(email_status=='success'): return {"status":"success"},200
     else: return {"status":"failure"},500
@@ -2627,7 +2658,8 @@ def add_record_extra_profile_Iberia_minibar():
 def update_record_extra_profile_Iberia_minibar():
     
     today = date.today()
-    username = getpass.getuser()
+    username=request.headers['username']
+       
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     query_parameters =json.loads(request.data)
@@ -2707,7 +2739,7 @@ def update_record_extra_profile_Iberia_minibar():
     email_status=''
         
     status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
-    if(status['status']=='success'):email_status=email([status['tableid']],tablename)
+    if(status['status']=='success'):email_status=email([status['tableid']],tablename,username=username)
     
     
     if(email_status=='success' or status['status']=='move_direct'): return {"status":"success"},200
@@ -2765,7 +2797,8 @@ def  validate_extra_profile_Iberia_minibar():
     
         
     json_data=json.loads(request.data)
-    username = getpass.getuser() 
+    username=request.headers['username']
+        
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     

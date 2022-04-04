@@ -47,12 +47,12 @@ CORS(smb_app3)
 
 
 
-# download_path="/home/ubuntu/mega_dir/"
-# input_directory="/home/ubuntu/mega_dir/"
+download_path="/home/ubuntu/mega_dir/"
+input_directory="/home/ubuntu/mega_dir/"
 
 
-download_path="C:/Users/Administrator/Documents/"
-input_directory="C:/Users/Administrator/Documents/"
+# download_path="C:/Users/Administrator/Documents/"
+# input_directory="C:/Users/Administrator/Documents/"
 
 
 
@@ -143,7 +143,8 @@ def get_record_transport():
 def add_record_transport():
     
     today = date.today()
-    username = getpass.getuser()
+    username=request.headers['username']
+       
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     query_parameters =json.loads(request.data)
@@ -197,7 +198,8 @@ def add_record_transport():
               "Currency")
     
     status=upsert(col_tuple,input_tuple,flag,tablename)
-    if(status['status']=='success'): email_status=email([status['tableid']],tablename)
+    if(status['status']=='success'): email_status=email([status['tableid']],tablename,username=username)
+    
     
     if(email_status=='success'): return {"status":"success"},200
     else: return {"status":"failure"},500
@@ -208,7 +210,8 @@ def add_record_transport():
 def update_record_transport():
     
     today = date.today()
-    username = getpass.getuser()
+    username=request.headers['username']
+       
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     query_parameters =json.loads(request.data)
@@ -271,7 +274,7 @@ def update_record_transport():
     email_status=''
     
     status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
-    if(status['status']=='success'):email_status=email([status['tableid']],tablename)
+    if(status['status']=='success'):email_status=email([status['tableid']],tablename,username=username)
     if(email_status=='success' or status['status']=='move_direct'): return {"status":"success"},200
     else: return {"status":"failure"},500
    
@@ -320,7 +323,8 @@ def  validate_transport():
     
         
     json_data=json.loads(request.data)
-    username = getpass.getuser() 
+    username=request.headers['username']
+        
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     
@@ -506,7 +510,8 @@ def get_record_transport_minibar():
 def add_record_transport_minibar():
     
     today = date.today()
-    username = getpass.getuser()
+    username=request.headers['username']
+       
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     query_parameters =json.loads(request.data)
@@ -566,7 +571,8 @@ def add_record_transport_minibar():
               "Currency")
     
     status=upsert(col_tuple,input_tuple,flag,tablename)
-    if(status['status']=='success'): email_status=email([status['tableid']],tablename)
+    if(status['status']=='success'): email_status=email([status['tableid']],tablename,username=username)
+    
     
     if(email_status=='success'): return {"status":"success"},200
     else: return {"status":"failure"},500
@@ -578,7 +584,8 @@ def add_record_transport_minibar():
 def update_record_transport_minibar():
     
         today = date.today()
-        username = getpass.getuser()
+        username=request.headers['username']
+       
         now = datetime.now()
         date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
         query_parameters =json.loads(request.data)
@@ -650,7 +657,7 @@ def update_record_transport_minibar():
         email_status=''
         
         status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
-        if(status['status']=='success'):email_status=email([status['tableid']],tablename)
+        if(status['status']=='success'):email_status=email([status['tableid']],tablename,username=username)
         
         
         
@@ -702,7 +709,8 @@ def  validate_transport_minibar():
     
         
     json_data=json.loads(request.data)
-    username = getpass.getuser() 
+    username=request.headers['username']
+        
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     
@@ -904,7 +912,8 @@ def get_record_length_production():
 def add_record_length_production():
     
     today = date.today()
-    username = getpass.getuser()
+    username=request.headers['username']
+       
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     query_parameters =json.loads(request.data)
@@ -968,7 +977,8 @@ def add_record_length_production():
               "Currency")
     
     status=upsert(col_tuple,input_tuple,flag,tablename)
-    if(status['status']=='success'): email_status=email([status['tableid']],tablename)
+    if(status['status']=='success'): email_status=email([status['tableid']],tablename,username=username)
+    
     
     if(email_status=='success'): return {"status":"success"},200
     else: return {"status":"failure"},500
@@ -979,7 +989,8 @@ def add_record_length_production():
 def update_record_length_production():
     
     today = date.today()
-    username = getpass.getuser()
+    username=request.headers['username']
+       
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     query_parameters =json.loads(request.data)
@@ -1056,7 +1067,7 @@ def update_record_length_production():
     email_status=''
         
     status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
-    if(status['status']=='success'):email_status=email([status['tableid']],tablename)
+    if(status['status']=='success'):email_status=email([status['tableid']],tablename,username=username)
         
         
         
@@ -1110,7 +1121,8 @@ def  validate_length_production():
     
         
     json_data=json.loads(request.data)
-    username = getpass.getuser() 
+    username=request.headers['username']
+        
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     
@@ -1326,7 +1338,8 @@ def get_record_length_production_minibar():
 def add_record_length_production_minibar():
     
     today = date.today()
-    username = getpass.getuser()
+    username=request.headers['username']
+       
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     query_parameters =json.loads(request.data)
@@ -1395,7 +1408,8 @@ def add_record_length_production_minibar():
               "Currency")
     
     status=upsert(col_tuple,input_tuple,flag,tablename)
-    if(status['status']=='success'): email_status=email([status['tableid']],tablename)
+    if(status['status']=='success'): email_status=email([status['tableid']],tablename,username=username)
+    
     
     if(email_status=='success'): return {"status":"success"},200
     else: return {"status":"failure"},500
@@ -1407,7 +1421,8 @@ def add_record_length_production_minibar():
 def update_record_length_production_minibar():
     
     today = date.today()
-    username = getpass.getuser()
+    username=request.headers['username']
+       
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     query_parameters =json.loads(request.data)
@@ -1490,7 +1505,7 @@ def update_record_length_production_minibar():
     email_status=''
         
     status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
-    if(status['status']=='success'):email_status=email([status['tableid']],tablename)
+    if(status['status']=='success'):email_status=email([status['tableid']],tablename,username=username)
         
         
         
@@ -1549,7 +1564,8 @@ def  validate_length_production_minibar():
     
         
     json_data=json.loads(request.data)
-    username = getpass.getuser() 
+    username=request.headers['username']
+        
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     
@@ -1767,7 +1783,8 @@ def get_record_length_logistic():
 def add_record_length_logistic():
     
     today = date.today()
-    username = getpass.getuser()
+    username=request.headers['username']
+       
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     query_parameters =json.loads(request.data)
@@ -1836,7 +1853,8 @@ def add_record_length_logistic():
               "Currency")
     
     status=upsert(col_tuple,input_tuple,flag,tablename)
-    if(status['status']=='success'): email_status=email([status['tableid']],tablename)
+    if(status['status']=='success'): email_status=email([status['tableid']],tablename,username=username)
+    
     
     if(email_status=='success'): return {"status":"success"},200
     else: return {"status":"failure"},500
@@ -1848,7 +1866,8 @@ def add_record_length_logistic():
 def update_record_length_logistic():
     
     today = date.today()
-    username = getpass.getuser()
+    username=request.headers['username']
+       
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     query_parameters =json.loads(request.data)
@@ -1927,7 +1946,7 @@ def update_record_length_logistic():
     email_status=''
         
     status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
-    if(status['status']=='success'):email_status=email([status['tableid']],tablename)
+    if(status['status']=='success'):email_status=email([status['tableid']],tablename,username=username)
         
         
         
@@ -1979,7 +1998,8 @@ def upload_length_logistic():
 def  validate_length_logistic():
     
     json_data=json.loads(request.data)
-    username = getpass.getuser() 
+    username=request.headers['username']
+        
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
        
@@ -2191,7 +2211,8 @@ def get_record_length_logistic_minibar():
 def add_record_length_logistic_minibar():
     
     today = date.today()
-    username = getpass.getuser()
+    username=request.headers['username']
+       
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     query_parameters =json.loads(request.data)
@@ -2258,7 +2279,8 @@ def add_record_length_logistic_minibar():
               "Currency")
     
     status=upsert(col_tuple,input_tuple,flag,tablename)
-    if(status['status']=='success'): email_status=email([status['tableid']],tablename)
+    if(status['status']=='success'): email_status=email([status['tableid']],tablename,username=username)
+    
     
     if(email_status=='success'): return {"status":"success"},200
     else: return {"status":"failure"},500
@@ -2270,7 +2292,8 @@ def add_record_length_logistic_minibar():
 def update_record_length_logistic_minibar():
     
     today = date.today()
-    username = getpass.getuser()
+    username=request.headers['username']
+       
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     query_parameters =json.loads(request.data)
@@ -2280,7 +2303,7 @@ def update_record_length_logistic_minibar():
     
     Length=(query_parameters['Length'])
     Length_From=(query_parameters['Length_From'])
-    Length_To=(query_parameters['Length_From'])
+    Length_To=(query_parameters['Length_To'])
     Transport_Mode=(query_parameters['Transport_Mode'])
     Customer_Group=(query_parameters['Customer_Group'])
     Market_Customer=(query_parameters["Market_Customer"])
@@ -2290,6 +2313,9 @@ def update_record_length_logistic_minibar():
     Currency =( query_parameters["Currency"])
     id_value=(query_parameters['id_value'])
     sequence_id=(query_parameters['sequence_id'])
+    
+    print(query_parameters)
+    print("####")
     
     # try:
         
@@ -2352,7 +2378,8 @@ def update_record_length_logistic_minibar():
     email_status=''
         
     status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
-    if(status['status']=='success'):email_status=email([status['tableid']],tablename)
+    print(status)
+    if(status['status']=='success'):email_status=email([status['tableid']],tablename,username=username)
         
         
         
@@ -2408,7 +2435,8 @@ def  validate_length_logistic_minibar():
     
         
     json_data=json.loads(request.data)
-    username = getpass.getuser() 
+    username=request.headers['username']
+        
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     

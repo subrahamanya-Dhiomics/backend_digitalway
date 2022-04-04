@@ -74,8 +74,12 @@ class Database:
             self.cursor.close()
  
 # File Path 
-download_path=input_directory="C:/Users/Administrator/Documents/"  
+# download_path=input_directory="C:/Users/Administrator/Documents/"  
  
+
+download_path="/home/ubuntu/mega_dir/"
+input_directory="/home/ubuntu/mega_dir/"
+
 # flsk app declaration 
 generic = Blueprint('generic', __name__)
 CORS(generic)
@@ -161,6 +165,7 @@ def  generic_download():
     
 @generic.route('/generic_delete',methods=['POST','GET','DELETE'])
 def generic_delete():  
+    
     id_value  = json.loads(request.data)['id'][1:]
     
     print(id_value)
@@ -180,7 +185,8 @@ def generic_delete():
     
 @generic.route('/generic_add',methods=['POST'])
 def generic_add():
-    username = getpass.getuser()
+    username=request.headers['username']
+    
     data = json.loads(request.data)
     tablename = data['table_name']
    
@@ -193,90 +199,16 @@ def generic_add():
     input_tuple=tuple([flag,username,tablename]+list(data.values()))
     
     status=upsert(col_tuple,input_tuple,flag,tablename)
-    if(status['status']=='success'): email_status=email([status['tableid']],tablename)
+    if(status['status']=='success'): email_status=email([status['tableid']],tablename,username=username)
     
     if(email_status=='success'): return {"status":"success"},200
     else: return {"status":"failure"},500
     
 
 
-
     
     
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-
-
-    
-    
-    
-    
-    
-# Add New Data
-
-    
-    
-    
-    
-    
-    
-    # col_df=pd.read_sql(''' select * from "SMB"."{}"'''.format(tablename),con)
-    # rm_col = ['id','active','aprover1','aprover2','aprover3','updated_on']
-    # col_df.drop(axis=1,columns=rm_col,inplace=True)
-    # col_df=list(col_df)
-    # col_tuple = ["tablename","flag"]
-    # col_tuple.extend(col_df)
-    # col_tuple = tuple(col_tuple)
-    
-    # value = data.values()
-    # value = list(value)
-    # input_tuple = [tablename,flag,username]
-    # input_tuple.extend(value)
-    # input_tuple.pop(-1)
-    # input_tuple = tuple(input_tuple)
-        
-    # status=upsert(col_tuple,input_tuple,flag,tablename)
-    # if(status['status']=='success'): email_status=email([status['tableid']],tablename)
-    
-    # if(email_status=='success'): return {"status":"success"},200
-    # else: return {"status":"failure"},500
-  
-    
-# Delete Data 
-
-
-# Download Data
-
-       
 # File Upload
 @generic.route('/generic_upload', methods=['GET','POST'])
 def generic_upload():
@@ -298,8 +230,10 @@ def generic_upload():
             print(query)
             df_main=pd.read_sql(query,con)
             
-           
-            df['Currency'] = df['Currency'].str.replace("'","")
+            try:
+             df['Currency'] = df['Currency'].str.replace("'","")
+            except:
+                pass
             
             df3 = df.merge(df_main, how='left', indicator=True)
             df3=df3[df3['_merge']=='left_only']
@@ -314,7 +248,8 @@ def generic_upload():
 @generic.route('/generic_validate',methods=['GET','POST'])
 def generic_validate():
     json_data=json.loads(request.data)
-    username = getpass.getuser() 
+    username=request.headers['username']
+     
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     print(json_data)
@@ -359,30 +294,7 @@ def generic_validate():
     return {"status":"success"},200
        
             
-       #      df=smb_df[["id","Delivering Mill", "Market - Country",
-       # "Zip Code (Dest)", "Product Division", "Document Item Currency",
-       # "Amount", "Currency"]]  
-            
-       #      df["id"]=df["id"].astype(int)
-            
-            
-       #      df_main = pd.read_sql('''select "id","Delivering Mill", "Market - Country",
-       # "Zip Code (Dest)", "Product Division", "Document Item Currency",
-       # "Amount", "Currency" from "SMB"."SMB - Extra - Freight Parity" where "active"='1' order by sequence_id ''', con=con)
-       #      df['Currency'] = df['Currency'].str.replace("'","")
-            
-       #      df3 = df.merge(df_main, how='left', indicator=True)
-       #      df3=df3[df3['_merge']=='left_only']
-            
-       #      df3.columns = df3.columns.str.replace(' ', '_')
-       #      df3.rename(columns={"Market_-_Country":"Market_Country","Zip_Code_(Dest)":"Zip_Code_Dest"},inplace=True)
-        
-       #      df3.drop(['_merge'],axis=1,inplace=True)
-            
-       #      table=json.loads(df3.to_json(orient='records'))
-            
-       #      return {"data":table},200
-       
+     
     
 
 @generic.route('/generic_history',methods=['POST','GET'])
@@ -430,7 +342,8 @@ def generic_history():
 def generic_update():
     
     today = date.today()
-    username = getpass.getuser()
+    username=request.headers['username']
+    
     now = datetime.now()
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     
@@ -460,7 +373,7 @@ def generic_update():
     email_status=''
     
     status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
-    if(status['status']=='success'):email_status=email([status['tableid']],tablename)
+    if(status['status']=='success'):email_status=email([status['tableid']],tablename,username)
     
     
     
