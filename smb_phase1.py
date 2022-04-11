@@ -350,7 +350,7 @@ def email(id_value,tablename,flag='change',username='admin'):
           
        
         
-        encoded_id = cryptocode.encrypt(str(id_value),"digitalway")
+        encoded_id = cryptocode.encrypt(str(id_value),current_app.config["mypassword"])
         ## And then to decode it:
         
         approver='subrahamanya.shetty@dhiomics.com'
@@ -395,7 +395,7 @@ def aproval_data():
     
     # decoding the id array 
     id_value=id_value.replace(' ','+')
-    id_value = cryptocode.decrypt(id_value, current_app.config["mypassword"])
+    id_value = cryptocode.decrypt(id_value, "digitalway")
     id_list=eval(id_value)
     id_list.append(0)
     id_tuple=tuple(id_list)
@@ -427,19 +427,22 @@ def aproval_data():
         query='''select * from "SMB"."SMB_Aproval" where tableid in {} and table_name='{}' '''.format(id_tuple,tablename)
         print(query)
         
+        
         id_data=db.query(''' select id from "SMB"."SMB_Aproval" where tableid in {} and table_name='{}' '''.format(id_tuple,tablename))
         id_data=sum(id_data,())
         id_data=list(id_data)
         id_data.append(0)
         
+        old_data=''
         
-        
-        old_data_df=pd.read_sql(''' select * from "SMB"."{}" where id in {} '''.format(tablename,tuple(id_data)),con)
-        
+        if(None not in id_data):
+            
+         old_data_df=pd.read_sql(''' select * from "SMB"."{}" where id in {} '''.format(tablename,tuple(id_data)),con)
+         old_data=json.loads(old_data_df.to_json(orient='records'))
         
         df=pd.read_sql(query,con=con)
     
-        old_data=json.loads(old_data_df.to_json(orient='records'))
+       
         df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer_Group":"Market_Customer_Group","Zip_Code_(Dest)":"Zip_Code_Dest"},inplace=True)
         df.dropna(axis=1, how='all',inplace=True)
         try:
