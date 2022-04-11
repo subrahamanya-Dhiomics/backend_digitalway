@@ -112,12 +112,12 @@ def  freight_parity():
 def delete_record_delivery_mill_minibar():  
     
    
-    id_value=json.loads(request.data)['id']
+    id_value,username=json.loads(request.data)['id'],request.headers['username']
     
     
     tablename='SMB - Extra - Freight Parity'
    
-    status=email(id_value,tablename,'delete')
+    status=email(id_value,tablename,'delete',username=username)
     if(status=='success'):return {"status":"success"},200
     else: return {"status":"failure"},500
 
@@ -322,7 +322,7 @@ def  validate_freight_parity():
         id_value.append(status['tableid'])
         
     if(status['status']=='success'):
-        email_status=email(id_value,tablename)
+        email_status=email(id_value,tablename,username=username)
         print("mail_sent")
   
     return {"status":"success"},200
@@ -404,12 +404,12 @@ def  freight_parity_minibar():
 def delete_record_freight_parity_minibar():  
    
     
-    id_value=json.loads(request.data)['id']
+    id_value,username=json.loads(request.data)['id'],request.headers['username']
     
     
     tablename='SMB - Extra - Freight Parity - MiniBar'
    
-    status=email(id_value,tablename,'delete')
+    status=email(id_value,tablename,'delete',username=username)
     if(status=='success'):return {"status":"success"},200
     else: return {"status":"failure"},500
 
@@ -595,7 +595,7 @@ def  validate_freight_parity_minibar():
         id_value.append(status['tableid'])
         
     if(status['status']=='success'):
-        email_status=email(id_value,tablename)
+        email_status=email(id_value,tablename,username=username)
   
     return {"status":"success"},200
       
@@ -665,12 +665,12 @@ def  extra_grade_data():
 @token_required
 def delete_record_extra_grade():  
     
-    id_value=json.loads(request.data)['id']
+    id_value,username=json.loads(request.data)['id'],request.headers['username']
     
     
     tablename='SMB - Extra - Grade'
    
-    status=email(id_value,tablename,'delete')
+    status=email(id_value,tablename,'delete',username=username)
     if(status=='success'):return {"status":"success"},200
     else: return {"status":"failure"},500
 
@@ -872,7 +872,7 @@ def  validate_extra_grade():
         id_value.append(status['tableid'])
         
     if(status['status']=='success'):
-        email_status=email(id_value,tablename)
+        email_status=email(id_value,tablename,username=username)
   
     return {"status":"success"},200
          
@@ -943,12 +943,12 @@ def  extra_grade_data_minibar():
 @token_required
 def delete_record_extra_grade_minibar():  
     
-    id_value=json.loads(request.data)['id']
+    id_value,username=json.loads(request.data)['id'],request.headers['username']
     
     
     tablename='SMB - Extra - Grade - MiniBar'
    
-    status=email(id_value,tablename,'delete')
+    status=email(id_value,tablename,'delete',username=username)
     if(status=='success'):return {"status":"success"},200
     else: return {"status":"failure"},500
 
@@ -1271,7 +1271,7 @@ def  validate_extra_grade_minibar():
         id_value.append(status['tableid'])
         
     if(status['status']=='success'):
-        email_status=email(id_value,tablename)
+        email_status=email(id_value,tablename,username=username)
   
     return {"status":"success"},200
         
@@ -1343,12 +1343,12 @@ def  extra_profile():
 @token_required
 def delete_record_extra_profile():  
     
-    id_value=json.loads(request.data)['id']
+    id_value,username=json.loads(request.data)['id'],request.headers['username']
     
     
     tablename='SMB - Extra - Profile'
    
-    status=email(id_value,tablename,'delete')
+    status=email(id_value,tablename,'delete',username=username)
     if(status=='success'):return {"status":"success"},200
     else: return {"status":"failure"},500
 
@@ -1643,7 +1643,7 @@ def  validate_extra_profile():
         id_value.append(status['tableid'])
         
     if(status['status']=='success'):
-        email_status=email(id_value,tablename)
+        email_status=email(id_value,tablename,username=username)
   
     return {"status":"success"},200
          
@@ -1716,12 +1716,12 @@ def  extra_profile_minibar():
 @token_required
 def delete_record_extra_profile_minibar():  
     
-    id_value=json.loads(request.data)['id']
+    id_value,username=json.loads(request.data)['id'],request.headers['username']
     
     
     tablename='SMB - Extra - Profile - MiniBar'
    
-    status=email(id_value,tablename,'delete')
+    status=email(id_value,tablename,'delete',username=username)
     if(status=='success'):return {"status":"success"},200
     else: return {"status":"failure"},500
 
@@ -2069,7 +2069,7 @@ def  validate_extra_profile_minibar():
         id_value.append(status['tableid'])
         
     if(status['status']=='success'):
-        email_status=email(id_value,tablename)
+        email_status=email(id_value,tablename,username=username)
   
     return {"status":"success"},200
          
@@ -2140,12 +2140,12 @@ def  extra_profile_minibar_iberia():
 def delete_record_extra_profile_Iberia():  
    
     
-    id_value=json.loads(request.data)['id']
+    id_value,username=json.loads(request.data)['id'],request.headers['username']
     
     
     tablename='SMB - Extra - Profile Iberia and Italy'
    
-    status=email(id_value,tablename,'delete')
+    status=email(id_value,tablename,'delete',username=username)
     if(status=='success'):return {"status":"success"},200
     else: return {"status":"failure"},500
 
@@ -2468,7 +2468,7 @@ def  validate_extra_profile_Iberia():
         id_value.append(status['tableid'])
         
     if(status['status']=='success'):
-        email_status=email(id_value,tablename)
+        email_status=email(id_value,tablename,username=username)
   
     return {"status":"success"},200
 
@@ -2541,12 +2541,12 @@ def  extra_profile_minibar_iberia_minibar():
 def delete_record_extra_profile_Iberia_minibar():  
     
     
-    id_value=json.loads(request.data)['id']
+    id_value,username=json.loads(request.data)['id'],request.headers['username']
     
     
     tablename='SMB - Extra - Profile Iberia and Italy - MiniBar'
    
-    status=email(id_value,tablename,'delete')
+    status=email(id_value,tablename,'delete',username=username)
     if(status=='success'):return {"status":"success"},200
     else: return {"status":"failure"},500
 
@@ -2894,7 +2894,7 @@ def  validate_extra_profile_Iberia_minibar():
         id_value.append(status['tableid'])
         
     if(status['status']=='success'):
-        email_status=email(id_value,tablename)
+        email_status=email(id_value,tablename,username=username)
   
     return {"status":"success"},200
     

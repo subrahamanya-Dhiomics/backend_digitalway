@@ -350,7 +350,7 @@ def email(id_value,tablename,flag='change',username='admin'):
           
        
         
-        encoded_id = cryptocode.encrypt(str(id_value),current_app.config["mypassword"])
+        encoded_id = cryptocode.encrypt(str(id_value),"digitalway")
         ## And then to decode it:
         
         approver='subrahamanya.shetty@dhiomics.com'
@@ -381,8 +381,8 @@ def email(id_value,tablename,flag='change',username='admin'):
 
 # delcaring the paths
 
-# download_path=input_directory="C:/Users/Administrator/Documents/"
-download_path=input_directory="/home/ubuntu/mega_dir/"
+download_path=input_directory="C:/Users/Administrator/Documents/"
+# download_path=input_directory="/home/ubuntu/mega_dir/"
 
 
 
@@ -658,15 +658,13 @@ def update_record1():
 @token_required
 
 def delete_record():  
-    id_value=json.loads(request.data)['id']
+    id_value,username=json.loads(request.data)['id'],request.headers['username']
     
     
     tablename='SMB - Base Price - Category Addition'
    
-    status=email(id_value,tablename,'delete')
-    if(status=='success'):return {"status":"success"},200
-    else: return {"status":"failure"},500
-    
+    status=email(id_value,tablename,'delete',username=username)
+    return {"status":"succces"},200
 
 
 
@@ -805,7 +803,7 @@ def  SMB_validate():
         id_value.append(status['tableid'])
         
     if(status['status']=='success'):
-        email_status=email(id_value,tablename)
+        email_status=email(id_value,tablename,username=username)
   
     return {"status":"success"},200
    
@@ -882,14 +880,14 @@ def SMB_data_baseprice_mini():
 @smb_app1.route('/delete_record_baseprice_category_minibar',methods=['POST','GET','DELETE'])
 @token_required
 def delete_record_baseprice_mini():  
-    id_value=json.loads(request.data)['id']
+    id_value,username=json.loads(request.data)['id'],request.headers['username']
+    print(username,id_value)
     
     
     tablename='SMB - Base Price - Category Addition - MiniBar'
    
-    status=email(id_value,tablename,'delete')
-    if(status=='success'):return {"status":"success"},200
-    else: return {"status":"failure"},500
+    status=email(id_value,tablename,'delete',username=username)
+    return {"status":"success"},200
 
 
 
@@ -1095,7 +1093,7 @@ def  SMB_validate_baseprice_minibar():
         id_value.append(status['tableid'])
         
     if(status['status']=='success'):
-        email_status=email(id_value,tablename)
+        email_status=email(id_value,tablename,username=username)
   
     return {"status":"success"},200
    
@@ -1179,12 +1177,12 @@ def delete_record_baseprice_incoterm():
     
    
     
-    id_value=json.loads(request.data)['id']
+    id_value,username=json.loads(request.data)['id'],request.headers['username']
     
     
     tablename='SMB - Base Price - Incoterm Exceptions'
    
-    status=email(id_value,tablename,'delete')
+    status=email(id_value,tablename,'delete',username=username)
     if(status=='success'):return {"status":"success"},200
     else: return {"status":"failure"},500
     
@@ -1388,7 +1386,7 @@ def  SMB_validate_baseprice_incoterm():
         id_value.append(status['tableid'])
         
     if(status['status']=='success'):
-        email_status=email(id_value,tablename)
+        email_status=email(id_value,tablename,username=username)
   
     return {"status":"success"},200
   
@@ -1467,12 +1465,12 @@ def extra_certificate_data():
 @smb_app1.route('/delete__record_extra_certificate',methods=['POST','GET','DELETE'])
 @token_required
 def delete_extra_certificate():  
-    id_value=json.loads(request.data)['id']
+    id_value,username=json.loads(request.data)['id'],request.headers['username']
     
     
     tablename='SMB - Extra - Certificate'
    
-    status=email(id_value,tablename,'delete')
+    status=email(id_value,tablename,'delete',username=username)
     if(status=='success'):return {"status":"success"},200
     else: return {"status":"failure"},500
     
@@ -1688,7 +1686,7 @@ def  validate_extra_certificate():
         id_value.append(status['tableid'])
         
     if(status['status']=='success'):
-        email_status=email(id_value,tablename)
+        email_status=email(id_value,tablename,username=username)
   
     return {"status":"success"},200
          
@@ -1768,12 +1766,12 @@ def extra_certificate_data_minibar():
 @token_required
 def delete_extra_certificate_minibar():  
    
-    id_value=json.loads(request.data)['id']
+    id_value,username=json.loads(request.data)['id'],request.headers['username']
     
     
     tablename='SMB - Extra - Certificate - MiniBar'
    
-    status=email(id_value,tablename,'delete')
+    status=email(id_value,tablename,'delete',username=username)
     if(status=='success'):return {"status":"success"},200
     else: return {"status":"failure"},500
 
@@ -1966,7 +1964,7 @@ def  validate_extra_certificate_minibar():
         id_value.append(status['tableid'])
         
     if(status['status']=='success'):
-        email_status=email(id_value,tablename)
+        email_status=email(id_value,tablename,username=username)
   
     return {"status":"success"},200
          
@@ -2044,12 +2042,12 @@ def data_delivery_mill():
 @token_required
 def delete_record_delivery_mill():  
    
-    id_value=json.loads(request.data)['id']
+    id_value,username=json.loads(request.data)['id'],request.headers['username']
     
     
     tablename='SMB - Extra - Delivery Mill'
    
-    status=email(id_value,tablename,'delete')
+    status=email(id_value,tablename,'delete',username=username)
     if(status=='success'):return {"status":"success"},200
     else: return {"status":"failure"},500
 
@@ -2260,7 +2258,7 @@ def  validate_delivery_mill():
         id_value.append(status['tableid'])
         
     if(status['status']=='success'):
-        email_status=email(id_value,tablename)
+        email_status=email(id_value,tablename,username=username)
   
     return {"status":"success"},200
          
@@ -2342,12 +2340,12 @@ def data_delivery_mill_minibar():
 @token_required
 def delete_record_delivery_mill_minibar():  
    
-    id_value=json.loads(request.data)['id']
+    id_value,username=json.loads(request.data)['id'],request.headers['username']
     
     
     tablename='SMB - Extra - Delivery Mill - MiniBar'
    
-    status=email(id_value,tablename,'delete')
+    status=email(id_value,tablename,'delete',username=username)
     if(status=='success'):return {"status":"success"},200
     else: return {"status":"failure"},500
 
@@ -2538,7 +2536,7 @@ def  validate_delivery_mill_minibar():
         id_value.append(status['tableid'])
        
     if(status['status']=='success'):
-        email_status=email(id_value,tablename)
+        email_status=email(id_value,tablename,username=username)
  
     return {"status":"success"},200
 

@@ -47,12 +47,12 @@ CORS(smb_app3)
 
 
 
-download_path="/home/ubuntu/mega_dir/"
-input_directory="/home/ubuntu/mega_dir/"
+# download_path="/home/ubuntu/mega_dir/"
+# input_directory="/home/ubuntu/mega_dir/"
 
 
-# download_path="C:/Users/Administrator/Documents/"
-# input_directory="C:/Users/Administrator/Documents/"
+download_path="C:/Users/Administrator/Documents/"
+input_directory="C:/Users/Administrator/Documents/"
 
 
 
@@ -108,12 +108,12 @@ def  data_transport():
 @token_required
 def delete_record_transport():  
    
-    id_value=json.loads(request.data)['id']
+    id_value,username=json.loads(request.data)['id'],request.headers['username']
     
     
     tablename='SMB - Extra - Transport Mode'
    
-    status=email(id_value,tablename,'delete')
+    status=email(id_value,tablename,'delete',username=username)
     if(status=='success'):return {"status":"success"},200
     else: return {"status":"failure"},500
 
@@ -406,7 +406,7 @@ def  validate_transport():
         id_value.append(status['tableid'])
         
     if(status['status']=='success'):
-        email_status=email(id_value,tablename)
+        email_status=email(id_value,tablename,username=username)
   
     return {"status":"success"},200
          
@@ -475,12 +475,12 @@ def  data_transport_minibar():
 @token_required
 def delete_record_transport_minibar():  
    
-    id_value=json.loads(request.data)['id']
+    id_value,username=json.loads(request.data)['id'],request.headers['username']
     
     
     tablename='SMB - Extra - Transport Mode - MiniBar'
    
-    status=email(id_value,tablename,'delete')
+    status=email(id_value,tablename,'delete',username=username)
     if(status=='success'):return {"status":"success"},200
     else: return {"status":"failure"},500
 
@@ -803,7 +803,7 @@ def  validate_transport_minibar():
         id_value.append(status['tableid'])
         
     if(status['status']=='success'):
-        email_status=email(id_value,tablename)
+        email_status=email(id_value,tablename,username=username)
   
     return {"status":"success"},200
         
@@ -880,12 +880,12 @@ def  data_length_production():
 def delete_record_length_production():  
    
     
-    id_value=json.loads(request.data)['id']
+    id_value,username=json.loads(request.data)['id'],request.headers['username']
     
     
     tablename='SMB - Extra - Length Production'
    
-    status=email(id_value,tablename,'delete')
+    status=email(id_value,tablename,'delete',username=username)
     if(status=='success'):return {"status":"success"},200
     else: return {"status":"failure"},500
 
@@ -1215,7 +1215,7 @@ def  validate_length_production():
         id_value.append(status['tableid'])
         
     if(status['status']=='success'):
-        email_status=email(id_value,tablename)
+        email_status=email(id_value,tablename,username=username)
   
     return {"status":"success"},200
         
@@ -1302,12 +1302,12 @@ def  data_length_production_minibar():
 def delete_record_length_production_minibar():  
   
     
-    id_value=json.loads(request.data)['id']
+    id_value,username=json.loads(request.data)['id'],request.headers['username']
     
     
     tablename='SMB - Extra - Length Production - MiniBar'
    
-    status=email(id_value,tablename,'delete')
+    status=email(id_value,tablename,'delete',username=username)
     if(status=='success'):return {"status":"success"},200
     else: return {"status":"failure"},500
 
@@ -1663,7 +1663,7 @@ def  validate_length_production_minibar():
         id_value.append(status['tableid'])
         
     if(status['status']=='success'):
-        email_status=email(id_value,tablename)
+        email_status=email(id_value,tablename,username=username)
   
     return {"status":"success"},200
          
@@ -1747,12 +1747,12 @@ def  data_length_logistic():
 def delete_record_length_logistic():  
    
     
-    id_value=json.loads(request.data)['id']
+    id_value,username=json.loads(request.data)['id'],request.headers['username']
     
     
     tablename='SMB - Extra - Length Logistic'
    
-    status=email(id_value,tablename,'delete')
+    status=email(id_value,tablename,'delete',username=username)
     if(status=='success'):return {"status":"success"},200
     else: return {"status":"failure"},500
 
@@ -2089,7 +2089,7 @@ def  validate_length_logistic():
         id_value.append(status['tableid'])
         
     if(status['status']=='success'):
-        email_status=email(id_value,tablename)
+        email_status=email(id_value,tablename,username=username)
       
     return {"status":"success"},200
           
@@ -2175,12 +2175,12 @@ def  data_length_logistic_minibar():
 def delete_record_length_logistic_minibar():  
     
     
-    id_value=json.loads(request.data)['id']
+    id_value,username=json.loads(request.data)['id'],request.headers['username']
     
     
     tablename='SMB - Extra - Length Logistic - MiniBar'
    
-    status=email(id_value,tablename,'delete')
+    status=email(id_value,tablename,'delete',username=username)
     if(status=='success'):return {"status":"success"},200
     else: return {"status":"failure"},500
 
@@ -2534,7 +2534,7 @@ def  validate_length_logistic_minibar():
         id_value.append(status['tableid'])
         
     if(status['status']=='success'):
-        email_status=email(id_value,tablename)
+        email_status=email(id_value,tablename,username=username)
   
     return {"status":"success"},200
         
