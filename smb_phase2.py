@@ -50,12 +50,12 @@ CORS(smb_app2)
 
 
 
-download_path="/home/ubuntu/mega_dir/"
-input_directory="/home/ubuntu/mega_dir/"
+# download_path="/home/ubuntu/mega_dir/"
+# input_directory="/home/ubuntu/mega_dir/"
 
 
-# download_path="C:/Users/Administrator/Documents/"
-# input_directory="C:/Users/Administrator/Documents/"
+download_path="C:/Users/Administrator/Documents/"
+input_directory="C:/Users/Administrator/Documents/"
 
 
 

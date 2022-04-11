@@ -279,6 +279,7 @@ def move_records(tablename,col_tuple,value_tuple,flag,id_value=None,sequence_id=
     
     if(flag=='update'):
         # moving the records to history from main table
+        
         query1=''' INSERT INTO "SMB"."{}_History"({})
         SELECT 
         
@@ -287,6 +288,7 @@ def move_records(tablename,col_tuple,value_tuple,flag,id_value=None,sequence_id=
          FROM "SMB"."{}"
         WHERE "id" ={} '''.format(tablename,al_columnstr,al_columnstr,tablename,id_value)
         
+        print(query1)
         # sequence_id logic
         sequence_initial=db.query(''' select sequence_id from "SMB"."{}" where id={} and active=1 '''.format(tablename,id_value) )[0][0]
         vacant_check=0
@@ -336,6 +338,7 @@ def move_records(tablename,col_tuple,value_tuple,flag,id_value=None,sequence_id=
             {})
              VALUES{};'''.format(tablename,columnstr,value_tuple)
         
+        print(query)
         status=db.insert(query)
         if(status!='failed'):
             db.insert(''' delete from "SMB"."SMB_Aproval" where tableid={} '''.format(id_value))
@@ -350,7 +353,7 @@ def email(id_value,tablename,flag='change',username='admin'):
         encoded_id = cryptocode.encrypt(str(id_value),current_app.config["mypassword"])
         ## And then to decode it:
         
-        approver='arriluceaz@gmail.com'
+        approver='subrahamanya.shetty@dhiomics.com'
         mail_from='''subrahamanya@digitalway-lu.com'''
         
        
@@ -360,7 +363,7 @@ def email(id_value,tablename,flag='change',username='admin'):
         msg['To'] = approver
         #print(user)
         html=''
-        with open('/home/ubuntu/SMBPricingAPI/backend_digitalway/email_aproval.html', 'r') as f:
+        with open('email_aproval.html', 'r') as f:
          html = f.read()
         
         html=html.format(tablename,username,id_value,encoded_id,tablename,flag)
@@ -420,12 +423,23 @@ def aproval_data():
         return {"data":data,"lis":lis},200
 
     else:
-  
+
         query='''select * from "SMB"."SMB_Aproval" where tableid in {} and table_name='{}' '''.format(id_tuple,tablename)
         print(query)
-        df=pd.read_sql(query,con=con)
-       
         
+        id_data=db.query(''' select id from "SMB"."SMB_Aproval" where tableid in {} and table_name='{}' '''.format(id_tuple,tablename))
+        id_data=sum(id_data,())
+        id_data=list(id_data)
+        id_data.append(0)
+        
+        
+        
+        old_data_df=pd.read_sql(''' select * from "SMB"."{}" where id in {} '''.format(tablename,tuple(id_data)),con)
+        
+        
+        df=pd.read_sql(query,con=con)
+    
+        old_data=json.loads(old_data_df.to_json(orient='records'))
         df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer_Group":"Market_Customer_Group","Zip_Code_(Dest)":"Zip_Code_Dest"},inplace=True)
         df.dropna(axis=1, how='all',inplace=True)
         try:
@@ -436,7 +450,7 @@ def aproval_data():
             pass
         data=json.loads(df.to_json(orient='records'))
         
-        return {"data":data,"lis":lis},200
+        return {"data":data,"lis":lis,"old_json":old_data},200
       
  
 
@@ -458,6 +472,7 @@ def aprove_records():
             id_value=tuple(id_value)
                         
             query='''UPDATE "SMB"."{}" SET "active"=0 WHERE "id" in {} '''.format(tablename,id_value)
+            print(query)
             result=db.insert(query)
             df=pd.read_sql('''select * from "SMB"."{}" limit 1'''.format(tablename),con)
             cols=get_required_columns(list(df.columns))
@@ -497,8 +512,11 @@ def aprove_records():
            
             else:
                df2=df.drop(['tableid','flag','updated_on','status','table_name'], axis = 1)
-               
-               sequence_id=db.query(''' select max(sequence_id) from "SMB"."{}" where "active"=1 '''.format(tablename))[0][0]+1
+               try:
+                   
+                sequence_id=db.query(''' select max(sequence_id) from "SMB"."{}" where "active"=1 '''.format(tablename))[0][0]+1
+               except:
+                   sequence_id=1
                df2.insert(0,"sequence_id",sequence_id)
                
                col_tuple=tuple(list(df2.columns))
@@ -691,7 +709,7 @@ def add_record1():
               "Currency")
     
     status=upsert(col_tuple,input_tuple,flag,tablename)
-    if(status['status']=='success'): email_status=email([status['tableid']],tablename)
+    if(status['status']=='success'): email_status=email([status['tableid']],tablename,username=username)
     
     if(email_status=='success'): return {"status":"success"},200
     else: return {"status":"failure"},500
@@ -989,7 +1007,7 @@ def add_record_mini():
              "Currency")
     
     status=upsert(col_tuple,input_tuple,flag,tablename)
-    if(status['status']=='success'): email_status=email([status['tableid']],tablename)
+    if(status['status']=='success'): email_status=email([status['tableid']],tablename,username=username)
     
     if(email_status=='success'): return {"status":"success"},200
     else: return {"status":"failure"},500
@@ -1284,7 +1302,7 @@ def add_record_incoterm():
 		"Amount","Currency" )
     
     status=upsert(col_tuple,input_tuple,flag,tablename)
-    if(status['status']=='success'): email_status=email([status['tableid']],tablename)
+    if(status['status']=='success'): email_status=email([status['tableid']],tablename,username=username)
     
     if(email_status=='success'): return {"status":"success"},200
     else: return {"status":"failure"},500
@@ -1575,7 +1593,7 @@ def smb_add_certificate():
     
     print(status)
     print("##")
-    if(status['status']=='success'): email_status=email([status['tableid']],tablename)
+    if(status['status']=='success'): email_status=email([status['tableid']],tablename,username=username)
     
     if(email_status=='success'): return {"status":"success"},200
     else: return {"status":"failure"},500
@@ -2146,7 +2164,7 @@ def add_record_delivery_mill():
     
     
     status=upsert(col_tuple,input_tuple,flag,tablename)
-    if(status['status']=='success'): email_status=email([status['tableid']],tablename)
+    if(status['status']=='success'): email_status=email([status['tableid']],tablename,username=username)
     
     if(email_status=='success'): return {"status":"success"},200
     else: return {"status":"failure"},500
@@ -2432,7 +2450,7 @@ def add_record_delivery_mill_minibar():
     
     
     status=upsert(col_tuple,input_tuple,flag,tablename)
-    if(status['status']=='success'): email_status=email([status['tableid']],tablename)
+    if(status['status']=='success'): email_status=email([status['tableid']],tablename,username=username)
     
     if(email_status=='success'): return {"status":"success"},200
     else: return {"status":"failure"},500

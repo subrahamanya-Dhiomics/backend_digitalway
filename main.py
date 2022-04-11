@@ -18,10 +18,11 @@ from taskbar_invoice import taskbar_invoice_app
 
 from SMB_Generic import generic
 
+from reset_password import reset_password 
 
 app = Flask(__name__)
 CORS(app)
-
+app.register_blueprint(reset_password)
 
 app.register_blueprint(scrap_app)
 app.register_blueprint(smb_app1)
@@ -36,8 +37,8 @@ app.register_blueprint(generic)
 
 con1=psycopg2.connect(dbname='offertool',user='pgadmin',password='Sahara_17',host='offertool2-qa.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
 
-con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
-cursor=con.cursor()
+# con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
+cursor=con1.cursor()
 app.config["environment_url"] = "https://smbprice.dcc-am.com/auth/reset-password?user_id"
 
 
@@ -64,17 +65,29 @@ def login():
     try:
         
      query="select distinct(1) from  user_management_ocp.user_details  where user_name='{}' and password='{}'".format(username,password)
-     
-     
-     cursor.execute(query)
-     status=cursor.fetchall()[0][0]
+     status=db.query(query)[0][0]
      
     except:
         status=0
         
     
     if status==1:
-        df=pd.read_sql("select * from  user_management_ocp.user_details  where user_name='{}'".format(username),con=con)
+        
+        menu_query=''' select menu from user_management_ocp.group_access a inner join user_management_ocp.user_details u on a.group_code=u.group_id where user_name='{}' '''.format(username)
+        print(menu_query)
+        menu_items=db.query(menu_query)[0][0]
+        menu_items.append('test')
+        
+       
+         
+        data=db.query(" select data from user_management_ocp.menudata where menu in  {}".format(tuple(menu_items)))
+        
+        menu_list=[]
+        for m in data:
+            item=json.loads(m[0])
+            menu_list.append(item)
+        
+        df=pd.read_sql("select * from  user_management_ocp.user_details  where user_name='{}'".format(username),con=con1)
         user=json.loads(df.to_json(orient='records'))[0]
         
        
@@ -83,7 +96,7 @@ def login():
         },
             app.config['SECRET_KEY'])
         
-        return jsonify({'token': token,'user':user}),200
+        return jsonify({'token': token,'user':user,'sidebar_json':menu_list}),200
     else:
         return make_response('Unable to verify',  {'WWW-Authenticate': 'Basic realm: "Authentication Failed "'}),500
 
@@ -190,6 +203,6 @@ def web_api():
         
  
 if __name__ == '__main__':
-    app.run(host='172.16.4.190')
-    # app.run()
+    # app.run(host='172.16.4.190')
+    app.run()
    

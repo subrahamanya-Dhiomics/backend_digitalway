@@ -165,7 +165,7 @@ def download_base_price_minibar_history():
         count=db.query('select count(*) from "SMB"."SMB - Base Price - Category Addition - MiniBar_History"')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
-        df.rename(columns={"Market_-_Customer":"Market_Customer"},inplace=True)
+        df.rename(columns={"Market_-_Customer":"Market_Customer","Market_-_Country":"Market_Country"},inplace=True)
         df['updated_on'] = df['updated_on'].astype('datetime64[s]')
         df['updated_on']=pd.to_datetime(df['updated_on'])
         df['updated_on']=df['updated_on'].astype(str)

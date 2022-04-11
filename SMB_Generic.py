@@ -108,6 +108,7 @@ def generic_list():
     
     # fetching the data from database and filtering    
     query='''select * from "SMB"."{}" where "active"=1 order by sequence_id OFFSET {} LIMIT {} '''.format(tablename,lowerLimit,upperLimit) 
+    print(query)
     df=pd.read_sql(query,con=con )
     count=db.query('select count(*) from "SMB"."{}" where "active"=1 '.format(tablename))[0][0]
     df.columns = df.columns.str.replace(' ', '_')

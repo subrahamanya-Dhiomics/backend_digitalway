@@ -7,7 +7,6 @@ Created on Thu Oct  12 07:33:38 2021
 """
 
 from flask import Blueprint,current_app
-
 import numpy as np
 import pandas as pd
 import traceback
@@ -51,10 +50,12 @@ consql = psycopg2.connect(dbname='offertool',user='pgadmin',password='Sahara_17'
 # csv_out_path="C:/Users/Administrator/Documents/"
 # input_path="C:/Users/Administrator/Documents/"
 
-# csv_out_path="/home/ubuntu/mega_dir/"
-# input_path="/home/ubuntu/mega_dir/"
+csv_out_path="/home/ubuntu/mega_dir/"
+input_path="/home/ubuntu/mega_dir/"
 
-engine = create_engine('postgresql://postgres:ocpphase01@ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com:5432/offertool')
+# engine = create_engine('postgresql://postgres:ocpphase01@ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com:5432/offertool')
+
+engine = create_engine('postgresql://pgadmin:Sahara_17@offertool2-qa.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com:5432/offertool')
 
 
 class NumpyArrayEncoder(JSONEncoder):
