@@ -168,6 +168,7 @@ def  generic_download():
 def generic_delete():  
     
     id_value  = json.loads(request.data)['id'][1:]
+    username=request.headers['username']
     
     print(id_value)
     print("****")
@@ -175,7 +176,7 @@ def generic_delete():
     
    
    
-    status=email(id_value,tablename,'delete')
+    status=email(id_value,tablename,'delete',username=username)
     
     if(status=='success'):return {"status":"success"},200
     else: return {"status":"failure"},500
@@ -289,7 +290,7 @@ def generic_validate():
         id_value.append(status['tableid'])
         
     if(status['status']=='success'):
-        email_status=email(id_value,tablename)
+        email_status=email(id_value,tablename,username=username)
         print("mail_sent")
   
     return {"status":"success"},200
@@ -374,7 +375,7 @@ def generic_update():
     email_status=''
     
     status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
-    if(status['status']=='success'):email_status=email([status['tableid']],tablename,username)
+    if(status['status']=='success'):email_status=email([status['tableid']],tablename,username=username)
     
     
     

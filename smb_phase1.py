@@ -411,6 +411,7 @@ def aproval_data():
         
         
     if(flag=='delete'):
+        
         query=''' select * from "SMB"."{}" where id in {} and active=1 '''.format(tablename,id_tuple)
         
         df=pd.read_sql(query,con)
@@ -425,23 +426,25 @@ def aproval_data():
     else:
 
         query='''select * from "SMB"."SMB_Aproval" where tableid in {} and table_name='{}' '''.format(id_tuple,tablename)
-        print(query)
-        
-        
+       
         id_data=db.query(''' select id from "SMB"."SMB_Aproval" where tableid in {} and table_name='{}' '''.format(id_tuple,tablename))
         id_data=sum(id_data,())
         id_data=list(id_data)
         id_data.append(0)
         
-        old_data=''
+        old_json=[]
         
-        if(None not in id_data):
-            
+        if(None not in id_data and len(id_data)>1):
+       
          old_data_df=pd.read_sql(''' select * from "SMB"."{}" where id in {} '''.format(tablename,tuple(id_data)),con)
-         old_data=json.loads(old_data_df.to_json(orient='records'))
+         
+         old_data_df['updated_on'] = old_data_df['updated_on'].astype('datetime64[s]')
+         old_data_df['updated_on']=pd.to_datetime(old_data_df['updated_on'])
+         old_data_df['updated_on']=old_data_df['updated_on'].astype(str)
+         old_json=json.loads(old_data_df.to_json(orient='records'))
+       
         
         df=pd.read_sql(query,con=con)
-    
        
         df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer_Group":"Market_Customer_Group","Zip_Code_(Dest)":"Zip_Code_Dest"},inplace=True)
         df.dropna(axis=1, how='all',inplace=True)
@@ -453,7 +456,7 @@ def aproval_data():
             pass
         data=json.loads(df.to_json(orient='records'))
         
-        return {"data":data,"lis":lis,"old_json":old_data},200
+        return {"data":data,"lis":lis,"old_json":old_json},200
       
  
 
@@ -1000,7 +1003,7 @@ def add_record_mini():
              
              "BusinessCode",
              "Customer Group",   
-             "Market - Customer"
+             "Market - Customer",
              "Market - Country",
         	 "Beam Category",
              "Document Item Currency",
