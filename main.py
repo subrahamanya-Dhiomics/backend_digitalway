@@ -101,56 +101,6 @@ def login():
         return make_response('Unable to verify',  {'WWW-Authenticate': 'Basic realm: "Authentication Failed "'}),500
 
 
-# @app.route("/SMBMinibarService",methods=['GET','POST'])
-# def web_api():
-    
-#     data=str( request.data)
-   
-#     text_file = open("data.txt", "w")
-
-
-#     text_file.write(data)
-   
-#     text_file.close()
-#     data=json.loads(request.data)
-    
-#     if(str(data)[0]=='['):
-#         data=data[0]
-    
-#     tableId = data['tableId']
-#     data=data['data']
-#     wherestr=''
-#     db.insert("rollback")
-#     query='select tablename from "SMB"."table_mapping" where id ={}'.format(tableId)
-#     tableName=db.query(query)[0][0]
-#     for i in list(data):
-#         if(data[i]=="*"):
-#             del data[i]
-            
-   
-#     k=0
-#     query='''select * from "SMB"."{}" where '''.format(tableName)
-#     for i in data:
-#         if(k==0):
-#             wherestr=wherestr +'"' + i +'"' +" = " + "'" +str(data[i])+"'"
-#             k=1
-       
-           
-#         elif(k==1):
-#             wherestr=wherestr + " and " +'"' + i +'"' +" = " + "'" +str(data[i])+"'"
-#     query=query+wherestr
-#     if(len(data)==0):
-#         query=''' select * from "SMB"."{}" '''.format(tableName)
-        
-#     query+=" order by sequence_id asc limit 1"
-#     print(query)
-#     data=db.query(query)
-       
-#     df=pd.read_sql(query,con=con)
-#     df_json=json.loads(df.to_json(orient='records'))
-           
-#     return {"data":df_json,"status":"sucess"}
-
 
 @app.route("/SMBMinibarService",methods=['GET','POST'])
 def web_api():

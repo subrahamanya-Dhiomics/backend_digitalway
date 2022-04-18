@@ -47,11 +47,11 @@ consql = psycopg2.connect(dbname='offertool',user='pgadmin',password='Sahara_17'
 
 
 
-# csv_out_path="C:/Users/Administrator/Documents/"
-# input_path="C:/Users/Administrator/Documents/"
+csv_out_path="C:/Users/Administrator/Documents/"
+input_path="C:/Users/Administrator/Documents/"
 
-csv_out_path="/home/ubuntu/mega_dir/"
-input_path="/home/ubuntu/mega_dir/"
+# csv_out_path="/home/ubuntu/mega_dir/"
+# input_path="/home/ubuntu/mega_dir/"
 
 # engine = create_engine('postgresql://postgres:ocpphase01@ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com:5432/offertool')
 
@@ -174,6 +174,9 @@ def upload_files():
         data1['Internal_Grade']=data1['Internal_Grade'].astype(str)
         df['grade']=df['grade'].astype(str)
         df['accountcode']=df['accountcode'].astype(str)
+        # df['plant']=df['plant'].astype(str)
+        
+        
         
         
      
@@ -195,8 +198,8 @@ def upload_files():
             if(mon==1):
                 ds=''
                 ds=data1[(pd.to_datetime(data1['Month_year'], format='%Y%m')) > today.strftime('%Y-%m')]
-        
-        
+           
+         
             data=df.merge(ds,left_on=['accountcode','grade'],right_on=['Customer_ID','Internal_Grade'])
             
             
@@ -213,9 +216,13 @@ def upload_files():
             a=[]
             
             
+            
+            
+            
             for i in list(data.index):
                    customer_id=data['accountcode'][i]
                    internal_grade=data['grade'][i]
+                  
                    pricemodel=data['pricemodel'][i]
                    offerid=data['offerid'][i]
             
@@ -224,7 +231,7 @@ def upload_files():
                      if (ds['Customer_ID'][ind]==customer_id and ds['Internal_Grade'][ind]==internal_grade):
                         if(data['pricemodel'][i]  in (2,4,5,7,None)):
                            
-                           if(offerid not in a):
+                           if({internal_grade:offerid} not in a):
                               print(ind)
                               if(ds['OFFER_ALLOY'][ind]==''):
                                 ds['OFFER_ALLOY'][ind]= 1
@@ -232,10 +239,10 @@ def upload_files():
                               else:
                                 ds['OFFER_ALLOY'][ind]= ds['OFFER_ALLOY'][ind]+1
                                 ds['OFFER_ALLOY_NUMBER'][ind]= ds['OFFER_ALLOY_NUMBER'][ind]+'_'+str(offerid)   
-                              a.append(offerid)
+                              a.append({internal_grade:offerid})
                     
                         if(data['pricemodel'][i] in (1,3,6,8)):
-                           if(offerid not in a):
+                           if({internal_grade:offerid}  not in a):
                             print(ind)
                             
                             if(ds['OFFER_ EFF_PR _NUMBER'][ind]==''):
@@ -244,10 +251,13 @@ def upload_files():
                             else:
                                ds['OFFER_ EFF_PR _NUMBER'][ind]= ds['OFFER_ EFF_PR _NUMBER'][ind]+'_'+str(offerid)
                                ds['OFFER_EFF_PR'][ind]= ds['OFFER_EFF_PR'][ind]+1
-                            a.append(offerid)
+                            a.append({internal_grade:offerid})
+            
             if(mon==0):
+               
                 data01=ds
             if(mon==1):
+              
                 data02=ds
                 
       

@@ -14,6 +14,9 @@ from flask import Flask, request, send_file, render_template, make_response,curr
 from flask import jsonify
 from flask_cors import CORS
 from json import JSONEncoder
+
+from SendMailTest import send_email
+
 import psycopg2
 import shutil
 from functools import wraps
@@ -184,8 +187,9 @@ def move_direct(tablename,id_value,sequence_id):
       # sequence_id logic
         sequence_initial=db.query(''' select sequence_id from "SMB"."{}" where id={} and active=1 '''.format(tablename,id_value) )[0][0]
         vacant_check=0
+       
         try:
-         vacant_check=db.query('''select active from "SMB"."{}" where sequence_id={} '''.format(tablename,sequence_id))[0][0]
+         vacant_check=db.query('''select active from "SMB"."{}" where sequence_id={} and active=1 '''.format(tablename,sequence_id))[0][0]
         except:
           pass
      
@@ -205,7 +209,11 @@ def move_direct(tablename,id_value,sequence_id):
                  qr2= ''' UPDATE "SMB"."{}" SET sequence_id=sequence_id-1 where id={} and active=1 '''.format(tablename,j)
                  db.insert(qr2)
         query2= ''' UPDATE "SMB"."{}" SET sequence_id={} where id={}  '''.format(tablename,sequence_id,id_value)
+        print(sequence_initial)
         
+        print(vacant_check)
+        print(tablename)
+        print("*****")
         db.insert(query2)
         
         return True
@@ -226,6 +234,8 @@ def upsert(col_tuple=None,input_tuple=None,flag='update',tablename=None,id_value
         columnstr=tuple_to_string(col_tuple)
         tableid=''
         
+        now = datetime.now()
+        date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
         
         
        
@@ -245,10 +255,13 @@ def upsert(col_tuple=None,input_tuple=None,flag='update',tablename=None,id_value
                 if check and check!='failed':querystr=''' UPDATE "SMB"."SMB_Aproval" SET ({})= {} where id={} and table_name='{}' '''.format(columnstr,input_tuple,id_value,tablename)
                 else: querystr='''INSERT INTO "SMB"."SMB_Aproval" ({}) VALUES{}; '''.format(columnstr,input_tuple)
                  
+               
+                
                 status=db.insert(querystr)
                 print(querystr)
                 tableid=db.query(''' select max(tableid) from "SMB"."SMB_Aproval" where id={} and table_name='{}' '''.format(id_value,tablename))[0][0]
-            
+                time_stamp_update=db.insert(''' update "SMB"."SMB_Aproval"  set updated_on='{}' where tableid={} '''.format(date_time,tableid))
+               
         if(flag=='add'):
             querystr=''' Insert into  "SMB"."SMB_Aproval"  ({}) VALUES{}'''.format(columnstr,input_tuple)
            
@@ -256,7 +269,8 @@ def upsert(col_tuple=None,input_tuple=None,flag='update',tablename=None,id_value
             print(querystr)            
             
             tableid=db.query(''' select max(tableid) from "SMB"."SMB_Aproval" where table_name='{}' and flag='add' '''.format(tablename) )[0][0]
-        
+            time_stamp_update=db.insert(''' update "SMB"."SMB_Aproval"  set updated_on='{}' where tableid={} '''.format(date_time,tableid))
+               
         
         
      
@@ -288,7 +302,7 @@ def move_records(tablename,col_tuple,value_tuple,flag,id_value=None,sequence_id=
          FROM "SMB"."{}"
         WHERE "id" ={} '''.format(tablename,al_columnstr,al_columnstr,tablename,id_value)
         
-        print(query1)
+        
         # sequence_id logic
         sequence_initial=db.query(''' select sequence_id from "SMB"."{}" where id={} and active=1 '''.format(tablename,id_value) )[0][0]
         vacant_check=0
@@ -353,7 +367,7 @@ def email(id_value,tablename,flag='change',username='admin'):
         encoded_id = cryptocode.encrypt(str(id_value),current_app.config["mypassword"])
         ## And then to decode it:
         
-        approver='subrahamanya.shetty@dhiomics.com'
+        approver='arriluceaz@gmail.com'
         mail_from='''subrahamanya@digitalway-lu.com'''
         
        
@@ -363,7 +377,7 @@ def email(id_value,tablename,flag='change',username='admin'):
         msg['To'] = approver
         #print(user)
         html=''
-        with open('email_aproval.html', 'r') as f:
+        with open('/home/ubuntu/SMBPricingAPI/backend_digitalway/email_aproval.html', 'r') as f:
          html = f.read()
         
         html=html.format(tablename,username,id_value,encoded_id,tablename,flag)
@@ -381,8 +395,8 @@ def email(id_value,tablename,flag='change',username='admin'):
 
 # delcaring the paths
 
-download_path=input_directory="C:/Users/Administrator/Documents/"
-# download_path=input_directory="/home/ubuntu/mega_dir/"
+# download_path=input_directory="C:/Users/Administrator/Documents/"
+download_path=input_directory="/home/ubuntu/mega_dir/"
 
 
 
@@ -478,7 +492,7 @@ def aprove_records():
             id_value=tuple(id_value)
                         
             query='''UPDATE "SMB"."{}" SET "active"=0 WHERE "id" in {} '''.format(tablename,id_value)
-            print(query)
+           
             result=db.insert(query)
             df=pd.read_sql('''select * from "SMB"."{}" limit 1'''.format(tablename),con)
             cols=get_required_columns(list(df.columns))
@@ -487,7 +501,7 @@ def aprove_records():
             
             query='''insert into "SMB"."{}_History"({}) select {} from 
 "SMB"."{}" where "id" in {} '''.format(tablename,col_string,col_string,tablename,id_value)
-            print(query)
+            
             
             
             result=db.insert(query)
@@ -510,14 +524,14 @@ def aprove_records():
                 pass
             
             if(flag=='update'):
-             df2=df.drop(['tableid','flag','updated_on','status','table_name'], axis = 1)
+             df2=df.drop(['tableid','flag','status','table_name'], axis = 1)
              col_tuple=tuple(list(df2.columns))
              value_tuple=tuple(df2.loc[i])
            
              status=move_records(tablename,col_tuple,value_tuple,flag,id_value,sequence_id)
            
             else:
-               df2=df.drop(['tableid','flag','updated_on','status','table_name'], axis = 1)
+               df2=df.drop(['tableid','flag','status','table_name'], axis = 1)
                try:
                    
                 sequence_id=db.query(''' select max(sequence_id) from "SMB"."{}" where "active"=1 '''.format(tablename))[0][0]+1
@@ -556,7 +570,7 @@ def SMB_data():
     search_string=request.args.get("search_string") 
     limit=request.args.get("limit",type=int)
     offset=request.args.get("offset",type=int)
-    
+    send_email()
     
     if(limit==None):
         limit=500
@@ -660,18 +674,18 @@ def update_record1():
         else: return {"status":"failure"},500
 
 
-@smb_app1.route('/delete_record_baseprice',methods=['POST','GET','DELETE'])
+@smb_app1.route('/delete_record_baseprice',methods=['POST','GET'])
 @token_required
 
 def delete_record():  
     id_value,username=json.loads(request.data)['id'],request.headers['username']
     
-    
     tablename='SMB - Base Price - Category Addition'
    
     status=email(id_value,tablename,'delete',username=username)
-    return {"status":"succces"},200
-
+    
+    if(status=='success'):return {"status":"success"},200
+    else: return {"status":"failure"},500
 
 
      
@@ -2568,35 +2582,6 @@ def  download_delivery_mill_minibar():
             return {"status":"failure"},500
     
         
-    
-@smb_app1.route('/history_delivering_mill',methods=['GET'])
-
-def  download_delivery_mill_minibar_history():
-    search_string=request.args.get("search_string")
-    
-    limit=request.args.get("limit",type=int)
-    offset=request.args.get("offset",type=int)
-    
-    # pagination logic
-    lowerLimit=offset*limit 
-    upperLimit=lowerLimit+limit
-    
-    # fetching the data from database and filtering    
-    try:
-        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Delivery Mill - MiniBar_History"   OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
-        count=db.query('select count(*) from "SMB"."SMB - Extra - Delivery Mill - MiniBar"')[0][0]
-        df.columns = df.columns.str.replace(' ', '_')
-        
-        df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer_Group":"Market_Customer_Group","Market_-_Customer":"Market_Customer"},inplace=True)
-        
-        if(search_string!="all" and search_string!=None):
-                      df=df[df.eq(search_string).any(1)]
-        
-        table=json.loads(df.to_json(orient='records'))
-        
-        return {"data":table,"totalCount":count},200         
-    except:
-        return {"statuscode":500,"msg":"failure"},500
         
 
     
