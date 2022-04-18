@@ -14,9 +14,6 @@ from flask import Flask, request, send_file, render_template, make_response,curr
 from flask import jsonify
 from flask_cors import CORS
 from json import JSONEncoder
-
-from SendMailTest import send_email
-
 import psycopg2
 import shutil
 from functools import wraps
@@ -367,7 +364,7 @@ def email(id_value,tablename,flag='change',username='admin'):
         encoded_id = cryptocode.encrypt(str(id_value),current_app.config["mypassword"])
         ## And then to decode it:
         
-        approver='arriluceaz@gmail.com'
+        approver='subrahamanya.shetty@dhiomics.com'
         mail_from='''subrahamanya@digitalway-lu.com'''
         
        
@@ -377,7 +374,7 @@ def email(id_value,tablename,flag='change',username='admin'):
         msg['To'] = approver
         #print(user)
         html=''
-        with open('/home/ubuntu/SMBPricingAPI/backend_digitalway/email_aproval.html', 'r') as f:
+        with open('email_aproval.html', 'r') as f:
          html = f.read()
         
         html=html.format(tablename,username,id_value,encoded_id,tablename,flag)
@@ -451,23 +448,33 @@ def aproval_data():
         if(None not in id_data and len(id_data)>1):
        
          old_data_df=pd.read_sql(''' select * from "SMB"."{}" where id in {} '''.format(tablename,tuple(id_data)),con)
-         
+         old_data_df.insert(0,"flag",flag)
          old_data_df['updated_on'] = old_data_df['updated_on'].astype('datetime64[s]')
          old_data_df['updated_on']=pd.to_datetime(old_data_df['updated_on'])
          old_data_df['updated_on']=old_data_df['updated_on'].astype(str)
+         
+         old_data_df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer_Group":"Market_Customer_Group","Zip_Code_(Dest)":"Zip_Code_Dest"},inplace=True)
          old_json=json.loads(old_data_df.to_json(orient='records'))
-       
-        
+          
         df=pd.read_sql(query,con=con)
        
         df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer_Group":"Market_Customer_Group","Zip_Code_(Dest)":"Zip_Code_Dest"},inplace=True)
         df.dropna(axis=1, how='all',inplace=True)
+        
         try:
             df['updated_on'] = df['updated_on'].astype('datetime64[s]')
             df['updated_on']=pd.to_datetime(df['updated_on'])
             df['updated_on']=df['updated_on'].astype(str)
         except:
             pass
+        data=[]
+        for i in range(len(df)):
+           
+           a= [key for key,val in dict(df.loc[i,lis]==old_data_df.loc[i,lis]).items() if val==False]
+           json_object=dict(df.loc[i])
+           json_object['changed']=a
+           data.append(json_object)
+        df=pd.DataFrame(data)
         data=json.loads(df.to_json(orient='records'))
         
         return {"data":data,"lis":lis,"old_json":old_json},200
@@ -492,7 +499,7 @@ def aprove_records():
             id_value=tuple(id_value)
                         
             query='''UPDATE "SMB"."{}" SET "active"=0 WHERE "id" in {} '''.format(tablename,id_value)
-           
+            print(query)
             result=db.insert(query)
             df=pd.read_sql('''select * from "SMB"."{}" limit 1'''.format(tablename),con)
             cols=get_required_columns(list(df.columns))
@@ -501,7 +508,7 @@ def aprove_records():
             
             query='''insert into "SMB"."{}_History"({}) select {} from 
 "SMB"."{}" where "id" in {} '''.format(tablename,col_string,col_string,tablename,id_value)
-            
+            print(query)
             
             
             result=db.insert(query)
@@ -570,7 +577,7 @@ def SMB_data():
     search_string=request.args.get("search_string") 
     limit=request.args.get("limit",type=int)
     offset=request.args.get("offset",type=int)
-    send_email()
+    
     
     if(limit==None):
         limit=500
