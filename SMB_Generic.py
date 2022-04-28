@@ -241,6 +241,11 @@ def generic_upload():
             df3=df3[df3['_merge']=='left_only']
             
             df3.drop(['_merge'],axis=1,inplace=True)
+            df3.rename(columns={"Unit of Quantity":"Unit_of_Quantity","Customer Group":"Customer_Group","Tonnage From":"Tonnage_From","Tonnage To":"Tonnage_To"},inplace=True)
+        
+            df.columns = df.columns.str.replace( ' ','_')
+         
+    
             
             table=json.loads(df3.to_json(orient='records'))
            
@@ -257,6 +262,8 @@ def generic_validate():
     print(json_data)
     
     df=pd.DataFrame(json_data["billet"]) 
+    df.columns = df.columns.str.replace( '_',' ')
+         
     
     tablename=json_data['table_name']
     

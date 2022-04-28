@@ -15,7 +15,7 @@ from taskbar1 import taskbar1
 import pandas as pd
 from user_management import user_management_app
 from taskbar_invoice import taskbar_invoice_app
-
+from SendMailTest import send_email
 from SMB_Generic import generic
 
 from reset_password import reset_password 
@@ -101,6 +101,41 @@ def login():
         return make_response('Unable to verify',  {'WWW-Authenticate': 'Basic realm: "Authentication Failed "'}),500
 
 
+def range_logic(data,typ):
+    if(typ=='len'):
+        
+        length_string='''CASE
+    		WHEN "Length To"~E'^\\\d+$' THEN
+    			CAST ("Length To" AS INTEGER) >={}
+    			else "Length To"='*'
+    			
+    		end
+    			and
+    case	WHEN "Length From"~E'^\\\d+$' THEN
+    			CAST ("Length From" AS INTEGER) <={}
+    			
+    			else "Length From"='*'
+    			
+    		end'''.format(data['Length'],data['Length'])
+        return length_string
+    else:
+        tonnage_string='''CASE
+    		WHEN "Tonnage To"~E'^\\\d+$' THEN
+    			CAST ("Tonnage To" AS INTEGER) >={}
+    			else "Tonnage To"='*'
+    			
+    		end
+    			and
+    case	WHEN "Tonnage From"~E'^\\\d+$' THEN
+    			CAST ("Tonnage From" AS INTEGER) <={}
+    			
+    			else "Tonnage From"='*'
+    			
+    		end'''.format(data['Tonnage'],data['Tonnage'])
+    			
+        data.pop('Tonnage')
+        return tonnage_string
+    
 
 @app.route("/SMBMinibarService",methods=['GET','POST'])
 def web_api():
@@ -127,6 +162,20 @@ def web_api():
     
     k=0
     query='''select * from "SMB"."{}" where '''.format(tableName)
+    
+    if('Length' in data):
+        if(data['Length'] !='*'):
+         wherestr=wherestr+range_logic(data,'len')
+         data.pop('Length')
+         k=1
+    if('Tonnage' in data):
+        if(data['Tonnage']!='*'):
+            wherestr=wherestr+range_logic(data,'ton')
+            k=1
+        else:
+            data.pop('Tonnage')
+            
+  
     for i in data:
         if(k==0):
             wherestr=wherestr+ "("+    '"' + i +'"'    +   " = "  +  "'" +str(data[i])+"'"   + " or " +   '"' + i +'"' + " = "+ "'"+ "*" +"'"+     ")"
@@ -137,9 +186,7 @@ def web_api():
             wherestr=wherestr + " and " +"("+    '"' + i +'"'    +   " = "  +  "'" +str(data[i])+"'"   + " or " +   '"' + i +'"' + " = "+ "'"+ "*" +"'"+     ")"
             
     query=query+wherestr
-    if(len(data)==0):
-        query=''' select * from "SMB"."{}" '''.format(tableName)
-        
+
     query+=" order by sequence_id asc limit 1"
     print(query)
     data=db.query(query)
@@ -153,6 +200,6 @@ def web_api():
         
  
 if __name__ == '__main__':
-    # app.run(host='172.16.4.190')
-    app.run()
+    app.run(host='172.16.4.190')
+    # app.run()
    

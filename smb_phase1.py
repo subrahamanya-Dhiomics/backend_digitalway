@@ -3,8 +3,6 @@
 Created on Thu Oct  12 07:33:38 2021
 @author: subbu
 """
-
-
 # import section (python libraries)
 
 from flask import Blueprint
@@ -13,14 +11,12 @@ import json
 from flask import Flask, request, send_file, render_template, make_response,current_app
 from flask import jsonify
 from flask_cors import CORS
-from json import JSONEncoder
 import psycopg2
 import shutil
 from functools import wraps
 from pathlib import Path
 import os
 from sqlalchemy import create_engine
-import getpass
 import cryptocode
 from datetime import datetime,date
 import jwt
@@ -31,10 +27,9 @@ from email.mime.text import MIMEText
 
 
 # database connection strings ( ocpphase1 -- > offertool >SMB)
-
 engine = create_engine('postgresql://postgres:ocpphase01@ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com:5432/offertool')
-
 con = psycopg2.connect(dbname='offertool',user='pgadmin',password='Sahara_17',host='offertool2-qa.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
+
 
 #database class for updating and fetching the data 
 class Database:
@@ -75,8 +70,6 @@ class Database:
             self.cursor.close()
            
 
-    
- 
 # flsk app declaration 
 
 smb_app1 = Blueprint('smb_app1', __name__)
@@ -93,8 +86,7 @@ def get_required_columns(cols):
         except:
             pass
     return  cols
-def move_deleted_record():
-    return 'dsf'
+
 
 #user defined functions section 
 # 1)token generation
@@ -138,32 +130,20 @@ def highlight_col(x):
 
     
 def test(col_tuple,input_tuple,id_value,tablename):
-    
-    print(col_tuple)
-    print(input_tuple)
     sequence_id=''
     col_tuple=list(col_tuple)
     input_tuple=list(input_tuple)
     lis=["table_name","id","Username"]
-    
     for n in lis:   
      col_tuple.remove(n)
-   
     input_tuple.pop(0)
     input_tuple.pop(0)
-    input_tuple.pop(1)
-        
+    input_tuple.pop(1)    
     tag=False
     columnstr=tuple_to_string(col_tuple)
-    
     query=''' select {} from "SMB"."{}" where id={} '''.format(columnstr,tablename,id_value)
-    
-   
     dat=list(db.query(query)[0])
-    
-    
     if(dat[0]!=input_tuple[0]):
-    
         tag=False
         sequence_id=input_tuple[0]
         
@@ -171,20 +151,13 @@ def test(col_tuple,input_tuple,id_value,tablename):
         input_tuple.pop(0)
         if(input_tuple==dat):
             tag=True
-    
-    
     return {"tag":tag,"seq":sequence_id}
             
 
 def move_direct(tablename,id_value,sequence_id):
-    
-        print("inside move_direct")
-        
-    
       # sequence_id logic
         sequence_initial=db.query(''' select sequence_id from "SMB"."{}" where id={} and active=1 '''.format(tablename,id_value) )[0][0]
-        vacant_check=0
-       
+        vacant_check=0 
         try:
          vacant_check=db.query('''select active from "SMB"."{}" where sequence_id={} and active=1 '''.format(tablename,sequence_id))[0][0]
         except:
@@ -197,7 +170,6 @@ def move_direct(tablename,id_value,sequence_id):
                 id_array=list(sum(id_array,()))
                 for i in  id_array:
                  qr1= ''' UPDATE "SMB"."{}" SET sequence_id=sequence_id+1 where id={}  and active=1 '''.format(tablename,i)
-                 print(qr1)
                  db.insert(qr1)
             else:
                 id_array=db.query(''' select id from "SMB"."{}" where sequence_id >{} and sequence_id<={} and active=1 order by sequence_id '''.format(tablename,sequence_initial,sequence_final))
@@ -206,11 +178,6 @@ def move_direct(tablename,id_value,sequence_id):
                  qr2= ''' UPDATE "SMB"."{}" SET sequence_id=sequence_id-1 where id={} and active=1 '''.format(tablename,j)
                  db.insert(qr2)
         query2= ''' UPDATE "SMB"."{}" SET sequence_id={} where id={}  '''.format(tablename,sequence_id,id_value)
-        print(sequence_initial)
-        
-        print(vacant_check)
-        print(tablename)
-        print("*****")
         db.insert(query2)
         
         return True
@@ -233,17 +200,10 @@ def upsert(col_tuple=None,input_tuple=None,flag='update',tablename=None,id_value
         
         now = datetime.now()
         date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
-        
-        
-       
-        
         if(flag=='update'):
             
             
             test_case=test(col_tuple,input_tuple,id_value,tablename)
-             
-            print(test_case)
-            
             if(test_case['tag']==True):
                stat=move_direct(tablename,id_value,test_case['seq'])
                status='move_direct'
@@ -251,9 +211,6 @@ def upsert(col_tuple=None,input_tuple=None,flag='update',tablename=None,id_value
                 check=db.query(''' select exists(select 1  from "SMB"."SMB_Aproval" where id={} and table_name='{}') '''.format(id_value,tablename))[0][0]
                 if check and check!='failed':querystr=''' UPDATE "SMB"."SMB_Aproval" SET ({})= {} where id={} and table_name='{}' '''.format(columnstr,input_tuple,id_value,tablename)
                 else: querystr='''INSERT INTO "SMB"."SMB_Aproval" ({}) VALUES{}; '''.format(columnstr,input_tuple)
-                 
-               
-                
                 status=db.insert(querystr)
                 print(querystr)
                 tableid=db.query(''' select max(tableid) from "SMB"."SMB_Aproval" where id={} and table_name='{}' '''.format(id_value,tablename))[0][0]
@@ -261,10 +218,8 @@ def upsert(col_tuple=None,input_tuple=None,flag='update',tablename=None,id_value
                
         if(flag=='add'):
             querystr=''' Insert into  "SMB"."SMB_Aproval"  ({}) VALUES{}'''.format(columnstr,input_tuple)
-           
             status=db.insert(querystr)
             print(querystr)            
-            
             tableid=db.query(''' select max(tableid) from "SMB"."SMB_Aproval" where table_name='{}' and flag='add' '''.format(tablename) )[0][0]
             time_stamp_update=db.insert(''' update "SMB"."SMB_Aproval"  set updated_on='{}' where tableid={} '''.format(date_time,tableid))
                
@@ -315,7 +270,6 @@ def move_records(tablename,col_tuple,value_tuple,flag,id_value=None,sequence_id=
                 id_array=list(sum(id_array,()))
                 for i in  id_array:
                  qr1= ''' UPDATE "SMB"."{}" SET sequence_id=sequence_id+1 where id={}  and active=1 '''.format(tablename,i)
-                 print(qr1)
                  db.insert(qr1)
             else:
                 id_array=db.query(''' select id from "SMB"."{}" where sequence_id >{} and sequence_id<={} and active=1 order by sequence_id '''.format(tablename,sequence_initial,sequence_final))
@@ -340,10 +294,6 @@ def move_records(tablename,col_tuple,value_tuple,flag,id_value=None,sequence_id=
         
     # case for adding the record
     if(flag=='add'):
-        
-        print(columnstr)
-        print(value_tuple)
-        print("*******")
         query='''INSERT INTO "SMB"."{}"(
              
             {})
@@ -356,11 +306,54 @@ def move_records(tablename,col_tuple,value_tuple,flag,id_value=None,sequence_id=
             status='success'     
         return status
     
+    
+def get_old_json(tablename,id_data,flag):
+         
+        temp_df=pd.read_sql(''' select * from "SMB"."{}"  where id in {} '''.format(tablename,tuple(id_data)),con)
+        old_data_df=pd.DataFrame()
+        for ids in id_data:
+        
+             old_data_df=old_data_df.append(temp_df.loc[temp_df['id']==ids])
+             
+        old_data_df.insert(0,"flag",flag)
+        old_data_df=change_date_format(old_data_df)
+        old_data_df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer_Group":"Market_Customer_Group","Zip_Code_(Dest)":"Zip_Code_Dest"},inplace=True)
+        
+        old_data_df=old_data_df.reset_index()
+        old_json=json.loads(old_data_df.to_json(orient='records'))
+        return old_json,old_data_df
+        
+        
+def json_compare(old_data_df,df,lis):
+    try:
+     data=[]
+     df=df.astype(str)
+     old_data_df=old_data_df.astype(str)
+     if(df['flag'][0]!='add' ):
+            for i in range(len(df)):
+               a= [key for key,val in dict(df.loc[i,lis]==old_data_df.loc[i,lis]).items() if val==False]
+               json_object=dict(df.loc[i])
+               json_object['changed']=a
+               data.append(json_object)
+            df=pd.DataFrame(data)
+            return df
+    except:
+        return df
+   
+
+
+
+def change_date_format(df):
+    try:
+         df['updated_on'] = df['updated_on'].astype('datetime64[s]')
+         df['updated_on']=pd.to_datetime(df['updated_on'])
+         df['updated_on']=df['updated_on'].astype(str)
+         return df
+    except:
+        return df
 
 def email(id_value,tablename,flag='change',username='admin'):  
-          
        
-        
         encoded_id = cryptocode.encrypt(str(id_value),current_app.config["mypassword"])
         ## And then to decode it:
         
@@ -404,13 +397,19 @@ def aproval_data():
     id_value=request.args.get('id_value')
     flag=request.args.get('flag')
     
+    
     # decoding the id array 
     id_value=id_value.replace(' ','+')
     id_value = cryptocode.decrypt(id_value, "digitalway")
     id_list=eval(id_value)
     id_list.append(0)
     id_tuple=tuple(id_list)
+   
+    
     tablename=request.args.get('tablename')
+    print(id_tuple)
+    
+    print(tablename)
     
     # preparing the columns list
     col_df=pd.read_sql(''' select * from "SMB"."{}"  limit 1 '''.format(tablename),con)
@@ -422,69 +421,44 @@ def aproval_data():
         
         
     if(flag=='delete'):
-        
         query=''' select * from "SMB"."{}" where id in {} and active=1 '''.format(tablename,id_tuple)
-        
         df=pd.read_sql(query,con)
         df.insert(0,"flag",flag)
-        df['updated_on'] = df['updated_on'].astype('datetime64[s]')
-        df['updated_on']=pd.to_datetime(df['updated_on'])
-        df['updated_on']=df['updated_on'].astype(str)
-        data=json.loads(df.to_json(orient='records'))
-        
+        df=change_date_format(df)
+        data=json.loads(df.to_json(orient='records'))  
         return {"data":data,"lis":lis},200
 
     else:
-
+       
         query='''select * from "SMB"."SMB_Aproval" where tableid in {} and table_name='{}' '''.format(id_tuple,tablename)
-       
-        id_data=db.query(''' select id from "SMB"."SMB_Aproval" where tableid in {} and table_name='{}' '''.format(id_tuple,tablename))
-        id_data=sum(id_data,())
-        id_data=list(id_data)
-        id_data.append(0)
-        
-        old_json=[]
-        
-        if(None not in id_data and len(id_data)>1):
-       
-         old_data_df=pd.read_sql(''' select * from "SMB"."{}" where id in {} '''.format(tablename,tuple(id_data)),con)
-         old_data_df.insert(0,"flag",flag)
-         old_data_df['updated_on'] = old_data_df['updated_on'].astype('datetime64[s]')
-         old_data_df['updated_on']=pd.to_datetime(old_data_df['updated_on'])
-         old_data_df['updated_on']=old_data_df['updated_on'].astype(str)
-         
-         old_data_df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer_Group":"Market_Customer_Group","Zip_Code_(Dest)":"Zip_Code_Dest"},inplace=True)
-         old_json=json.loads(old_data_df.to_json(orient='records'))
-          
         df=pd.read_sql(query,con=con)
-       
-        df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer_Group":"Market_Customer_Group","Zip_Code_(Dest)":"Zip_Code_Dest"},inplace=True)
-        df.dropna(axis=1, how='all',inplace=True)
+        old_json=[]
+        if(df.empty!=True):
+            df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer_Group":"Market_Customer_Group","Zip_Code_(Dest)":"Zip_Code_Dest"},inplace=True)
+            df.dropna(axis=1, how='all',inplace=True)
+            df=change_date_format(df)
+            
+            if(df['flag'][0]!='add'):
+                id_data=list(df['id'])
+                id_data.append(0)
+               
+                if(None not in id_data and len(id_data)>1):
+                 old_json,old_data_df=get_old_json(tablename,tuple(id_data),flag)
+                df=json_compare(old_data_df,df,lis)
         
-        try:
-            df['updated_on'] = df['updated_on'].astype('datetime64[s]')
-            df['updated_on']=pd.to_datetime(df['updated_on'])
-            df['updated_on']=df['updated_on'].astype(str)
-        except:
-            pass
-        data=[]
-        for i in range(len(df)):
-           
-           a= [key for key,val in dict(df.loc[i,lis]==old_data_df.loc[i,lis]).items() if val==False]
-           json_object=dict(df.loc[i])
-           json_object['changed']=a
-           data.append(json_object)
-        df=pd.DataFrame(data)
-        data=json.loads(df.to_json(orient='records'))
-        
-        return {"data":data,"lis":lis,"old_json":old_json},200
-      
+            data=json.loads(df.to_json(orient='records'))
+            
+            return {"data":data,"lis":lis,"old_json":old_json},200
+        else:
+            return {"data":[],"lis":lis,"old_json":old_json},200
  
 
 @smb_app1.route('/aprove_records',methods=['GET','POST'])
 def aprove_records():
     data=json.loads(request.data)
     df=pd.DataFrame(data["data"])
+    
+    df.drop(['changed'],axis=1,inplace=True,errors='ignore')
     tablename=data['tablename']
     email=data['email']
     
@@ -691,8 +665,8 @@ def delete_record():
    
     status=email(id_value,tablename,'delete',username=username)
     
-    if(status=='success'):return {"status":"success"},200
-    else: return {"status":"failure"},500
+    if(status=='success'):return {"status":"success"}
+    else: return {"status":"failure"}
 
 
      
@@ -781,8 +755,14 @@ def fun_ignore_sequence_id(df,tablename):
      
      id_tuple=list(df['id'])
      id_tuple.append(0)
-     sequence_id=db.query(''' select sequence_id from "SMB"."{}" where id in {} '''.format(tablename,tuple(id_tuple)))
-     df.insert(0,'sequence_id',list(sum(sequence_id, ())))
+     sequence_id=[]
+     
+     for ids in id_tuple:
+      try:
+       sequence_id.append(db.query(''' select sequence_id from "SMB"."{}" where id={} '''.format(tablename,ids))[0][0])
+      except:
+          pass
+     df.insert(0,'sequence_id',sequence_id)
      
      return df
          
@@ -805,7 +785,10 @@ def  SMB_validate():
    
     
     tablename='SMB - Base Price - Category Addition' 
+    
     df=fun_ignore_sequence_id(df,tablename)
+    
+    
     flag='update'  
     df.insert(1,'table_name',tablename)
     col_tuple=("table_name","id","sequence_id",

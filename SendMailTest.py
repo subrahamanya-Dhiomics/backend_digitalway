@@ -85,7 +85,8 @@ def send_email():
     # part = MIMEText(html, 'html')
     # msg.attach(part)
     
-    me='''EUROPE\ELPSMBUP'''
+    # me='''EUROPE\ELPSMBUP'''
+    me='elp.orderentry-smbpricingtable@arcelormittal.com'
     password="AM@prictab01*"
     msg = MIMEMultipart('alternative')
     msg['Subject'] = "Sample Reset Password Email"
@@ -94,14 +95,6 @@ def send_email():
     part = MIMEText(html, 'html')
     msg.attach(part)
     
-    # me='''singhpdevendra@gmail.com'''
-    # password="7829847182#Dev"
-    # msg = MIMEMultipart('alternative')
-    # msg['Subject'] = "Sample Reset Password Email"
-    # msg['From'] = me
-    # msg['To'] = "devendra@digitalway-lu.com"
-    # part = MIMEText(html, 'html')
-    # msg.attach(part)
     
 
     try:
@@ -118,3 +111,5 @@ def send_email():
     except Exception as ex:
         print("Error",ex)
 
+if __name__=="__main__":
+    send_email()

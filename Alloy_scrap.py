@@ -29,9 +29,7 @@ from datetime import datetime
 from datetime import date
 import random
 import pysftp
-from base64 import decodebytes
-import paramiko
-import pymssql
+
  
 scrap_app = Blueprint('scrap_app', __name__)
 
@@ -47,11 +45,11 @@ consql = psycopg2.connect(dbname='offertool',user='pgadmin',password='Sahara_17'
 
 
 
-csv_out_path="C:/Users/Administrator/Documents/"
-input_path="C:/Users/Administrator/Documents/"
+# csv_out_path="C:/Users/Administrator/Documents/"
+# input_path="C:/Users/Administrator/Documents/"
 
-# csv_out_path="/home/ubuntu/mega_dir/"
-# input_path="/home/ubuntu/mega_dir/"
+csv_out_path="/home/ubuntu/mega_dir/"
+input_path="/home/ubuntu/mega_dir/"
 
 # engine = create_engine('postgresql://postgres:ocpphase01@ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com:5432/offertool')
 
@@ -168,10 +166,12 @@ def upload_files():
         
         
         df=pd.read_sql('select * from offertool.ordertoofferV2',con=consql)
-        
+        df['grade_upper']=df['grade'].str.upper()
         
         data1['Customer_ID']=data1['Customer_ID'].astype(str,errors='ignore')
         data1['Internal_Grade']=data1['Internal_Grade'].astype(str)
+        data1['Internal_Grade_Upper'] = data1['Internal_Grade'].str.upper()
+        
         df['grade']=df['grade'].astype(str)
         df['accountcode']=df['accountcode'].astype(str)
         # df['plant']=df['plant'].astype(str)
@@ -200,12 +200,12 @@ def upload_files():
                 ds=data1[(pd.to_datetime(data1['Month_year'], format='%Y%m')) > today.strftime('%Y-%m')]
            
          
-            data=df.merge(ds,left_on=['accountcode','grade'],right_on=['Customer_ID','Internal_Grade'])
+            data=df.merge(ds,left_on=['accountcode','grade_upper'],right_on=['Customer_ID','Internal_Grade_Upper'])
             
             
             data=data[   ((pd.to_datetime(data['Month_year'], format='%Y%m')) >= (pd.to_datetime(data['frompriceperiod'], format='%Y%m'))  )  &  ((pd.to_datetime(data['Month_year'], format='%Y%m')) <=(pd.to_datetime(data['topriceperiod'], format='%Y%m')))]
             
-            data=data[['accountcode','pricemodel','offerid','Month_year','grade','frompriceperiod','topriceperiod']]
+            data=data[['accountcode','pricemodel','offerid','Month_year','grade','grade_upper','frompriceperiod','topriceperiod']]
            
             data['pricemodel']=data['pricemodel'].astype(float,errors='ignore')
             data['pricemodel']=data['pricemodel'].astype(int,errors='ignore')
@@ -221,14 +221,14 @@ def upload_files():
             
             for i in list(data.index):
                    customer_id=data['accountcode'][i]
-                   internal_grade=data['grade'][i]
+                   internal_grade=data['grade_upper'][i]
                   
                    pricemodel=data['pricemodel'][i]
                    offerid=data['offerid'][i]
             
                    for ind in list(ds.index):
                     
-                     if (ds['Customer_ID'][ind]==customer_id and ds['Internal_Grade'][ind]==internal_grade):
+                     if (ds['Customer_ID'][ind]==customer_id and ds['Internal_Grade_Upper'][ind]==internal_grade):
                         if(data['pricemodel'][i]  in (2,4,5,7,None)):
                            
                            if({internal_grade:offerid} not in a):
@@ -266,27 +266,12 @@ def upload_files():
                           ignore_index = True,
                           sort = False)
         d=d.replace('', 0)
+        d.drop(['Internal_Grade_Upper'],axis=1,inplace=True)
         table_1 = d.to_json(orient='records')
         return {"data":table_1,"filename":f.filename},200
                         
         
-             
-        
-        
-                      
-        
-        
-        
-            
-        
-        
-              
-
-
-
-
-
-
+    
             
         
        
