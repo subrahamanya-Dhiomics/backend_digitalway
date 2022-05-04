@@ -49,15 +49,8 @@ smb_app2 = Blueprint('smb_app2', __name__)
 CORS(smb_app2)
 
 
-
-download_path="/home/ubuntu/mega_dir/"
-input_directory="/home/ubuntu/mega_dir/"
-
-
-# download_path="C:/Users/Administrator/Documents/"
-# input_directory="C:/Users/Administrator/Documents/"
-
-
+# download_path=input_directory="C:/Users/Administrator/Documents/"
+download_path=input_directory="/home/ubuntu/mega_dir/"
 
 
 db=Database()
@@ -222,7 +215,7 @@ def add_record_frieght_parity():
     col_tuple=("table_name","flag", "Username",
            "Delivering Mill",
     "Market - Country",
-    "Zip Code (Dest)"
+    "Zip Code (Dest)",
     "Product Division",
     "Document Item Currency",
     "Amount",
@@ -463,7 +456,7 @@ def update_record_frieght_parity_minibar():
     flag='update'
   
     tablename='SMB - Extra - Freight Parity - MiniBar'        
-    
+    email_status=''
     
     input_tuple=(tablename,id_value,sequence_id,username,Delivering_Mill,Market_Country,Market_Customer_Group,Market_Customer,Zip_Code_Dest,Product_Division,Document_Item_Currency,Amount,Currency)	
     col_tuple=("table_name","id","sequence_id","Username","Delivering Mill","Market - Country","Market - Customer Group","Market - Customer","Zip Code (Dest)","Product Division",
@@ -711,7 +704,7 @@ def update_record_extra_grade():
     
     BusinessCode=(query_parameters["BusinessCode"])
     Grade_Category=(query_parameters["Grade_Category"])
-    Country_Group=(query_parameters['Country_Group'])
+   
     Market_Country=(query_parameters['Market_Country'])
     sequence_id=(query_parameters['sequence_id'])
     
@@ -725,14 +718,14 @@ def update_record_extra_grade():
     flag='update'
   
     tablename='SMB - Extra - Grade'
-    input_tuple=(tablename,id_value,sequence_id,username,BusinessCode,Grade_Category,Market_Country,Document_Item_Currency,Product_Division,Country_Group,Amount,Currency)
+    input_tuple=(tablename,id_value,sequence_id,username,BusinessCode,Grade_Category,Market_Country,Document_Item_Currency,Product_Division,Amount,Currency)
     col_tuple=("table_name","id","sequence_id","Username",
           "BusinessCode",
         "Grade Category",
         "Market - Country",
         "Document Item Currency",
         "Product Division",
-        "Country Group",
+       
         "Amount",
         "Currency")
     email_status=''
@@ -760,7 +753,7 @@ def add_record_extra_grade():
     
     BusinessCode=(query_parameters["BusinessCode"])
     Grade_Category=(query_parameters["Grade_Category"])
-    Country_Group=(query_parameters['Country_Group'])
+   
     Market_Country=(query_parameters['Market_Country'])
     
    
@@ -775,13 +768,13 @@ def add_record_extra_grade():
   
     tablename='SMB - Extra - Grade'        
     
-    input_tuple=(tablename,flag,username,BusinessCode,Grade_Category,Market_Country,Document_Item_Currency,Product_Division,Country_Group,Amount,Currency)
+    input_tuple=(tablename,flag,username,BusinessCode,Grade_Category,Market_Country,Document_Item_Currency,Product_Division,Amount,Currency)
     col_tuple=("table_name","flag", "Username", "BusinessCode",
 "Grade Category",
 "Market - Country",
 "Document Item Currency",
 "Product Division",
-"Country Group",
+
 "Amount",
 "Currency")
     
@@ -807,14 +800,14 @@ def upload_extra_grade():
             smb_df=pd.read_excel(input_directory+f.filename,dtype=str)
             
             df=smb_df[["id","BusinessCode", "Grade Category",
-       "Country Group", "Market - Country", "Product Division",
+        "Market - Country", "Product Division",
        "Document Item Currency", "Amount", "Currency"]]  
             df["id"]=df["id"].astype(int)
            
             df['Currency'] = df['Currency'].str.replace("'","")
             
             df_main = pd.read_sql('''select "id","BusinessCode", "Grade Category",
-       "Country Group", "Market - Country", "Product Division",
+       "Market - Country", "Product Division",
        "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Grade" where "active"='1' order by sequence_id ''', con=con)
             
             
@@ -857,10 +850,10 @@ def  validate_extra_grade():
             "Market - Country",
             "Document Item Currency",
             "Product Division",
-            "Country Group",
+           
             "Amount",
             "Currency")
-    col_list=['table_name','id','sequence_id','Username','BusinessCode','Grade_Category','Market_Country','Document_Item_Currency','Product_Division','Country_Group','Amount','Currency']
+    col_list=['table_name','id','sequence_id','Username','BusinessCode','Grade_Category','Market_Country','Document_Item_Currency','Product_Division','Amount','Currency']
     
     
     id_value=[]
@@ -883,7 +876,7 @@ def download_extra_grade():
         now = datetime.now()
         try:
             df = pd.read_sql('''select "id",sequence_id,"BusinessCode", "Grade Category",
-       "Country Group", "Market - Country", "Product Division",
+       "Market - Country", "Product Division",
        "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Grade" where "active"='1' order by sequence_id ''', con=con)
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'extra_grade.xlsx'
@@ -1605,10 +1598,11 @@ def  validate_extra_profile():
     tablename='SMB - Extra - Profile'
     df=fun_ignore_sequence_id(df,tablename)
     flag='update'  
+    df.insert(1,'table_name',tablename)
     
     # df.insert(1,'table_name',tablename)
     col_tuple=("table_name",
-               "id",
+               "id","sequence_id",
         "Username",
         "BusinessCode", 
         "Market - Country",
@@ -1621,16 +1615,16 @@ def  validate_extra_profile():
         "Amount", 
         "Currency")
     col_list=["table_name",
-               "id",
+               "id","sequence_id",
         "Username",
         "BusinessCode", 
-        "Market - Country",
-        "Product Division", 
-        "Product Level 04", 
-        "Product Level 05",
-        "Product Level 02", 
-        "Delivering Mill", 
-        "Document Item Currency",
+        "Market_Country",
+        "Product_Division", 
+        "Product_Level_04", 
+        "Product_Level_05",
+        "Product_Level_02", 
+        "Delivering_Mill", 
+        "Document_Item_Currency",
         "Amount", 
         "Currency"]
     

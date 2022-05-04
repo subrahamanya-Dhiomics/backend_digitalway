@@ -74,11 +74,10 @@ class Database:
             self.cursor.close()
  
 # File Path 
-# download_path=input_directory="C:/Users/Administrator/Documents/"  
- 
 
-download_path="/home/ubuntu/mega_dir/"
-input_directory="/home/ubuntu/mega_dir/"
+
+# download_path=input_directory="C:/Users/Administrator/Documents/"
+download_path=input_directory="/home/ubuntu/mega_dir/"
 
 # flsk app declaration 
 generic = Blueprint('generic', __name__)
@@ -241,7 +240,7 @@ def generic_upload():
             df3=df3[df3['_merge']=='left_only']
             
             df3.drop(['_merge'],axis=1,inplace=True)
-            df3.rename(columns={"Unit of Quantity":"Unit_of_Quantity","Customer Group":"Customer_Group","Tonnage From":"Tonnage_From","Tonnage To":"Tonnage_To"},inplace=True)
+            df3.rename(columns={"Unit of Quantity":"Unit_of_Quantity","Customer Group":"Customer_Group","Tonnage From":"Tonnage_From","Tonnage To":"\_To"},inplace=True)
         
             df.columns = df.columns.str.replace( ' ','_')
          

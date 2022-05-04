@@ -43,16 +43,15 @@ cur = con.cursor()
 
 consql = psycopg2.connect(dbname='offertool',user='pgadmin',password='Sahara_17',host='offertool2-qa.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
 
+# con=consql = psycopg2.connect(dbname='offertool',user='pgapp',password='Fulcrum_17',host='offertool2-pro.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
 
+csv_out_path="C:/Users/Administrator/Documents/"
+input_path="C:/Users/Administrator/Documents/"
 
-# csv_out_path="C:/Users/Administrator/Documents/"
-# input_path="C:/Users/Administrator/Documents/"
-
-csv_out_path="/home/ubuntu/mega_dir/"
-input_path="/home/ubuntu/mega_dir/"
+# csv_out_path="/home/ubuntu/mega_dir/"
+# input_path="/home/ubuntu/mega_dir/"
 
 # engine = create_engine('postgresql://postgres:ocpphase01@ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com:5432/offertool')
-
 engine = create_engine('postgresql://pgadmin:Sahara_17@offertool2-qa.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com:5432/offertool')
 
 
@@ -70,7 +69,7 @@ def tupleToList(tupleVar):
             return(listVar)
 
 # Hostname = "3.65.20.36"
-Hostname="3.65.20.36"
+Hostname="18.157.73.174"
 Username = "sftp_user"
 Password = "sftp_user@321"
 
@@ -207,9 +206,10 @@ def upload_files():
             
             data=data[['accountcode','pricemodel','offerid','Month_year','grade','grade_upper','frompriceperiod','topriceperiod']]
            
-            data['pricemodel']=data['pricemodel'].astype(float,errors='ignore')
-            data['pricemodel']=data['pricemodel'].astype(int,errors='ignore')
-            data['pricemodel'] = data['pricemodel']. replace(np.nan, None)
+            # data['pricemodel']=data['pricemodel'].astype(float,errors='ignore')
+            # data['pricemodel']=data['pricemodel'].astype(int,errors='ignore')
+            
+          
             data['offerid']=data['offerid'].astype(int,errors='ignore')
            
             
@@ -229,7 +229,7 @@ def upload_files():
                    for ind in list(ds.index):
                     
                      if (ds['Customer_ID'][ind]==customer_id and ds['Internal_Grade_Upper'][ind]==internal_grade):
-                        if(data['pricemodel'][i]  in (2,4,5,7,None)):
+                        if(data['pricemodel'][i]  in (2,4,5,7,None) or str(data['pricemodel'][i]) in ('NaN','nan')):
                            
                            if({internal_grade:offerid} not in a):
                               print(ind)

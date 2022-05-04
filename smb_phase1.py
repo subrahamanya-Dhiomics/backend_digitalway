@@ -30,13 +30,24 @@ from email.mime.text import MIMEText
 engine = create_engine('postgresql://postgres:ocpphase01@ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com:5432/offertool')
 con = psycopg2.connect(dbname='offertool',user='pgadmin',password='Sahara_17',host='offertool2-qa.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
 
+# con = psycopg2.connect(dbname='offertool',user='pgapp',password='Fulcrum_17',host='offertool2-pro.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
 
 #database class for updating and fetching the data 
 class Database:
+    
+    # connection qa
     host='offertool2-qa.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com'  # your host
-    user='pgadmin'      # usernames
+    user='pgadmin'    
     password='Sahara_17' 
     db='offertool'
+    
+    
+    # connection prod
+    # host='offertool2-pro.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com'  # your host
+    # user='pgapp'    
+    # password='Fulcrum_17' 
+    # db='offertool'
+
     
     
     
@@ -656,17 +667,17 @@ def update_record1():
 
 
 @smb_app1.route('/delete_record_baseprice',methods=['POST','GET'])
-@token_required
 
-def delete_record():  
+def delete_record_baseprice():  
+   
     id_value,username=json.loads(request.data)['id'],request.headers['username']
+    
     
     tablename='SMB - Base Price - Category Addition'
    
     status=email(id_value,tablename,'delete',username=username)
-    
-    if(status=='success'):return {"status":"success"}
-    else: return {"status":"failure"}
+    if(status=='success'):return {"status":"success"},200
+    else: return {"status":"failure"},500
 
 
      
@@ -1081,7 +1092,7 @@ def  SMB_validate_baseprice_minibar():
     flag='update'  
     df.insert(1,'table_name',tablename)
     df.insert(2,'Username',username)
-    col_tuple=("table_name","id","sequence_id",
+    col_tuple=("table_name","id","sequence_id","Username",
             "BusinessCode",
              "Customer Group",
              "Market - Customer",
@@ -1091,7 +1102,7 @@ def  SMB_validate_baseprice_minibar():
              "Document Item Currency",
              "Amount",
              "Currency")
-    col_list=['table_name','id','sequence_id','BusinessCode','Customer_Group','Market_Customer','Market_Country','Beam_Category','Document_Item_Currency', 'Amount', 'Currency']
+    col_list=['table_name','id','sequence_id',"Username",'BusinessCode','Customer_Group','Market_Customer','Market_Country','Beam_Category','Document_Item_Currency', 'Amount', 'Currency']
     
     
     id_value=[]
@@ -1406,28 +1417,25 @@ def  SMB_validate_baseprice_incoterm():
 def SMB_baseprice_download_incoterm():
    
         now = datetime.now()
-        try:
-            df = pd.read_sql('''select "id","sequence_id","Market - Country","Customer Group",
+     
+        df = pd.read_sql('''select "id","sequence_id","Market - Country","Customer Group",
 	        
-                "Incoterm1","Product Division",
+            "Incoterm1","Product Division",
 		"Customer Group",
 		"Beam Category",
 		"Delivering Mill",
 		"Document Item Currency",
 		"Amount","Currency" from "SMB"."SMB - Base Price - Incoterm Exceptions" where "active"='1' order by sequence_id ''', con=con)
-           
-            t=now.strftime("%d-%m-%Y-%H-%M-%S")
-            file=download_path+t+'incoterm.xlsx'
-            
-            df=df.style.apply(highlight_col, axis=None)
-            print(file)
-            df.to_excel(file,index=False)
-            
-            return send_file(file, as_attachment=True)
-           
-        except:
-            return {"status":"failure"},500
-
+       
+        t=now.strftime("%d-%m-%Y-%H-%M-%S")
+        file=download_path+t+'incoterm.xlsx'
+        
+        df=df.style.apply(highlight_col, axis=None)
+        
+        df.to_excel(file,index=False)
+        
+        return send_file(file, as_attachment=True)
+    
 # *****************************************************************************************************************************************
 # smb extra certificate
 

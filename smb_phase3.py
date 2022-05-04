@@ -47,12 +47,8 @@ CORS(smb_app3)
 
 
 
-download_path="/home/ubuntu/mega_dir/"
-input_directory="/home/ubuntu/mega_dir/"
-
-
-# download_path="C:/Users/Administrator/Documents/"
-# input_directory="C:/Users/Administrator/Documents/"
+# download_path=input_directory="C:/Users/Administrator/Documents/"
+download_path=input_directory="/home/ubuntu/mega_dir/"
 
 
 
@@ -919,7 +915,7 @@ def add_record_length_production():
     query_parameters =json.loads(request.data)
     
     BusinessCode=(query_parameters['BusinessCode'])
-    Country_Group=(query_parameters['Country_Group'])
+  
     Market_Country=(query_parameters['Market_Country'])
     
     Delivering_Mill=(query_parameters['Delivering_Mill'])
@@ -961,12 +957,12 @@ def add_record_length_production():
    
     tablename='SMB - Extra - Length Production'     
             
-    input_tuple=(tablename,flag,username,BusinessCode,Country_Group,Market_Country,Delivering_Mill,Length,Length_From,Length_To,Document_Item_Currency, Amount, Currency.strip("'"))
+    input_tuple=(tablename,flag,username,BusinessCode,Market_Country,Delivering_Mill,Length,Length_From,Length_To,Document_Item_Currency, Amount, Currency.strip("'"))
     col_tuple=("table_name",
                "flag",  
                "Username",
             "BusinessCode",
-            "Country Group",
+           
             "Market - Country", 
             "Delivering Mill", 
             "Length",
@@ -996,7 +992,7 @@ def update_record_length_production():
     query_parameters =json.loads(request.data)
     
     BusinessCode=(query_parameters['BusinessCode'])
-    Country_Group=(query_parameters['Country_Group'])
+   
     Market_Country=(query_parameters['Market_Country'])
     
     Delivering_Mill=(query_parameters['Delivering_Mill'])
@@ -1050,10 +1046,10 @@ def update_record_length_production():
     tablename='SMB - Extra - Length Production'  
          
 
-    input_tuple=(tablename,id_value,sequence_id,username,BusinessCode,Country_Group,Market_Country,Delivering_Mill,Length,Length_From ,Length_To,Document_Item_Currency,Amount,Currency)
+    input_tuple=(tablename,id_value,sequence_id,username,BusinessCode,Market_Country,Delivering_Mill,Length,Length_From ,Length_To,Document_Item_Currency,Amount,Currency)
     col_tuple=("table_name","id","sequence_id", "Username",
            "BusinessCode", 
-        "Country Group",
+      
         "Market - Country", 
         "Delivering Mill", 
         "Length", 
@@ -1089,13 +1085,13 @@ def upload_length_production():
         try:
             smb_df=pd.read_excel(input_directory+f.filename,dtype=str)
             
-            df=smb_df[["id","BusinessCode", "Country Group",
+            df=smb_df[["id","BusinessCode",
        "Market - Country", "Delivering Mill", "Length", "Length From",
        "Length To", "Document Item Currency", "Amount", "Currency"]]  
             df["id"]=df["id"].astype(int)
             
             
-            df_main = pd.read_sql('''select "id","BusinessCode", "Country Group",
+            df_main = pd.read_sql('''select "id","BusinessCode",
        "Market - Country", "Delivering Mill", "Length", "Length From",
        "Length To", "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Length Production" where "active"='1' order by sequence_id ''', con=con)
             
@@ -1180,10 +1176,10 @@ def  validate_length_production():
 
     # df.insert(1,'table_name',tablename)
     col_tuple=("table_name",
-               "id",
+               "id","sequence_id",
         "Username",
         "BusinessCode",
-        "Country Group",
+     
         "Market - Country", 
         "Delivering Mill", 
         "Length", 
@@ -1193,10 +1189,10 @@ def  validate_length_production():
         "Amount", 
         "Currency")
     col_list=["tablename",
-               "id",
+               "id","sequence_id",
         "Username",
         "BusinessCode",
-        "Country_Group",
+       
         "Market_Country", 
         "Delivering_Mill", 
         "Length", 
@@ -1227,7 +1223,7 @@ def download_length_production():
         now = datetime.now()
         try:
             df = pd.read_sql('''select "id",sequence_id,"BusinessCode", 
-        "Country Group",
+     
         "Market - Country", 
         "Delivering Mill", 
         "Length", 
@@ -1437,7 +1433,7 @@ def update_record_length_production_minibar():
     Delivering_Mill=(query_parameters['Delivering_Mill'])
     Length=(query_parameters['Length'])
     Length_From=(query_parameters['Length_From'])
-    Length_To=(query_parameters['Length_From'])
+    Length_To=(query_parameters['Length_To'])
     
     Document_Item_Currency =( query_parameters["Document_Item_Currency"])
     Amount =( query_parameters["Amount"])
@@ -1501,7 +1497,7 @@ def update_record_length_production_minibar():
         "Amount",
         "Currency")      
         
-    
+    print(input_tuple)
     email_status=''
         
     status=upsert(col_tuple,input_tuple,flag,tablename,id_value)
@@ -1789,7 +1785,7 @@ def add_record_length_logistic():
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     query_parameters =json.loads(request.data)
     
-    Country_Group=(query_parameters['Country_Group'])
+   
     Market_Country=(query_parameters['Market_Country'])
     Delivering_Mill=(query_parameters['Delivering_Mill'])
     
@@ -1837,11 +1833,11 @@ def add_record_length_logistic():
    
     tablename='SMB - Extra - Length Logistic'     
             
-    input_tuple=(tablename,flag,username,Country_Group,Market_Country,Delivering_Mill,Length,Length_From,Length_To,Transport_Mode,Document_Item_Currency, Amount, Currency.strip("'"))
+    input_tuple=(tablename,flag,username,Market_Country,Delivering_Mill,Length,Length_From,Length_To,Transport_Mode,Document_Item_Currency, Amount, Currency.strip("'"))
     col_tuple=("table_name",
                "flag",  
                "Username",
-              "Country Group",
+             
               "Market - Country",
             "Delivering Mill",
             "Length",
@@ -1872,7 +1868,7 @@ def update_record_length_logistic():
     date_time= now.strftime("%m/%d/%Y, %H:%M:%S")
     query_parameters =json.loads(request.data)
     
-    Country_Group=(query_parameters['Country_Group'])
+ 
     Market_Country=(query_parameters['Market_Country'])
     Delivering_Mill=(query_parameters['Delivering_Mill'])
     
@@ -1926,12 +1922,12 @@ def update_record_length_logistic():
       
     tablename='SMB - Extra - Length Logistic'  
         
-    input_tuple=(tablename,id_value,sequence_id,username,Country_Group,Market_Country,Delivering_Mill,Length,Length_From,Length_To,Transport_Mode,Document_Item_Currency,Amount,Currency)
+    input_tuple=(tablename,id_value,sequence_id,username,Market_Country,Delivering_Mill,Length,Length_From,Length_To,Transport_Mode,Document_Item_Currency,Amount,Currency)
     col_tuple=("table_name",
                "id",
                "sequence_id", 
                "Username",
-                "Country Group", 
+             
                 "Market - Country",
                 "Delivering Mill",
                 "Length", 
@@ -1967,13 +1963,13 @@ def upload_length_logistic():
         try:
             smb_df=pd.read_excel(input_directory+f.filename,dtype=str)
             
-            df=smb_df[["id","Country Group", "Market - Country",
+            df=smb_df[["id","Market - Country",
        "Delivering Mill", "Length", "Length From", "Length To",
        "Transport Mode", "Document Item Currency", "Amount", "Currency"]]  
             df["id"]=df["id"].astype(int)
            
             
-            df_main = pd.read_sql('''select "id","Country Group", "Market - Country",
+            df_main = pd.read_sql('''select "id", "Market - Country",
        "Delivering Mill", "Length", "Length From", "Length To",
        "Transport Mode", "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Length Logistic" where "active"='1' order by sequence_id ''', con=con)
             
@@ -2054,9 +2050,9 @@ def  validate_length_logistic():
     df.insert(1,'Username',username)
     
     col_tuple=("table_name",
-               "id",
+               "id","sequence_id",
           "Username",
-          "Country Group", 
+         
           "Market - Country",
         "Delivering Mill", 
         "Length", 
@@ -2067,9 +2063,9 @@ def  validate_length_logistic():
         "Amount", 
         "Currency")
     col_list=["table_name",
-               "id",
+               "id","sequence_id",
               "Username",
-              "Country_Group", 
+             
               "Market_Country",
             "Delivering_Mill", 
             "Length", 
@@ -2100,7 +2096,7 @@ def download_length_logistic():
    
         now = datetime.now()
         try:
-            df = pd.read_sql('''select "id",sequence_id, "Country Group", 
+            df = pd.read_sql('''select "id",sequence_id,
                 "Market - Country",
                 "Delivering Mill",
                 "Length", 
@@ -2262,12 +2258,13 @@ def add_record_length_logistic_minibar():
     #     return {"status":"failure"},500
     flag='add'
    
+   
     tablename='SMB - Extra - Length Logistic - MiniBar'     
             
     input_tuple=(tablename,flag,username,Customer_Group,Market_Customer,Market_Country,Delivering_Mill,Length,Length_From,Length_To,Transport_Mode,Document_Item_Currency, Amount, Currency.strip("'"))
     col_tuple=("table_name",
                "flag",  
-               "Username","Customer - Group","Market - Customer",
+               "Username","Customer Group","Market - Customer",
             "Market - Country", 
             "Delivering Mill",
             "Length",

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 
 from flask import Flask, request, jsonify, make_response, request, render_template, session, flash,current_app
 import jwt
@@ -15,7 +14,7 @@ from taskbar1 import taskbar1
 import pandas as pd
 from user_management import user_management_app
 from taskbar_invoice import taskbar_invoice_app
-from SendMailTest import send_email
+
 from SMB_Generic import generic
 
 from reset_password import reset_password 
@@ -180,8 +179,6 @@ def web_api():
         if(k==0):
             wherestr=wherestr+ "("+    '"' + i +'"'    +   " = "  +  "'" +str(data[i])+"'"   + " or " +   '"' + i +'"' + " = "+ "'"+ "*" +"'"+     ")"
             k=1
-          
-           
         elif(k==1):
             wherestr=wherestr + " and " +"("+    '"' + i +'"'    +   " = "  +  "'" +str(data[i])+"'"   + " or " +   '"' + i +'"' + " = "+ "'"+ "*" +"'"+     ")"
             
@@ -200,6 +197,6 @@ def web_api():
         
  
 if __name__ == '__main__':
-    app.run(host='172.16.4.190')
-    # app.run()
+    # app.run(host='172.16.4.190')
+    app.run()
    
