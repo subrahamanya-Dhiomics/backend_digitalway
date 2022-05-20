@@ -368,7 +368,7 @@ def email(id_value,tablename,flag='change',username='admin'):
         encoded_id = cryptocode.encrypt(str(id_value),current_app.config["mypassword"])
         ## And then to decode it:
         
-        approver='subrahamanya.shetty@dhiomics.com'
+        approver='arriluceaz@gmail.com'
         mail_from='''subrahamanya@digitalway-lu.com'''
         
        
@@ -378,7 +378,7 @@ def email(id_value,tablename,flag='change',username='admin'):
         msg['To'] = approver
         #print(user)
         html=''
-        with open('email_aproval.html', 'r') as f:
+        with open('/home/ubuntu/SMBPricingAPI/backend_digitalway/email_aproval.html', 'r') as f:
          html = f.read()
         
         html=html.format(tablename,username,id_value,encoded_id,tablename,flag)
@@ -396,13 +396,19 @@ def email(id_value,tablename,flag='change',username='admin'):
 
 # delcaring the paths
 
-# download_path=input_directory="C:/Users/Administrator/Documents/"
-download_path=input_directory="/home/ubuntu/mega_dir/"
+download_path=input_directory="C:/Users/Administrator/Documents/"
+# download_path=input_directory="/home/ubuntu/mega_dir/"
 
 
 
 # llist of generinc api's works for all 21 tables
      
+
+@smb_app1.route('/insert_data',methods=['GET','POST'])
+def insert():
+    dta=json.loads(request.data)
+    df=pd.DataFrame(dta)
+    return {"data":json.loads(df.to_json(orient='records'))}
 @smb_app1.route('/aproval_data',methods=['GET','POST'])
 def aproval_data():
     id_value=request.args.get('id_value')

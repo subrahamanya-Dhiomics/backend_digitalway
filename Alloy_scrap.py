@@ -41,15 +41,15 @@ cur = con.cursor()
 
 
 
-consql = psycopg2.connect(dbname='offertool',user='pgadmin',password='Sahara_17',host='offertool2-qa.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
+consql = psycopg2.connect(dbname='offertool',user='pgadmin',password='Sahara_17',host='offertool2-pro.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
 
 # con=consql = psycopg2.connect(dbname='offertool',user='pgapp',password='Fulcrum_17',host='offertool2-pro.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
 
-csv_out_path="C:/Users/Administrator/Documents/"
-input_path="C:/Users/Administrator/Documents/"
+# csv_out_path="C:/Users/Administrator/Documents/"
+# input_path="C:/Users/Administrator/Documents/"
 
-# csv_out_path="/home/ubuntu/mega_dir/"
-# input_path="/home/ubuntu/mega_dir/"
+csv_out_path="/home/ubuntu/mega_dir/"
+input_path="/home/ubuntu/mega_dir/"
 
 # engine = create_engine('postgresql://postgres:ocpphase01@ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com:5432/offertool')
 engine = create_engine('postgresql://pgadmin:Sahara_17@offertool2-qa.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com:5432/offertool')
