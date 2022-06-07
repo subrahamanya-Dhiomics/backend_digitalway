@@ -37,7 +37,7 @@ app.register_blueprint(generic)
 con1=psycopg2.connect(dbname='offertool',user='pgadmin',password='Sahara_17',host='offertool2-qa.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
 
 # con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
-cursor=con1.cursor()
+
 app.config["environment_url"] = "https://smbprice.dcc-am.com/auth/reset-password?user_id"
 
 
@@ -103,7 +103,7 @@ def login():
 def range_logic(data,typ):
     if(typ=='len'):
         
-        length_string='''CASE
+        length_string='''  ("Length"='*' or "Length"='{}') and CASE
     		WHEN "Length To"~E'^\\\d+$' THEN
     			CAST ("Length To" AS INTEGER) >={}
     			else "Length To"='*'
@@ -115,7 +115,7 @@ def range_logic(data,typ):
     			
     			else "Length From"='*'
     			
-    		end'''.format(data['Length'],data['Length'])
+    		end'''.format(data['Length'],data['Length'],data['Length'])
         return length_string
     else:
         tonnage_string='''CASE
@@ -141,12 +141,12 @@ def web_api():
     
     data=str( request.data)
    
-    text_file = open("data.txt", "w")
+    # text_file = open("data.txt", "w")
 
 
-    text_file.write(data)
+    # text_file.write(data)
    
-    text_file.close()
+    # text_file.close()
     data=json.loads(request.data)
     
     if(str(data)[0]=='['):
@@ -167,6 +167,7 @@ def web_api():
          wherestr=wherestr+range_logic(data,'len')
          data.pop('Length')
          k=1
+         
     if('Tonnage' in data):
         if(data['Tonnage']!='*'):
             wherestr=wherestr+range_logic(data,'ton')
@@ -184,7 +185,7 @@ def web_api():
             
     query=query+wherestr
 
-    query+=" order by sequence_id asc limit 1"
+    query+=" and active=1 order by sequence_id asc limit 1"
     print(query)
     data=db.query(query)
        

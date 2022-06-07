@@ -74,10 +74,11 @@ class Database:
             self.cursor.close()
  
 # File Path 
+# download_path=input_directory="C:/Users/Administrator/Documents/"  
+ 
 
-
-# download_path=input_directory="C:/Users/Administrator/Documents/"
-download_path=input_directory="/home/ubuntu/mega_dir/"
+download_path="/home/ubuntu/mega_dir/"
+input_directory="/home/ubuntu/mega_dir/"
 
 # flsk app declaration 
 generic = Blueprint('generic', __name__)

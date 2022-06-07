@@ -45,8 +45,8 @@ consql = psycopg2.connect(dbname='offertool',user='pgadmin',password='Sahara_17'
 
 # con=consql = psycopg2.connect(dbname='offertool',user='pgapp',password='Fulcrum_17',host='offertool2-pro.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
 
-# csv_out_path="C:/Users/Administrator/Documents/"
-# input_path="C:/Users/Administrator/Documents/"
+# csv_out_path="C:/Users/Administrator/Documents/xl_testing/"
+# input_path="C:/Users/Administrator/Documents/xl_testing/"
 
 csv_out_path="/home/ubuntu/mega_dir/"
 input_path="/home/ubuntu/mega_dir/"
@@ -182,7 +182,7 @@ def upload_files():
         df['frompriceperiod'] = pd.to_datetime(df['frompriceperiod'])
         df['topriceperiod'] = pd.to_datetime(df['topriceperiod'])
         
-        columns=['OFFER_ALLOY','OFFER_EFF_PR','OFFER_ALLOY_NUMBER','OFFER_ EFF_PR _NUMBER']
+        columns=['OFFER_ALLOY','OFFER_EFF_PR','OFFER_ALLOY_NUMBER','OFFER_EFF_PR_NUMBER']
         
         n=[9,10,11,12]
         for i in range(0,len(columns)):
@@ -245,11 +245,11 @@ def upload_files():
                            if({internal_grade:offerid}  not in a):
                             print(ind)
                             
-                            if(ds['OFFER_ EFF_PR _NUMBER'][ind]==''):
-                             ds['OFFER_ EFF_PR _NUMBER'][ind]= ds['OFFER_ EFF_PR _NUMBER'][ind]+str(offerid)
+                            if(ds['OFFER_EFF_PR_NUMBER'][ind]==''):
+                             ds['OFFER_EFF_PR_NUMBER'][ind]= ds['OFFER_EFF_PR_NUMBER'][ind]+str(offerid)
                              ds['OFFER_EFF_PR'][ind]= 1
                             else:
-                               ds['OFFER_ EFF_PR _NUMBER'][ind]= ds['OFFER_ EFF_PR _NUMBER'][ind]+'_'+str(offerid)
+                               ds['OFFER_EFF_PR_NUMBER'][ind]= ds['OFFER_EFF_PR_NUMBER'][ind]+'_'+str(offerid)
                                ds['OFFER_EFF_PR'][ind]= ds['OFFER_EFF_PR'][ind]+1
                             a.append({internal_grade:offerid})
             
@@ -260,13 +260,14 @@ def upload_files():
               
                 data02=ds
                 
-      
+        
          
         d = pd.concat([data01,data02],    # Combine vertically
                           ignore_index = True,
                           sort = False)
         d=d.replace('', 0)
         d.drop(['Internal_Grade_Upper'],axis=1,inplace=True)
+        d.drop(['Mill'],axis=1,inplace=True)
         table_1 = d.to_json(orient='records')
         return {"data":table_1,"filename":f.filename},200
                         
@@ -290,10 +291,13 @@ def validate_files1():
     wire =( query_parameters["wire"])
     
     
+    
     wire_df=pd.DataFrame(wire)
+    
     wire_df.rename(columns={'Monthly_Deviation':'Monthly Deviation'})
     out_df=wire_df.copy()
-    wire_df.drop(['Mill'],axis=1,inplace=True)
+    
+    
     
     cur.execute('rollback')
     cur.execute('select max("Batch_ID") from alloy_surcharge.alloy_surcharge_wire;')
@@ -301,38 +305,38 @@ def validate_files1():
     if(max_id[0][0] == None):
             Batch_ID=1
     else:
-            Batch_ID=((max_id[0][0])+1)      
+            Batch_ID=((max_id[0][0])+1)     
+            
     dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
     wire_df.insert(0,'filename',filename)
     wire_df.insert(0,'Batch_ID',Batch_ID)
     wire_df.insert(1,'Username',username)
     wire_df.insert(2,'date_time',dt_string)
     
-    wire_df.to_csv('wire_df.csv')
-    wire_df.to_sql('alloy_surcharge_wire',con=engine, schema='alloy_surcharge',if_exists='append', index=False)
+    # wire_df.to_sql('alloy_surcharge_wire',con=engine, schema='alloy_surcharge',if_exists='append', index=False)
     
     date_time= today.strftime("%Y%m%d")
     counter=str(Batch_ID)
     cond_type="Z133"
-    sales_org={"Duisburg":"0300","Hamburg":"0400"}
+    sales_org=["0300","0400"]
     
     for i in sales_org:
-      if(i=="Duisburg"):
-          filename=date_time+counter+'_'+cond_type+'_'+sales_org["Duisburg"]+'.csv'
+      if(i=="0300"):
+          filename=date_time+counter+'_'+cond_type+'_'+i+'.csv'
           file_path=csv_out_path+filename
-          df1=out_df[out_df['Mill']=='Duisburg']
-          df1.drop(['Mill'],axis=1,inplace=True)
+          df1=out_df[out_df['VKORG']=='0300']
+          
           
           df1.to_csv(file_path, index = False)
-          funUpload(file_path,filename)
+          # funUpload(file_path,filename)
       else:
-          filename=date_time+counter+'_'+cond_type+'_'+sales_org["Hamburg"]+'.csv'
+          filename=date_time+counter+'_'+cond_type+'_'+"0400"+'.csv'
           file_path=csv_out_path+filename
-          df2=out_df[out_df['Mill']=='Hamburg']
-          df2.drop(['Mill'],axis=1,inplace=True)
+          df2=out_df[out_df['VKORG']=='0400']
+          
           df2.to_csv(file_path, index = False)
-          print("hello")
-          funUpload(file_path,filename)
+          
+          # funUpload(file_path,filename)
     
     
     print("Done File: Upload to SFTP")
@@ -457,7 +461,7 @@ def upload_files_scrap ():
             data3["Month_year"] =data3["Month_year"].str.replace("_", "")
             
             data3=data3[(pd.to_datetime(data3['Month_year'], format='%Y%m')) >=today.strftime('%Y-%m') ]
-            
+            data3=data3.head(6)
             data3.loc[(df.Model =='Former'), 'Model'] = 'O'
             data3.loc[(df.Model =='New '), 'Model'] = 'N'
             data3.loc[(df.Model =='Market'), 'Model'] = 'M'
@@ -501,7 +505,7 @@ def validate_files2():
         billet_df.insert(0,'Batch_ID',Batch_ID)
         billet_df.insert(1,'Username',username)
         billet_df.insert(2,'date_time',dt_string)
-        billet_df.to_sql('alloy_surcharge_billet',con=engine, schema='alloy_surcharge',if_exists='append', index=False)
+        # billet_df.to_sql('alloy_surcharge_billet',con=engine, schema='alloy_surcharge',if_exists='append', index=False)
         
         date_time= today.strftime("%Y%m%d")
         counter=str(Batch_ID)
@@ -514,7 +518,7 @@ def validate_files2():
         # Path("C:\ocpphase1\ftp\Q72").mkdir(parents=True, exist_ok=True)
         # out_df.reset_index(drop=True, inplace=True)
         out_df.to_csv(file_path, index = False)
-        funUpload(file_path, filename)
+        # funUpload(file_path, filename)
         
         status='success'
         return {"message":"success"},200
@@ -559,7 +563,7 @@ def validate_files3():
         scrap_df.insert(0,'Batch_ID',Batch_ID)
         scrap_df.insert(1,'Username',username)
         scrap_df.insert(2,'date_time',dt_string)
-        scrap_df.to_sql('scrap_surcharge_billet',con=engine, schema='alloy_surcharge',if_exists='append', index=False)
+        # scrap_df.to_sql('scrap_surcharge_billet',con=engine, schema='alloy_surcharge',if_exists='append', index=False)
         
         
         date_time= today.strftime("%Y%m%d")
@@ -573,7 +577,7 @@ def validate_files3():
         # Path("C:\ocpphase1\ftp\Q72").mkdir(parents=True, exist_ok=True)
         # out_df.reset_index(drop=True, inplace=True)
         out_df.to_csv(file_path, index = False)
-        funUpload(file_path,filename)
+        # funUpload(file_path,filename)
     
     
         
@@ -632,7 +636,7 @@ def history():
     select distinct "Batch_ID", "Username","date_time","filename","COND_TYPE" from  alloy_surcharge.alloy_surcharge_wire
     union
     select distinct  "Batch_ID","Username","date_time","filename","COND_TYPE" from  alloy_surcharge.scrap_surcharge_billet
-    order by date_time desc OFFSET {} LIMIT {} '''.format(lowerLimit,upperLimit)
+    order by "Batch_ID" desc OFFSET {} LIMIT {} '''.format(lowerLimit,upperLimit)
     
         cur.execute(query)
         history_data=cur.fetchall()
