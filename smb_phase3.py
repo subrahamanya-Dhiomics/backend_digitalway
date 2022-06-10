@@ -12,7 +12,7 @@ from flask import Blueprint
 import pandas as pd
 import time
 import json
-from flask import Flask, request, send_file, render_template
+from flask import Flask, request, send_file, render_template,current_app
 from flask import jsonify
 from functools import wraps
 from flask_cors import CORS
@@ -30,14 +30,14 @@ from smb_phase2 import token_required
 from smb_phase1 import upsert
 from smb_phase1 import email
 from smb_phase1 import Database
-from smb_phase1 import con
+
 
 from smb_phase1 import highlight_col
 
 from smb_phase1 import fun_ignore_sequence_id
 
 
-engine = create_engine('postgresql://postgres:ocpphase01@ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com:5432/offertool')
+# engine = create_engine('postgresql://postgres:ocpphase01@ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com:5432/offertool')
      
 
  
@@ -54,6 +54,20 @@ download_path=input_directory="/home/ubuntu/mega_dir/"
 
 db=Database()
 
+# db connection opening and closing before and after the every api calls 
+
+@smb_app3.before_request
+def before_request():
+   
+    current_app.config['CON']  = psycopg2.connect(dbname='offertool', user='pgadmin', password='Sahara_17',
+                       host='offertool2-qa.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
+    
+
+@smb_app3.after_request
+def after_request(response):
+     current_app.config['CON'].close()
+     return response
+ 
 # *****************************************************************************************************************************************
 # transport mode
 
@@ -81,7 +95,7 @@ def  data_transport():
     
     # fetching the data from database and filtering    
     try:
-        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Transport Mode" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Transport Mode" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=current_app.config['CON'])
         count=db.query('select count(*) from "SMB"."SMB - Extra - Transport Mode" where "active"=1 ')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
@@ -123,7 +137,7 @@ def get_record_transport():
     query='''SELECT * FROM "SMB"."SMB - Extra - Transport Mode" where id={}'''.format(id_value)
     
     try:
-        df = pd.read_sql(query, con=con)
+        df = pd.read_sql(query, con=current_app.config['CON'])
         df.columns = df.columns.str.replace(' ', '_')
         df.rename(columns={"Market_-_Country":"Market_Country"},inplace=True)
         record=json.loads(df.to_json(orient='records'))
@@ -295,7 +309,7 @@ def upload_transport():
             
             
             df_main = pd.read_sql('''select "id","Product Division", "Market - Country",
-       "Transport Mode", "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Transport Mode" where "active"='1' order by sequence_id ''', con=con)
+       "Transport Mode", "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Transport Mode" where "active"='1' order by sequence_id ''', con=current_app.config['CON'])
             
             df['Currency'] = df['Currency'].str.replace("'","")
             df3 = df.merge(df_main, how='left', indicator=True)
@@ -413,7 +427,7 @@ def download_transport():
         now = datetime.now()
         try:
             df = pd.read_sql('''select "id",sequence_id,"Product Division", "Market - Country",
-       "Transport Mode", "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Transport Mode" where "active"='1' order by sequence_id ''', con=con)
+       "Transport Mode", "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Transport Mode" where "active"='1' order by sequence_id ''', con=current_app.config['CON'])
            
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'extra_transport_mode.xlsx'
@@ -450,7 +464,7 @@ def  data_transport_minibar():
     
     # fetching the data from database and filtering    
     try:
-        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Transport Mode - MiniBar" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Transport Mode - MiniBar" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=current_app.config['CON'])
         count=db.query('select count(*) from "SMB"."SMB - Extra - Transport Mode - MiniBar" where "active"=1 ')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
@@ -490,7 +504,7 @@ def get_record_transport_minibar():
     query='''SELECT * FROM "SMB"."SMB - Extra - Transport Mode - MiniBar" where id={}'''.format(id_value)
     
     try:
-        df = pd.read_sql(query, con=con)
+        df = pd.read_sql(query, con=current_app.config['CON'])
         df.columns = df.columns.str.replace(' ', '_')
         df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer_Group":"Market_Customer_Group","Market_-_Customer":"Market_Customer"},inplace=True)  
         record=json.loads(df.to_json(orient='records'))
@@ -681,7 +695,7 @@ def upload_transport_minibar():
             
             df_main = pd.read_sql('''select "id","Product Division", "Market - Country",
        "Market - Customer Group","Market - Customer",  "Transport Mode",
-       "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Transport Mode - MiniBar" where "active"='1' order by sequence_id ''', con=con)
+       "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Transport Mode - MiniBar" where "active"='1' order by sequence_id ''', con=current_app.config['CON'])
             
             df['Currency'] = df['Currency'].str.replace("'","")
             df3 = df.merge(df_main, how='left', indicator=True)
@@ -815,7 +829,7 @@ def download_transport_minibar():
               "Transport Mode",
               "Document Item Currency", 
               "Amount", 
-              "Currency" from "SMB"."SMB - Extra - Transport Mode - MiniBar" where "active"='1' order by sequence_id ''', con=con)
+              "Currency" from "SMB"."SMB - Extra - Transport Mode - MiniBar" where "active"='1' order by sequence_id ''', con=current_app.config['CON'])
            
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'transport_mode_minibar.xlsx'
@@ -854,7 +868,7 @@ def  data_length_production():
    
     # fetching the data from database and filtering    
     try:
-        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Length Production" where "active"='1' order by sequence_id OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Length Production" where "active"='1' order by sequence_id OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=current_app.config['CON'])
         count=db.query('select count(*) from "SMB"."SMB - Extra - Length Production" where "active"=1 ')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
@@ -894,7 +908,7 @@ def get_record_length_production():
     query='''SELECT * FROM "SMB"."SMB - Extra - Length Production" where id={}'''.format(id_value)
     
     try:
-        df = pd.read_sql(query, con=con)
+        df = pd.read_sql(query, con=current_app.config['CON'])
         df.columns = df.columns.str.replace(' ', '_')
         df.rename(columns={"Market_-_Country":"Market_Country"},inplace=True)
         record=json.loads(df.to_json(orient='records'))
@@ -1093,7 +1107,7 @@ def upload_length_production():
             
             df_main = pd.read_sql('''select "id","BusinessCode",
        "Market - Country", "Delivering Mill", "Length", "Length From",
-       "Length To", "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Length Production" where "active"='1' order by sequence_id ''', con=con)
+       "Length To", "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Length Production" where "active"='1' order by sequence_id ''', con=current_app.config['CON'])
             
             df['Currency'] = df['Currency'].str.replace("'","")
             
@@ -1231,7 +1245,7 @@ def download_length_production():
         "Length To", 
         "Document Item Currency", 
         "Amount", 
-        "Currency" from "SMB"."SMB - Extra - Length Production" where "active"='1' order by sequence_id ''', con=con)
+        "Currency" from "SMB"."SMB - Extra - Length Production" where "active"='1' order by sequence_id ''', con=current_app.config['CON'])
             
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             # file=download_path+t+'length_production_minibar.xlsx'
@@ -1274,7 +1288,7 @@ def  data_length_production_minibar():
     
     # fetching the data from database and filtering    
     try:
-        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Length Production - MiniBar" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Length Production - MiniBar" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=current_app.config['CON'])
         count=db.query('select count(*) from "SMB"."SMB - Extra - Length Production - MiniBar" where "active"=1 ')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
@@ -1317,7 +1331,7 @@ def get_record_length_production_minibar():
     query='''SELECT * FROM "SMB"."SMB - Extra - Length Production - MiniBar" where id={}'''.format(id_value)
     
     try:
-        df = pd.read_sql(query, con=con)
+        df = pd.read_sql(query, con=current_app.config['CON'])
         df.columns = df.columns.str.replace(' ', '_')
         df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer":"Market_Customer"},inplace=True)
         
@@ -1534,7 +1548,7 @@ def upload_length_production_minibar():
             df_main = pd.read_sql('''select "id","BusinessCode", "Customer Group","Market - Customer",
       "Market - Country", "Delivering Mill", "Length",
        "Length From", "Length To", "Document Item Currency", "Amount",
-       "Currency" from "SMB"."SMB - Extra - Length Production - MiniBar" where "active"='1' order by sequence_id ''', con=con)
+       "Currency" from "SMB"."SMB - Extra - Length Production - MiniBar" where "active"='1' order by sequence_id ''', con=current_app.config['CON'])
             df['Currency'] = df['Currency'].str.replace("'","")
             
             df3 = df.merge(df_main, how='left', indicator=True)
@@ -1678,7 +1692,7 @@ def download_length_production_minibar():
             "Length To",
               "Document Item Currency",
               "Amount",
-              "Currency" from "SMB"."SMB - Extra - Length Production - MiniBar" where "active"='1' order by sequence_id ''', con=con)
+              "Currency" from "SMB"."SMB - Extra - Length Production - MiniBar" where "active"='1' order by sequence_id ''', con=current_app.config['CON'])
            
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'length_production_minibar.xlsx'
@@ -1719,7 +1733,7 @@ def  data_length_logistic():
     
     # fetching the data from database and filtering    
     try:
-        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Length Logistic" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Length Logistic" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=current_app.config['CON'])
         count=db.query('select count(*) from "SMB"."SMB - Extra - Length Logistic" where "active"=1 ')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
@@ -1762,7 +1776,7 @@ def get_record_length_logistic():
     query='''SELECT * FROM "SMB"."SMB - Extra - Length Logistic" where id={}'''.format(id_value)
     
     try:
-        df = pd.read_sql(query, con=con)
+        df = pd.read_sql(query, con=current_app.config['CON'])
         df.columns = df.columns.str.replace(' ', '_')
         df.rename(columns={"Market_-_Country":"Market_Country"},inplace=True)
         
@@ -1971,7 +1985,7 @@ def upload_length_logistic():
             
             df_main = pd.read_sql('''select "id", "Market - Country",
        "Delivering Mill", "Length", "Length From", "Length To",
-       "Transport Mode", "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Length Logistic" where "active"='1' order by sequence_id ''', con=con)
+       "Transport Mode", "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Length Logistic" where "active"='1' order by sequence_id ''', con=current_app.config['CON'])
             
             df['Currency'] = df['Currency'].str.replace("'","")
             df3 = df.merge(df_main, how='left', indicator=True)
@@ -2105,7 +2119,7 @@ def download_length_logistic():
                 "Transport Mode", 
                 "Document Item Currency", 
                 "Amount", 
-                "Currency" from "SMB"."SMB - Extra - Length Logistic" where "active"='1' order by sequence_id ''', con=con)
+                "Currency" from "SMB"."SMB - Extra - Length Logistic" where "active"='1' order by sequence_id ''', con=current_app.config['CON'])
            
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'length_logistic.xlsx'
@@ -2147,7 +2161,7 @@ def  data_length_logistic_minibar():
     
     # fetching the data from database and filtering    
     try:
-        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Length Logistic - MiniBar" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Length Logistic - MiniBar" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=current_app.config['CON'])
         count=db.query('select count(*) from "SMB"."SMB - Extra - Length Logistic - MiniBar" where "active"=1 ')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
@@ -2190,7 +2204,7 @@ def get_record_length_logistic_minibar():
     query='''SELECT * FROM "SMB"."SMB - Extra - Length Logistic - MiniBar" where id={}'''.format(id_value)
     
     try:
-        df = pd.read_sql(query, con=con)
+        df = pd.read_sql(query, con=current_app.config['CON'])
         df.columns = df.columns.str.replace(' ', '_')
         df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer":"Market_Customer"},inplace=True)  
        
@@ -2406,7 +2420,7 @@ def upload_length_logistic_minibar():
             df_main = pd.read_sql('''select "id","Customer Group","Market - Customer",
        "Market - Country", "Delivering Mill", "Length", "Length From",
        "Length To", "Transport Mode", "Document Item Currency", "Amount",
-       "Currency" from "SMB"."SMB - Extra - Length Logistic - MiniBar" where "active"='1' order by sequence_id ''', con=con)
+       "Currency" from "SMB"."SMB - Extra - Length Logistic - MiniBar" where "active"='1' order by sequence_id ''', con=current_app.config['CON'])
             
             df['Currency'] = df['Currency'].str.replace("'","")
             df3 = df.merge(df_main, how='left', indicator=True)
@@ -2550,7 +2564,7 @@ def download_length_logistic_minibar():
             "Transport Mode",
               "Document Item Currency",
               "Amount",
-              "Currency" from "SMB"."SMB - Extra - Length Logistic - MiniBar" where "active"='1' order by sequence_id ''', con=con)
+              "Currency" from "SMB"."SMB - Extra - Length Logistic - MiniBar" where "active"='1' order by sequence_id ''', con=current_app.config['CON'])
            
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'length_logistic_minibar.xlsx'

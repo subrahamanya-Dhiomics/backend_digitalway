@@ -25,54 +25,20 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-from smb_phase1 import upsert,email,tuple_to_string,fun_ignore_sequence_id
+
+
+from smb_phase1 import upsert,email,tuple_to_string,fun_ignore_sequence_id,Database
 
 
 
 
 # database connection strings ( ocpphase1 -- > offertool >SMB)
 
-engine = create_engine('postgresql://postgres:ocpphase01@ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com:5432/offertool')
-con = psycopg2.connect(dbname='offertool',user='pgadmin',password='Sahara_17',host='offertool2-qa.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
+# engine = create_engine('postgresql://postgres:ocpphase01@ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com:5432/offertool')
+# con = psycopg2.connect(dbname='offertool',user='pgadmin',password='Sahara_17',host='offertool2-qa.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
 
 #database class for updating and fetching the data
-class Database:
-    host='offertool2-qa.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com'  # your host
-    user='pgadmin'      # usernames
-    password='Sahara_17'
-    db='offertool'
-   
-   
-   
-    def __init__(self):
-           
-            self.connection = psycopg2.connect(dbname=self.db,user=self.user,password=self.password,host=self.host)
-             
-    def insert(self, query):
-           
-            var = 'failed'
-            try:
-                self.cursor = self.connection.cursor()
-#                print("HEY")
-                var = self.cursor.execute(query)
-               
-                self.connection.commit()
-            except:
-                self.connection.rollback()
-            finally:
-                self.cursor.close()
-               
-            return(var)
 
-    def query(self, query):
-        try:
-            self.cursor = self.connection.cursor()
-           
-            self.cursor.execute(query)
-            return self.cursor.fetchall()
-        finally:
-            self.cursor.close()
- 
 # File Path 
 # download_path=input_directory="C:/Users/Administrator/Documents/"  
  
@@ -87,6 +53,21 @@ db=Database()
 
 
 
+# db connection opening and closing before and after the every api calls 
+
+@generic.before_request
+def before_request():
+   
+    current_app.config['CON']  = psycopg2.connect(dbname='offertool', user='pgadmin', password='Sahara_17',
+                       host='offertool2-qa.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
+    
+
+@generic.after_request
+def after_request(response):
+     current_app.config['CON'].close()
+     
+     return response
+ 
 # Generic List
 @generic.route('/generic_list',methods=['GET','POST'])
 def generic_list():
@@ -109,7 +90,7 @@ def generic_list():
     # fetching the data from database and filtering    
     query='''select * from "SMB"."{}" where "active"=1 order by sequence_id OFFSET {} LIMIT {} '''.format(tablename,lowerLimit,upperLimit) 
     print(query)
-    df=pd.read_sql(query,con=con )
+    df=pd.read_sql(query,con=current_app.config['CON'] )
     count=db.query('select count(*) from "SMB"."{}" where "active"=1 '.format(tablename))[0][0]
     df.columns = df.columns.str.replace(' ', '_')
     
@@ -130,10 +111,10 @@ def generic_get():
     query='''select * from "SMB"."{}" where "id"={} '''.format(tablename,id_value)
     
     try:
-        df = pd.read_sql(query, con=con)
+        df = pd.read_sql(query, con=current_app.config['CON'])
         df.columns = df.columns.str.replace(' ', '_')
         record=json.loads(df.to_json(orient='records'))
-        print('recoooooo    ',record)
+        print('cccc   ',current_app.config['CON'])
         return {"record":record},200
     except:
         return {"status":"failure"},500
@@ -144,7 +125,7 @@ def  generic_download():
         tablename = request.args.get('table_name')
        
         now = datetime.now()
-        col_df=pd.read_sql(''' select * from "SMB"."{}" where "active"='1' order by sequence_id  '''.format(tablename),con)
+        col_df=pd.read_sql(''' select * from "SMB"."{}" where "active"='1' order by sequence_id  '''.format(tablename),current_app.config['CON'])
         constant_cols=['id','sequence_id']
         
         rm_col = ['Username','active','aprover1','aprover2','aprover3','updated_on']
@@ -170,8 +151,7 @@ def generic_delete():
     id_value  = json.loads(request.data)['id'][1:]
     username=request.headers['username']
     
-    print(id_value)
-    print("****")
+    
     tablename = json.loads(request.data)['id'][0]
     
    
@@ -230,7 +210,7 @@ def generic_upload():
             
             query=''' select {} from "SMB"."{}" where "active"='1' order by sequence_id  '''.format(colstr,tablename)
             print(query)
-            df_main=pd.read_sql(query,con)
+            df_main=pd.read_sql(query,current_app.config['CON'])
             
             try:
              df['Currency'] = df['Currency'].str.replace("'","")
@@ -321,7 +301,7 @@ def generic_history():
  
     # fetching the data from database and filtering    
    
-    df = pd.read_sql('''select * from "SMB"."{}_History"   OFFSET {} LIMIT {}'''.format(table_name,lowerLimit,upperLimit), con=con)
+    df = pd.read_sql('''select * from "SMB"."{}_History"   OFFSET {} LIMIT {}'''.format(table_name,lowerLimit,upperLimit), con=current_app.config['CON'])
     count=db.query('select count(*) from "SMB"."{}_History" '.format(table_name))[0][0]
     df.columns = df.columns.str.replace(' ', '_')
     

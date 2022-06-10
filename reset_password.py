@@ -20,8 +20,8 @@ db=Database()
 reset_password = Blueprint('reset_password', __name__)
 CORS(reset_password)
 
-con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
-cursor=con.cursor()
+# con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
+# cursor=con.cursor()
 
 
 

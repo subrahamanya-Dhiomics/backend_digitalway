@@ -14,7 +14,7 @@ from flask import Blueprint
 import pandas as pd
 import time
 import json
-from flask import Flask, request, send_file, render_template, make_response
+from flask import Flask, request, send_file, render_template, make_response,current_app
 from flask import jsonify
 from flask_cors import CORS
 from json import JSONEncoder
@@ -28,13 +28,10 @@ from sqlalchemy import create_engine
 import getpass
 from datetime import datetime,date
 
-from smb_phase1 import con
 
 
 from smb_phase1 import Database
 
-engine = create_engine('postgresql://postgres:ocpphase01@ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com:5432/offertool')
-     
 
 smb_history = Blueprint('smb_history', __name__)
 
@@ -45,6 +42,20 @@ db=Database()
 input_directory="C:/Users/Administrator/Documents/SMB_INPUT/"
 
 
+# db connection opening and closing before and after the every api calls 
+
+@smb_history.before_request
+def before_request():
+   
+    current_app.config['CON']  = psycopg2.connect(dbname='offertool', user='pgadmin', password='Sahara_17',
+                       host='offertool2-qa.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
+    
+
+@smb_history.after_request
+def after_request(response):
+     current_app.config['CON'].close()
+     return response
+ 
 
 @smb_history.route('/history_delivering_mill_MiniBar',methods=['GET'])
 def  download_delivery_mill_minibar_history():
@@ -59,7 +70,7 @@ def  download_delivery_mill_minibar_history():
     
     # fetching the data from database and filtering    
     try:
-        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Delivery Mill - MiniBar_History"   OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Delivery Mill - MiniBar_History"   OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=current_app.config['CON'])
         count=db.query('select count(*) from "SMB"."SMB - Extra - Delivery Mill - MiniBar"')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
@@ -94,7 +105,7 @@ def  download_delivery_mill_history():
     
     # fetching the data from database and filtering    
     try:
-        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Delivery Mill_History"   OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Delivery Mill_History"   OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=current_app.config['CON'])
         count=db.query('select count(*) from "SMB"."SMB - Extra - Delivery Mill_History"')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
@@ -126,7 +137,7 @@ def download_base_price_history():
  
     # fetching the data from database and filtering    
     try:
-        df = pd.read_sql('''select * from "SMB"."SMB - Base Price - Category Addition_History"   OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        df = pd.read_sql('''select * from "SMB"."SMB - Base Price - Category Addition_History"   OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=current_app.config['CON'])
         count=db.query('select count(*) from "SMB"."SMB - Base Price - Category Addition_History"')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
@@ -161,7 +172,7 @@ def download_base_price_minibar_history():
  
     # fetching the data from database and filtering    
     try:
-        df = pd.read_sql('''select * from "SMB"."SMB - Base Price - Category Addition - MiniBar_History"   OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        df = pd.read_sql('''select * from "SMB"."SMB - Base Price - Category Addition - MiniBar_History"   OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=current_app.config['CON'])
         count=db.query('select count(*) from "SMB"."SMB - Base Price - Category Addition - MiniBar_History"')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
@@ -197,7 +208,7 @@ def download_base_price_Incoterm_Exceptions_History():
  
     # fetching the data from database and filtering    
     try:
-        df = pd.read_sql('''select * from "SMB"."SMB - Base Price - Incoterm Exceptions_History"   OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        df = pd.read_sql('''select * from "SMB"."SMB - Base Price - Incoterm Exceptions_History"   OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=current_app.config['CON'])
         count=db.query('select count(*) from "SMB"."SMB - Base Price - Incoterm Exceptions_History"')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
@@ -233,7 +244,7 @@ def download_Extra_Certificate_History():
  
     # fetching the data from database and filtering    
     try:
-        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Certificate_History"   OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Certificate_History"   OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=current_app.config['CON'])
         count=db.query('select count(*) from "SMB"."SMB - Extra - Certificate_History"')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
@@ -263,7 +274,7 @@ def download_Extra_Certificate_miniBar_History():
  
     # fetching the data from database and filtering    
     try:
-        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Certificate - MiniBar_History"   OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Certificate - MiniBar_History"   OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=current_app.config['CON'])
         count=db.query('select count(*) from "SMB"."SMB - Extra - Certificate - MiniBar_History"')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
@@ -300,7 +311,7 @@ def download_Extra_Freight_Parity_History():
  
     # fetching the data from database and filtering    
     try:
-        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Freight Parity_History"   OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Freight Parity_History"   OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=current_app.config['CON'])
         count=db.query('select count(*) from "SMB"."SMB - Extra - Freight Parity_History"')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
@@ -337,7 +348,7 @@ def download_Extra_Freight_Parity_MiniBar_History():
  
     # fetching the data from database and filtering    
     try:
-        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Freight Parity - MiniBar_History"   OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Freight Parity - MiniBar_History"   OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=current_app.config['CON'])
         count=db.query('select count(*) from "SMB"."SMB - Extra - Freight Parity - MiniBar_History"')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
@@ -376,7 +387,7 @@ def download_Extra_Grade_History():
  
     # fetching the data from database and filtering    
     try:
-        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Grade_History"   OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Grade_History"   OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=current_app.config['CON'])
         count=db.query('select count(*) from "SMB"."SMB - Extra - Grade_History"')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
@@ -411,7 +422,7 @@ def download_Extra_Grade_MiniBar_History():
  
     # fetching the data from database and filtering    
     try:
-        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Grade - MiniBar_History"  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Grade - MiniBar_History"  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=current_app.config['CON'])
         count=db.query('select count(*) from "SMB"."SMB - Extra - Grade - MiniBar_History"')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
@@ -447,7 +458,7 @@ def download_Extra_Length_Logistic_History():
  
     # fetching the data from database and filtering    
     try:
-        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Length Logistic_History"  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Length Logistic_History"  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=current_app.config['CON'])
         count=db.query('select count(*) from "SMB"."SMB - Extra - Length Logistic_History"')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
@@ -483,7 +494,7 @@ def download_Extra_Length_Logistic_MiniBar_History():
  
     # fetching the data from database and filtering    
     try:
-        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Length Logistic - MiniBar_History"  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Length Logistic - MiniBar_History"  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=current_app.config['CON'])
         count=db.query('select count(*) from "SMB"."SMB - Extra - Length Logistic - MiniBar_History"')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
@@ -520,7 +531,7 @@ def download_Extra_Length_Production_History():
  
     # fetching the data from database and filtering    
     try:
-        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Length Production_History"  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Length Production_History"  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=current_app.config['CON'])
         count=db.query('select count(*) from "SMB"."SMB - Extra - Length Production_History"')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
@@ -557,7 +568,7 @@ def download_Extra_Length_Production_MiniBar_History():
  
     # fetching the data from database and filtering    
     try:
-        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Length Production - MiniBar_History" OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Length Production - MiniBar_History" OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=current_app.config['CON'])
         count=db.query('select count(*) from "SMB"."SMB - Extra - Length Production - MiniBar_History"')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
@@ -595,7 +606,7 @@ def download_Extra_Profile_History():
  
     # fetching the data from database and filtering    
     try:
-        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Profile_History" OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Profile_History" OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=current_app.config['CON'])
         count=db.query('select count(*) from "SMB"."SMB - Extra - Profile_History"')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
@@ -633,7 +644,7 @@ def download_Extra_Profile_MiniBar_History():
  
     # fetching the data from database and filtering    
     try:
-        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Profile - MiniBar_History" OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Profile - MiniBar_History" OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=current_app.config['CON'])
         count=db.query('select count(*) from "SMB"."SMB - Extra - Profile - MiniBar_History"')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
@@ -671,7 +682,7 @@ def download_Extra_Profile_Iberia_And_Italy_History():
  
     # fetching the data from database and filtering    
     try:
-        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Profile Iberia and Italy_History" OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Profile Iberia and Italy_History" OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=current_app.config['CON'])
         count=db.query('select count(*) from "SMB"."SMB - Extra - Profile Iberia and Italy_History"')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
@@ -709,7 +720,7 @@ def download_Extra_Profile_Iberia_And_Italy_MiniBar_History():
  
     # fetching the data from database and filtering    
     try:
-        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar_History" OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar_History" OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=current_app.config['CON'])
         count=db.query('select count(*) from "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar_History"')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
@@ -747,7 +758,7 @@ def download_Extra_Transport_Mode_History():
  
     # fetching the data from database and filtering    
     try:
-        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Transport Mode_History" OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Transport Mode_History" OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=current_app.config['CON'])
         count=db.query('select count(*) from "SMB"."SMB - Extra - Transport Mode_History"')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
@@ -784,7 +795,7 @@ def download_Extra_Transport_Mode_MiniBar_History():
  
     # fetching the data from database and filtering    
     try:
-        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Transport Mode - MiniBar_History" OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Transport Mode - MiniBar_History" OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=current_app.config['CON'])
         count=db.query('select count(*) from "SMB"."SMB - Extra - Transport Mode - MiniBar_History"')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         

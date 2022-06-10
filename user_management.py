@@ -8,7 +8,7 @@ from flask import Blueprint
 import pandas as pd
 
 import json
-from flask import Flask, request, send_file, render_template, make_response
+from flask import Flask, request, send_file, render_template, make_response,current_app
 from flask import jsonify
 from flask_cors import CORS
 from smb_phase1 import Database
@@ -16,10 +16,10 @@ from smb_phase1 import Database
 import psycopg2
 
 from sqlalchemy import create_engine
-from smb_phase1 import con
+
 from smb_phase2 import token_required
 
-engine = create_engine('postgresql://postgres:ocpphase01@ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com:5432/offertool')
+# engine = create_engine('postgresql://postgres:ocpphase01@ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com:5432/offertool')
 
 # class Database:
 #     host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com'  # your host
@@ -69,9 +69,21 @@ CORS(user_management_app)
 # con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
 
 
+# db connection opening and closing before and after the every api calls 
 
-cursor=con.cursor()
+@user_management_app.before_request
+def before_request():
+   
+    current_app.config['CON']  = psycopg2.connect(dbname='offertool', user='pgadmin', password='Sahara_17',
+                       host='offertool2-qa.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
+    
 
+@user_management_app.after_request
+def after_request(response):
+     current_app.config['CON'].close()
+     return response
+ 
+    
  
 @user_management_app.route("/group_management_data",methods=['GET','POST'])
 @token_required
@@ -125,8 +137,7 @@ def valid_user():
     try:       
         query_1='''select distinct(1) user_name from  user_management_ocp.user_details  where  user_name='{}' '''.format(username)  
         print(query_1)
-        cursor.execute(query_1)
-        status=cursor.fetchall()[0][0]
+        status=db.query(query_1)[0][0]
         return{"status":"Exist Username"}
     except:
         return{"status":"Not-Exist Username"}
@@ -137,9 +148,7 @@ def valid_email():
     email = request.args.get('email')
     try:     
         query_1='''select distinct(1) email from  user_management_ocp.user_details  where  email='{}' '''.format(email)   
-        print(query_1)
-        cursor.execute(query_1)
-        status=cursor.fetchall()[0][0] 
+        status=db.query(query_1)[0][0]
         return{"status":"Exist-Email"}
     except:
         return{"status":"Not-Exist Email"}
@@ -185,7 +194,7 @@ def insert_values():
 @token_required
 def useraccess():
     query='''SELECT  groupid, group_description FROM user_management_ocp.group'''
-    df=pd.read_sql(query,con=con)
+    df=pd.read_sql(query,con=current_app.config['CON'])
     data=json.loads(df.to_json(orient='records'))
     return {"data":data},200
 

@@ -34,8 +34,7 @@ app.register_blueprint(smb_history)
 app.register_blueprint(generic)
 
 
-con1=psycopg2.connect(dbname='offertool',user='pgadmin',password='Sahara_17',host='offertool2-qa.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
-
+# con1=psycopg2.connect(dbname='offertool',user='pgadmin',password='Sahara_17',host='offertool2-qa.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
 # con = psycopg2.connect(dbname='offertool',user='postgres',password='ocpphase01',host='ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
 
 app.config["environment_url"] = "https://smbprice.dcc-am.com/auth/reset-password?user_id"
@@ -43,15 +42,27 @@ app.config["environment_url"] = "https://smbprice.dcc-am.com/auth/reset-password
 
 app.config['SECRET_KEY'] = 'YOU_SECRET_KEY'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1000 * 1000
-
-
-
+app.config['CON']=''
 app.config['mypassword']='digitalway'
 
 
 db=Database()
 
-# Login page
+# db connection opening and closing before and after the every api calls 
+
+@app.before_request
+def before_request():
+   
+    current_app.config['CON']  = psycopg2.connect(dbname='offertool', user='pgadmin', password='Sahara_17',
+                       host='offertool2-qa.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
+    
+
+@app.after_request
+def after_request(response):
+     current_app.config['CON'].close()
+     return response
+ 
+
 
 
 @app.route('/login', methods=['POST','GET'])
@@ -86,7 +97,7 @@ def login():
             item=json.loads(m[0])
             menu_list.append(item)
         
-        df=pd.read_sql("select * from  user_management_ocp.user_details  where user_name='{}'".format(username),con=con1)
+        df=pd.read_sql("select * from  user_management_ocp.user_details  where user_name='{}'".format(username),con=current_app.config['CON'])
         user=json.loads(df.to_json(orient='records'))[0]
         
        
@@ -189,7 +200,7 @@ def web_api():
     print(query)
     data=db.query(query)
        
-    df=pd.read_sql(query,con=con1)
+    df=pd.read_sql(query,con=current_app.config['CON'])
     df_json=json.loads(df.to_json(orient='records'))
            
     return {"data":df_json,"status":"sucess"}

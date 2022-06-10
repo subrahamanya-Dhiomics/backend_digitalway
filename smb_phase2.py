@@ -34,12 +34,12 @@ from smb_phase1 import upsert
 from smb_phase1 import email
 
 from smb_phase1 import Database
-from smb_phase1 import con 
+
 
 
 from smb_phase1 import highlight_col
 
-engine = create_engine('postgresql://postgres:ocpphase01@ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com:5432/offertool')
+# engine = create_engine('postgresql://postgres:ocpphase01@ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com:5432/offertool')
      
 
                
@@ -56,6 +56,21 @@ download_path=input_directory="/home/ubuntu/mega_dir/"
 db=Database()
 # Login page
 
+
+# db connection opening and closing before and after the every api calls 
+
+@smb_app2.before_request
+def before_request():
+   
+    current_app.config['CON']  = psycopg2.connect(dbname='offertool', user='pgadmin', password='Sahara_17',
+                       host='offertool2-qa.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
+    
+
+@smb_app2.after_request
+def after_request(response):
+     current_app.config['CON'].close()
+     return response
+ 
 
 # *****************************************************************************************************************************************
 # freight_parity
@@ -81,7 +96,7 @@ def  freight_parity():
     
     # fetching the data from database and filtering    
     try:
-        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Freight Parity" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Freight Parity" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=current_app.config['CON'])
         count=db.query('select count(*) from "SMB"."SMB - Extra - Freight Parity" where "active"=1 ')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
@@ -124,7 +139,7 @@ def get_record_freight_parity():
     query='''SELECT * FROM "SMB"."SMB - Extra - Freight Parity" where id={}'''.format(id_value)
     
     try:
-        df = pd.read_sql(query, con=con)
+        df = pd.read_sql(query, con=current_app.config['CON'])
         df.columns = df.columns.str.replace(' ', '_')
         df.rename(columns={"Market_-_Country":"Market_Country","Zip Code (Dest)":"Zip_Code_Dest"},inplace=True)
         
@@ -253,7 +268,7 @@ def upload_freight_parity():
             
             df_main = pd.read_sql('''select "id","Delivering Mill", "Market - Country",
        "Zip Code (Dest)", "Product Division", "Document Item Currency",
-       "Amount", "Currency" from "SMB"."SMB - Extra - Freight Parity" where "active"='1' order by sequence_id ''', con=con)
+       "Amount", "Currency" from "SMB"."SMB - Extra - Freight Parity" where "active"='1' order by sequence_id ''', con=current_app.config['CON'])
             df['Currency'] = df['Currency'].str.replace("'","")
             
             df3 = df.merge(df_main, how='left', indicator=True)
@@ -328,7 +343,7 @@ def download_freight_parity():
    
         now = datetime.now()
         try:
-            df = pd.read_sql('''select  "id",sequence_id,"Delivering Mill","Market - Country","Zip Code (Dest)","Product Division","Document Item Currency","Amount", "Currency" from "SMB"."SMB - Extra - Freight Parity" where "active"='1' order by sequence_id ''', con=con)
+            df = pd.read_sql('''select  "id",sequence_id,"Delivering Mill","Market - Country","Zip Code (Dest)","Product Division","Document Item Currency","Amount", "Currency" from "SMB"."SMB - Extra - Freight Parity" where "active"='1' order by sequence_id ''', con=current_app.config['CON'])
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'freight_parity.xlsx'
             df=df.style.apply(highlight_col, axis=None)
@@ -372,7 +387,7 @@ def  freight_parity_minibar():
     
     # fetching the data from database and filtering    
     try:
-        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Freight Parity - MiniBar" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Freight Parity - MiniBar" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=current_app.config['CON'])
         count=db.query('select count(*) from "SMB"."SMB - Extra - Freight Parity - MiniBar" where "active"=1 ')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
@@ -414,7 +429,7 @@ def get_record_freight_parity_minibar():
     query='''SELECT * FROM "SMB"."SMB - Extra - Freight Parity - MiniBar" where id={}'''.format(id_value)
     
     try:
-        df = pd.read_sql(query, con=con)
+        df = pd.read_sql(query, con=current_app.config['CON'])
         df.columns = df.columns.str.replace(' ', '_')
         df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer_Group":"Market_Customer_Group","Market_-_Customer":"Market_Customer","Zip_Code_(Dest)":"Zip_Code_Dest"},inplace=True)  
            
@@ -536,7 +551,7 @@ def upload_freight_parity_minibar():
             
             df_main = pd.read_sql('''select "id","Delivering Mill", "Market - Country",
        "Market - Customer Group","Market - Customer","Zip Code (Dest)",
-       "Product Division", "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Freight Parity - MiniBar" where "active"='1' order by sequence_id ''', con=con)
+       "Product Division", "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Freight Parity - MiniBar" where "active"='1' order by sequence_id ''', con=current_app.config['CON'])
             
             df['Currency'] = df['Currency'].str.replace("'","")
             df3 = df.merge(df_main, how='left', indicator=True)
@@ -599,7 +614,7 @@ def download_freight_parity_minibar():
    
         now = datetime.now()
         try:
-            df = pd.read_sql('''select id,sequence_id,"Delivering Mill","Market - Country","Market - Customer Group","Market - Customer","Zip Code (Dest)","Product Division","Document Item Currency","Amount", "Currency" from "SMB"."SMB - Extra - Freight Parity - MiniBar"  where "active"='1' order by sequence_id ''', con=con)
+            df = pd.read_sql('''select id,sequence_id,"Delivering Mill","Market - Country","Market - Customer Group","Market - Customer","Zip Code (Dest)","Product Division","Document Item Currency","Amount", "Currency" from "SMB"."SMB - Extra - Freight Parity - MiniBar"  where "active"='1' order by sequence_id ''', con=current_app.config['CON'])
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'freight_parity_minibar.xlsx'
             df=df.style.apply(highlight_col, axis=None)
@@ -634,7 +649,7 @@ def  extra_grade_data():
     
     # fetching the data from database and filtering    
     try:
-        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Grade" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Grade" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=current_app.config['CON'])
         count=db.query('select count(*) from "SMB"."SMB - Extra - Grade" where "active"=1 ')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
@@ -676,7 +691,7 @@ def get_record_extra_grade():
     query='''SELECT * FROM "SMB"."SMB - Extra - Grade" where id={}'''.format(id_value)
     
     try:
-        df = pd.read_sql(query, con=con)
+        df = pd.read_sql(query, con=current_app.config['CON'])
         df.columns = df.columns.str.replace(' ', '_')
         df.rename(columns={"Market_-_Country":"Market_Country"},inplace=True)  
     
@@ -808,7 +823,7 @@ def upload_extra_grade():
             
             df_main = pd.read_sql('''select "id","BusinessCode", "Grade Category",
        "Market - Country", "Product Division",
-       "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Grade" where "active"='1' order by sequence_id ''', con=con)
+       "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Grade" where "active"='1' order by sequence_id ''', con=current_app.config['CON'])
             
             
             df3 = df.merge(df_main, how='left', indicator=True)
@@ -877,7 +892,7 @@ def download_extra_grade():
         try:
             df = pd.read_sql('''select "id",sequence_id,"BusinessCode", "Grade Category",
        "Market - Country", "Product Division",
-       "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Grade" where "active"='1' order by sequence_id ''', con=con)
+       "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Grade" where "active"='1' order by sequence_id ''', con=current_app.config['CON'])
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'extra_grade.xlsx'
             df=df.style.apply(highlight_col, axis=None)
@@ -916,7 +931,7 @@ def  extra_grade_data_minibar():
     
     # fetching the data from database and filtering    
     try:
-        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Grade - MiniBar" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Grade - MiniBar" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=current_app.config['CON'])
         
         df.columns = df.columns.str.replace(' ', '_')
         
@@ -955,7 +970,7 @@ def get_record_extra_grade_minibar():
     query='''SELECT * FROM "SMB"."SMB - Extra - Grade - MiniBar" where id={}'''.format(id_value)
     
     try:
-        df = pd.read_sql(query, con=con)
+        df = pd.read_sql(query, con=current_app.config['CON'])
         df.columns = df.columns.str.replace(' ', '_')
         df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer":"Market_Customer"},inplace=True)  
          
@@ -1148,7 +1163,7 @@ def upload_extra_grade_minibar():
          
          df_main = pd.read_sql('''select "id","BusinessCode", "Customer Group","Market - Customer",
        "Market - Country", "Grade Category",
-       "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Grade - MiniBar" where "active"='1' order by sequence_id ''', con=con)
+       "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Grade - MiniBar" where "active"='1' order by sequence_id ''', con=current_app.config['CON'])
          
          df['Currency'] = df['Currency'].str.replace("'","")
          df3 = df.merge(df_main, how='left', indicator=True)
@@ -1274,7 +1289,7 @@ def  validate_extra_grade_minibar():
 def download_extra_grade_minibar():
         now = datetime.now()
         try:
-            df = pd.read_sql('''select id,sequence_id,"BusinessCode","Customer Group","Market - Customer","Market - Country","Grade Category","Document Item Currency","Amount", "Currency" from "SMB"."SMB - Extra - Grade - MiniBar" where "active"='1' order by sequence_id ''', con=con)
+            df = pd.read_sql('''select id,sequence_id,"BusinessCode","Customer Group","Market - Customer","Market - Country","Grade Category","Document Item Currency","Amount", "Currency" from "SMB"."SMB - Extra - Grade - MiniBar" where "active"='1' order by sequence_id ''', con=current_app.config['CON'])
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'extra_grade_minibar.xlsx'
             df=df.style.apply(highlight_col, axis=None)
@@ -1312,7 +1327,7 @@ def  extra_profile():
     
     # fetching the data from database and filtering    
     try:
-        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Profile" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Profile" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=current_app.config['CON'])
         count=db.query('select count(*) from "SMB"."SMB - Extra - Profile" where "active"=1 ')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
@@ -1354,7 +1369,7 @@ def get_record_extra_profile():
     query='''SELECT * FROM "SMB"."SMB - Extra - Profile" where id={}'''.format(id_value)
     
     try:
-        df = pd.read_sql(query, con=con)
+        df = pd.read_sql(query, con=current_app.config['CON'])
         df.columns = df.columns.str.replace(' ', '_')
         df.rename(columns={"Market_-_Country":"Market_Country"},inplace=True)  
          
@@ -1517,7 +1532,7 @@ def upload_extra_profile():
             df_main = pd.read_sql('''select "id","BusinessCode", "Market - Country",
        "Product Division", "Product Level 04", "Product Level 05",
        "Product Level 02", "Delivering Mill", "Document Item Currency",
-       "Amount", "Currency" from "SMB"."SMB - Extra - Profile" where "active"='1' order by sequence_id ''', con=con)
+       "Amount", "Currency" from "SMB"."SMB - Extra - Profile" where "active"='1' order by sequence_id ''', con=current_app.config['CON'])
             
             
             df['Currency'] = df['Currency'].str.replace("'","")
@@ -1647,7 +1662,7 @@ def download_extra_profile():
    
         now = datetime.now()
         try:
-            df = pd.read_sql('''select "id",sequence_id,"BusinessCode","Market - Country","Product Division","Product Level 04","Product Level 05","Product Level 02","Delivering Mill","Document Item Currency","Amount", "Currency" from "SMB"."SMB - Extra - Profile" where "active"='1' order by sequence_id ''', con=con)
+            df = pd.read_sql('''select "id",sequence_id,"BusinessCode","Market - Country","Product Division","Product Level 04","Product Level 05","Product Level 02","Delivering Mill","Document Item Currency","Amount", "Currency" from "SMB"."SMB - Extra - Profile" where "active"='1' order by sequence_id ''', con=current_app.config['CON'])
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'extra_profile.xlsx'
             
@@ -1686,7 +1701,7 @@ def  extra_profile_minibar():
     
     # fetching the data from database and filtering    
     try:
-        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Profile - MiniBar" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Profile - MiniBar" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=current_app.config['CON'])
         count=db.query('select count(*) from "SMB"."SMB - Extra - Profile - MiniBar" where "active"=1 ')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
@@ -1728,7 +1743,7 @@ def get_record_extra_profile_minibar():
     query='''SELECT * FROM "SMB"."SMB - Extra - Profile - MiniBar" where id={}'''.format(id_value)
     
     try:
-        df = pd.read_sql(query, con=con)
+        df = pd.read_sql(query, con=current_app.config['CON'])
         df.columns = df.columns.str.replace(' ', '_')
         df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer_Group":"Market_Customer_Group","Market_-_Customer":"Market_Customer"},inplace=True)  
          
@@ -1937,7 +1952,7 @@ def upload_extra_profile_minibar():
             df_main = pd.read_sql('''select "id","BusinessCode", "Customer Group","Market - Customer",
      "Market - Country", "Product Level 04",
        "Product Level 05", "Product Level 02", "Delivering Mill",
-       "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Profile - MiniBar" where "active"='1' order by sequence_id ''', con=con)
+       "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Profile - MiniBar" where "active"='1' order by sequence_id ''', con=current_app.config['CON'])
             
             
             df['Currency'] = df['Currency'].str.replace("'","")
@@ -2073,7 +2088,7 @@ def download_extra_profile_minibar():
     
         now = datetime.now()
         try:
-            df = pd.read_sql('''select id,sequence_id,"BusinessCode","Customer Group","Market - Customer","Market - Country","Product Level 04","Product Level 05","Product Level 02","Delivering Mill","Document Item Currency","Amount", "Currency" from "SMB"."SMB - Extra - Profile - MiniBar" where "active"='1' order by sequence_id ''', con=con)
+            df = pd.read_sql('''select id,sequence_id,"BusinessCode","Customer Group","Market - Customer","Market - Country","Product Level 04","Product Level 05","Product Level 02","Delivering Mill","Document Item Currency","Amount", "Currency" from "SMB"."SMB - Extra - Profile - MiniBar" where "active"='1' order by sequence_id ''', con=current_app.config['CON'])
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'extra_profile_minibar.xlsx'
             
@@ -2111,7 +2126,7 @@ def  extra_profile_minibar_iberia():
     
     # fetching the data from database and filtering    
     try:
-        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Profile Iberia and Italy" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Profile Iberia and Italy" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=current_app.config['CON'])
         count=db.query('select count(*) from "SMB"."SMB - Extra - Profile Iberia and Italy" where "active"=1 ')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
@@ -2151,7 +2166,7 @@ def get_record_extra_profile_Iberia():
     query='''SELECT * FROM "SMB"."SMB - Extra - Profile Iberia and Italy" where id={}'''.format(id_value)
     
     try:
-        df = pd.read_sql(query, con=con)
+        df = pd.read_sql(query, con=current_app.config['CON'])
         df.columns = df.columns.str.replace(' ', '_')
         df.rename(columns={"Market_-_Country":"Market_Country"},inplace=True)  
          
@@ -2346,7 +2361,7 @@ def upload_extra_profile_Iberia():
             
             df_main = pd.read_sql('''select "id","BusinessCode", "Market - Country",
        "Delivering Mill", "Product Level 02", "Product Level 05",
-       "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Profile Iberia and Italy" where "active"='1' order by sequence_id ''', con=con)
+       "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Profile Iberia and Italy" where "active"='1' order by sequence_id ''', con=current_app.config['CON'])
             
             df['Currency'] = df['Currency'].str.replace("'","")
             df3 = df.merge(df_main, how='left', indicator=True)
@@ -2471,7 +2486,7 @@ def  validate_extra_profile_Iberia():
 def download_extra_profile_Iberia():
         now = datetime.now()
         try:
-            df = pd.read_sql('''select "id",sequence_id,"BusinessCode","Market - Country","Delivering Mill","Product Level 02","Product Level 05","Document Item Currency","Amount", "Currency" from "SMB"."SMB - Extra - Profile Iberia and Italy" where "active"='1' order by sequence_id ''', con=con)
+            df = pd.read_sql('''select "id",sequence_id,"BusinessCode","Market - Country","Delivering Mill","Product Level 02","Product Level 05","Document Item Currency","Amount", "Currency" from "SMB"."SMB - Extra - Profile Iberia and Italy" where "active"='1' order by sequence_id ''', con=current_app.config['CON'])
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'extra_profile_Iberia.xlsx'
             df=df.style.apply(highlight_col, axis=None)
@@ -2509,7 +2524,7 @@ def  extra_profile_minibar_iberia_minibar():
    
     # fetching the data from database and filtering    
     try:
-        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=con)
+        df = pd.read_sql('''select * from "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit,upperLimit), con=current_app.config['CON'])
         count=db.query('select count(*) from "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar" where "active"=1 ')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
         
@@ -2554,7 +2569,7 @@ def get_record_extra_profile_Iberia_minibar():
     query='''SELECT * FROM "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar" where id={}'''.format(id_value)
     
     try:
-        df = pd.read_sql(query, con=con)
+        df = pd.read_sql(query, con=current_app.config['CON'])
         df.columns = df.columns.str.replace(' ', '_')
         df.rename(columns={"Market_-_Country":"Market_Country","Market_-_Customer_Group":"Market_Customer_Group","Market_-_Customer":"Market_Customer"},inplace=True)  
           
@@ -2766,7 +2781,7 @@ def upload_extra_profile_Iberia_minibar():
             df_main = pd.read_sql('''select "id","BusinessCode", "Market - Country",
        "Market - Customer Group", "Market - Customer", "Delivering Mill",
        "Product Level 02", "Product Level 05", "Document Item Currency",
-       "Amount", "Currency" from "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar" where "active"='1' order by sequence_id ''', con=con)
+       "Amount", "Currency" from "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar" where "active"='1' order by sequence_id ''', con=current_app.config['CON'])
             
             
             df['Currency'] = df['Currency'].str.replace("'","")
@@ -2896,7 +2911,7 @@ def  validate_extra_profile_Iberia_minibar():
 def download_extra_profile_Iberia_minibar():
         now = datetime.now()
         try:
-            df = pd.read_sql('''select id,sequence_id,"BusinessCode","Market - Country","Market - Customer Group","Market - Customer","Delivering Mill","Product Level 02","Product Level 05","Document Item Currency","Amount", "Currency" from "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar" where "active"='1' order by sequence_id ''', con=con)
+            df = pd.read_sql('''select id,sequence_id,"BusinessCode","Market - Country","Market - Customer Group","Market - Customer","Delivering Mill","Product Level 02","Product Level 05","Document Item Currency","Amount", "Currency" from "SMB"."SMB - Extra - Profile Iberia and Italy - MiniBar" where "active"='1' order by sequence_id ''', con=current_app.config['CON'])
             t=now.strftime("%d-%m-%Y-%H-%M-%S")
             file=download_path+t+'extra_profile_Iberia_minibar.xlsx'
             

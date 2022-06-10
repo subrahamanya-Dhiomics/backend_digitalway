@@ -12,10 +12,9 @@ from flask import Flask, request, send_file, render_template, make_response, cur
 from flask import jsonify
 from flask_cors import CORS
 import psycopg2
-import shutil
+
 from functools import wraps
-from pathlib import Path
-import os
+
 from sqlalchemy import create_engine
 import cryptocode
 from datetime import datetime, date
@@ -26,11 +25,12 @@ from email.mime.text import MIMEText
 
 
 # database connection strings ( ocpphase1 -- > offertool >SMB)
-engine = create_engine(
-    'postgresql://postgres:ocpphase01@ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com:5432/offertool')
 
-con = psycopg2.connect(dbname='offertool', user='pgadmin', password='Sahara_17',
-                       host='offertool2-qa.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
+
+# engine = create_engine('postgresql://postgres:ocpphase01@ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com:5432/offertool')
+
+# con = psycopg2.connect(dbname='offertool', user='pgadmin', password='Sahara_17',
+#                        host='offertool2-qa.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
 
 
 # con = psycopg2.connect(dbname='offertool',user='pgapp',password='Fulcrum_17',host='offertool2-pro.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
@@ -46,14 +46,6 @@ class Database:
     password = 'Sahara_17'
     db = 'offertool'
 
-    # connection prod
-    # host='offertool2-pro.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com'  # your host
-    # user='pgapp'
-    # password='Fulcrum_17'
-    # db='offertool'
-
-   
-        
     def insert(self, query):
         self.connection = psycopg2.connect(
             dbname=self.db, user=self.user, password=self.password, host=self.host)
@@ -341,7 +333,7 @@ def move_records(tablename, col_tuple, value_tuple, flag, id_value=None, sequenc
 def get_old_json(tablename, id_data, flag):
 
     temp_df = pd.read_sql(
-        ''' select * from "SMB"."{}"  where id in {} '''.format(tablename, tuple(id_data)), con)
+        ''' select * from "SMB"."{}"  where id in {} '''.format(tablename, tuple(id_data)), current_app.config['CON'])
     old_data_df = pd.DataFrame()
     for ids in id_data:
 
@@ -391,7 +383,7 @@ def email(id_value, tablename, flag='change', username='admin'):
         str(id_value), current_app.config["mypassword"])
     # And then to decode it:
 
-    approver = 'arriluceaz@gmail.com'
+    approver = 'subrahamanya.shetty@dhiomics.com'
     mail_from = '''subrahamanya@digitalway-lu.com'''
 
     msg = MIMEMultipart('alternative')
@@ -401,6 +393,8 @@ def email(id_value, tablename, flag='change', username='admin'):
     # print(user)
     html = ''
     with open('/home/ubuntu/SMBPricingAPI/backend_digitalway/email_aproval.html', 'r') as f:
+    # with open('email_aproval.html', 'r') as f:
+    
         html = f.read()
 
     html = html.format(tablename, username, id_value,
@@ -424,6 +418,25 @@ download_path=input_directory="/home/ubuntu/mega_dir/"
 
 
 # llist of generinc api's works for all 21 tables
+
+
+# db connection opening and closing before and after the every api calls 
+
+@smb_app1.before_request
+def before_request():
+   
+    current_app.config['CON']  = psycopg2.connect(dbname='offertool', user='pgadmin', password='Sahara_17',
+                       host='offertool2-qa.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com')
+    
+
+@smb_app1.after_request
+def after_request(response):
+     current_app.config['CON'].close()
+     return response
+ 
+    
+ 
+    
 
 
 @smb_app1.route('/insert_data', methods=['GET', 'POST'])
@@ -452,7 +465,7 @@ def aproval_data():
 
     # preparing the columns list
     col_df = pd.read_sql(
-        ''' select * from "SMB"."{}"  limit 1 '''.format(tablename), con)
+        ''' select * from "SMB"."{}"  limit 1 '''.format(tablename), current_app.config['CON'])
     lis = list(col_df.columns)
     lis.append('flag')
     removals = ['id', 'Username', 'active', 'aprover1', 'aprover2', 'aprover3']
@@ -462,7 +475,7 @@ def aproval_data():
     if(flag == 'delete'):
         query = ''' select * from "SMB"."{}" where id in {} and active=1 '''.format(
             tablename, id_tuple)
-        df = pd.read_sql(query, con)
+        df = pd.read_sql(query, current_app.config['CON'])
         df.insert(0, "flag", flag)
         df = change_date_format(df)
         data = json.loads(df.to_json(orient='records'))
@@ -472,7 +485,7 @@ def aproval_data():
 
         query = '''select * from "SMB"."SMB_Aproval" where tableid in {} and table_name='{}' '''.format(
             id_tuple, tablename)
-        df = pd.read_sql(query, con=con)
+        df = pd.read_sql(query, con=current_app.config['CON'])
         old_json = []
         if(df.empty != True):
             df.rename(columns={"Market_-_Country": "Market_Country", "Market_-_Customer_Group":
@@ -518,7 +531,7 @@ def aprove_records():
         print(query)
         result = db.insert(query)
         df = pd.read_sql(
-            '''select * from "SMB"."{}" limit 1'''.format(tablename), con)
+            '''select * from "SMB"."{}" limit 1'''.format(tablename), current_app.config['CON'])
         cols = get_required_columns(list(df.columns))
 
         col_string = tuple_to_string(tuple(cols))
@@ -612,7 +625,7 @@ def SMB_data():
     try:
         query = '''select * from "SMB"."SMB - Base Price - Category Addition" where "active"='1' order by sequence_id  OFFSET {} LIMIT {} '''.format(
             lowerLimit, upperLimit)
-        df = pd.read_sql(query, con=con)
+        df = pd.read_sql(query, con=current_app.config['CON'])
 
         count = db.query(
             'select count(*) from "SMB"."SMB - Base Price - Category Addition" where "active"=1 ')[0][0]
@@ -639,7 +652,7 @@ def get_record():
         id_value)
 
     try:
-        df = pd.read_sql(query, con=con)
+        df = pd.read_sql(query, con=current_app.config['CON'])
         df.columns = df.columns.str.replace(' ', '_')
         df.rename(columns={"Market_-_Country": "Market_Country"}, inplace=True)
         record = json.loads(df.to_json(orient='records'))
@@ -767,7 +780,7 @@ def SMB_upload():
                  'Product Level 02', 'Document Item Currency', 'Amount', 'Currency']]
     df['id'] = df['id'].astype(int)
 
-    df_main = pd.read_sql('''select "id","BusinessCode","Market - Country","Product Division","Product Level 02","Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Base Price - Category Addition" where "active"='1' order by "id" ''', con=con)
+    df_main = pd.read_sql('''select "id","BusinessCode","Market - Country","Product Division","Product Level 02","Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Base Price - Category Addition" where "active"='1' order by "id" ''', con=current_app.config['CON'])
 
     df['Currency'] = df['Currency'].str.replace("'", "")
 
@@ -860,7 +873,7 @@ def SMB_baseprice_download1():
              "Product Level 02",
              "Document Item Currency",
              "Amount",
-             "Currency" from "SMB"."SMB - Base Price - Category Addition" where "active"='1' order by sequence_id ''', con=con)
+             "Currency" from "SMB"."SMB - Base Price - Category Addition" where "active"='1' order by sequence_id ''', con=current_app.config['CON'])
 
     t = now.strftime("%d-%m-%Y-%H-%M-%S")
 
@@ -896,7 +909,7 @@ def SMB_data_baseprice_mini():
     try:
         query = '''select * from "SMB"."SMB - Base Price - Category Addition - MiniBar" where "active"='1' order by sequence_id  OFFSET {} LIMIT {} '''.format(
             lowerLimit, upperLimit)
-        df = pd.read_sql(query, con=con)
+        df = pd.read_sql(query, con=current_app.config['CON'])
 
         count = db.query(
             'select count(*) from "SMB"."SMB - Base Price - Category Addition - MiniBar" where "active"=1 ')[0][0]
@@ -937,7 +950,7 @@ def get_record_minibar():
         id_value)
 
     try:
-        df = pd.read_sql(query, con=con)
+        df = pd.read_sql(query, con=current_app.config['CON'])
         df.columns = df.columns.str.replace(' ', '_')
         df.rename(columns={"Market_-_Country": "Market_Country",
                   "Market_-_Customer": "Market_Customer"}, inplace=True)
@@ -1067,7 +1080,7 @@ def SMB_upload_baseprice_minibar():
     df['id'] = df['id'].astype(int)
     df["sequence_id"] = df["sequence_id"].astype(int)
 
-    df_main = pd.read_sql('''select "id","BusinessCode", "Customer Group", "Market - Customer","Market - Country", "Beam Category","Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Base Price - Category Addition - MiniBar" where "active"='1' order by sequence_id ''', con=con)
+    df_main = pd.read_sql('''select "id","BusinessCode", "Customer Group", "Market - Customer","Market - Country", "Beam Category","Document Item Currency", "Amount", "Currency",sequence_id from "SMB"."SMB - Base Price - Category Addition - MiniBar" where "active"='1' order by sequence_id ''', con=current_app.config['CON'])
 
     df['Currency'] = df['Currency'].str.replace("'", "")
 
@@ -1143,7 +1156,7 @@ def SMB_baseprice_catecory_minibar_download():
               "Beam Category",
               "Document Item Currency",
               "Amount",
-              "Currency" from "SMB"."SMB - Base Price - Category Addition - MiniBar" where "active"='1' order by sequence_id ''', con=con)
+              "Currency" from "SMB"."SMB - Base Price - Category Addition - MiniBar" where "active"='1' order by sequence_id ''', con=current_app.config['CON'])
 
         t = now.strftime("%d-%m-%Y-%H-%M-%S")
 
@@ -1181,7 +1194,7 @@ def SMB_data_baseprice_incoterm():
     try:
         query = '''select * from "SMB"."SMB - Base Price - Incoterm Exceptions" where "active"='1' order by sequence_id OFFSET {} LIMIT {} '''.format(
             lowerLimit, upperLimit)
-        df = pd.read_sql(query, con=con)
+        df = pd.read_sql(query, con=current_app.config['CON'])
         count = db.query(
             'select count(*) from "SMB"."SMB - Base Price - Incoterm Exceptions" where "active"=1 ')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
@@ -1222,7 +1235,7 @@ def get_record_incoterm():
         id_value)
 
     try:
-        df = pd.read_sql(query, con=con)
+        df = pd.read_sql(query, con=current_app.config['CON'])
         df.columns = df.columns.str.replace(' ', '_')
         df.rename(columns={"Market_-_Country": "Market_Country"}, inplace=True)
         record = json.loads(df.to_json(orient='records'))
@@ -1349,7 +1362,7 @@ def SMB_upload_baseprice_incoterm():
 
     df_main = pd.read_sql('''select "id","Market - Country", "Customer Group",
     "Incoterm1", "Product Division", "Beam Category", "Delivering Mill",
-    "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Base Price - Incoterm Exceptions" where "active"='1' order by sequence_id ''', con=con)
+    "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Base Price - Incoterm Exceptions" where "active"='1' order by sequence_id ''', con=current_app.config['CON'])
 
     df['Currency'] = df['Currency'].str.replace("'", "")
     df3 = df.merge(df_main, how='left', indicator=True)
@@ -1423,7 +1436,7 @@ def SMB_baseprice_download_incoterm():
 		"Beam Category",
 		"Delivering Mill",
 		"Document Item Currency",
-		"Amount","Currency" from "SMB"."SMB - Base Price - Incoterm Exceptions" where "active"='1' order by sequence_id ''', con=con)
+		"Amount","Currency" from "SMB"."SMB - Base Price - Incoterm Exceptions" where "active"='1' order by sequence_id ''', con=current_app.config['CON'])
 
     t = now.strftime("%d-%m-%Y-%H-%M-%S")
     file = download_path+t+'incoterm.xlsx'
@@ -1458,7 +1471,7 @@ def extra_certificate_data():
     # fetching the data from database and filtering
     try:
         df = pd.read_sql(
-            '''select * from "SMB"."SMB - Extra - Certificate" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit, upperLimit), con=con)
+            '''select * from "SMB"."SMB - Extra - Certificate" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit, upperLimit), con=current_app.config['CON'])
         count = db.query(
             'select count(*) from "SMB"."SMB - Extra - Certificate" where "active"=1 ')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
@@ -1498,7 +1511,7 @@ def get_record_extra_certificate():
         id_value)
 
     try:
-        df = pd.read_sql(query, con=con)
+        df = pd.read_sql(query, con=current_app.config['CON'])
         df.columns = df.columns.str.replace(' ', '_')
         df.rename(columns={"Market_-_Country": "Market_Country"}, inplace=True)
         record = json.loads(df.to_json(orient='records'))
@@ -1626,7 +1639,7 @@ def Upload_extra_certificate():
 
         df_main = pd.read_sql('''select "id","BusinessCode", "Certificate",
        "Grade Category", "Market - Country", "Delivering Mill",
-       "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Certificate" where "active"='1' order by sequence_id ''', con=con)
+       "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Certificate" where "active"='1' order by sequence_id ''', con=current_app.config['CON'])
 
         df['Currency'] = df['Currency'].str.replace("'", "")
         df3 = df.merge(df_main, how='left', indicator=True)
@@ -1708,7 +1721,7 @@ def download_extra_certificate():
 "Delivering Mill",
 "Document Item Currency",
 "Amount",
-"Currency" from "SMB"."SMB - Extra - Certificate" where "active"='1' order by sequence_id ''', con=con)
+"Currency" from "SMB"."SMB - Extra - Certificate" where "active"='1' order by sequence_id ''', con=current_app.config['CON'])
 
         t = now.strftime("%d-%m-%Y-%H-%M-%S")
         file = download_path+t+'extra_certificate.xlsx'
@@ -1748,7 +1761,7 @@ def extra_certificate_data_minibar():
     # fetching the data from database and filtering
     try:
         df = pd.read_sql(
-            '''select * from "SMB"."SMB - Extra - Certificate - MiniBar" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit, upperLimit), con=con)
+            '''select * from "SMB"."SMB - Extra - Certificate - MiniBar" where "active"='1' order by sequence_id  OFFSET {} LIMIT {}'''.format(lowerLimit, upperLimit), con=current_app.config['CON'])
         count = db.query(
             'select count(*) from "SMB"."SMB - Extra - Certificate - MiniBar" where "active"=1 ')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
@@ -1789,7 +1802,7 @@ def get_record_extra_certificate_minibar():
         id_value)
 
     try:
-        df = pd.read_sql(query, con=con)
+        df = pd.read_sql(query, con=current_app.config['CON'])
         df.columns = df.columns.str.replace(' ', '_')
         df.rename(columns={"Market_-_Country": "Market_Country",
                   "Market_-_Customer": "Market_Customer"}, inplace=True)
@@ -1902,7 +1915,7 @@ def Upload_extra_certificate_minibar():
 
         df_main = pd.read_sql('''select "id","BusinessCode", "Customer Group","Market - Customer",
        "Market - Country", "Certificate",
-       "Grade Category", "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Certificate - MiniBar" where "active"='1' order by sequence_id ''', con=con)
+       "Grade Category", "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Certificate - MiniBar" where "active"='1' order by sequence_id ''', con=current_app.config['CON'])
 
         df['Currency'] = df['Currency'].str.replace("'", "")
 
@@ -1969,7 +1982,7 @@ def download_extra_certificate_minibar():
     now = datetime.now()
     try:
         df = pd.read_sql('''select "id",sequence_id,"BusinessCode","Customer Group","Market - Customer","Market - Country","Certificate",
-"Grade Category","Document Item Currency","Amount","Currency" from "SMB"."SMB - Extra - Certificate - MiniBar" where "active"='1' order by sequence_id ''', con=con)
+"Grade Category","Document Item Currency","Amount","Currency" from "SMB"."SMB - Extra - Certificate - MiniBar" where "active"='1' order by sequence_id ''', con=current_app.config['CON'])
 
         t = now.strftime("%d-%m-%Y-%H-%M-%S")
         file = download_path+t+'extra_certificate_minibar.xlsx'
@@ -2007,7 +2020,7 @@ def data_delivery_mill():
     # fetching the data from database and filtering
     try:
         df = pd.read_sql(
-            '''select * from "SMB"."SMB - Extra - Delivery Mill" where "active"='1' order by sequence_id OFFSET {} LIMIT {}'''.format(lowerLimit, upperLimit), con=con)
+            '''select * from "SMB"."SMB - Extra - Delivery Mill" where "active"='1' order by sequence_id OFFSET {} LIMIT {}'''.format(lowerLimit, upperLimit), con=current_app.config['CON'])
         count = db.query(
             'select count(*) from "SMB"."SMB - Extra - Delivery Mill" where "active"=1 ')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
@@ -2048,7 +2061,7 @@ def get_record_delivery_mill():
         id_value)
 
     try:
-        df = pd.read_sql(query, con=con)
+        df = pd.read_sql(query, con=current_app.config['CON'])
         df.columns = df.columns.str.replace(' ', '_')
         df.rename(columns={"Market_-_Country": "Market_Country"}, inplace=True)
         record = json.loads(df.to_json(orient='records'))
@@ -2169,7 +2182,7 @@ def upload_delivery_mill():
 
         df_main = pd.read_sql('''select "id","BusinessCode", "Market - Country",
        "Delivering Mill", "Product Division", "Beam Category",
-       "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Delivery Mill" where "active"='1' order by sequence_id ''', con=con)
+       "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Delivery Mill" where "active"='1' order by sequence_id ''', con=current_app.config['CON'])
 
         df['Currency'] = df['Currency'].str.replace("'", "")
         df3 = df.merge(df_main, how='left', indicator=True)
@@ -2247,7 +2260,7 @@ def download_delivery_mill():
 "Beam Category",
 "Document Item Currency",
 "Amount",
-"Currency" from "SMB"."SMB - Extra - Delivery Mill" where "active"='1' order by sequence_id ''', con=con)
+"Currency" from "SMB"."SMB - Extra - Delivery Mill" where "active"='1' order by sequence_id ''', con=current_app.config['CON'])
 
         t = now.strftime("%d-%m-%Y-%H-%M-%S")
         file = download_path+t+'delivery_mill.xlsx'
@@ -2285,7 +2298,7 @@ def data_delivery_mill_minibar():
     # fetching the data from database and filtering
     try:
         df = pd.read_sql(
-            '''select * from "SMB"."SMB - Extra - Delivery Mill - MiniBar" where "active"='1' order by sequence_id OFFSET {} LIMIT {}'''.format(lowerLimit, upperLimit), con=con)
+            '''select * from "SMB"."SMB - Extra - Delivery Mill - MiniBar" where "active"='1' order by sequence_id OFFSET {} LIMIT {}'''.format(lowerLimit, upperLimit), con=current_app.config['CON'])
         count = db.query(
             'select count(*) from "SMB"."SMB - Extra - Delivery Mill - MiniBar" where "active"=1 ')[0][0]
         df.columns = df.columns.str.replace(' ', '_')
@@ -2327,7 +2340,7 @@ def get_record_delivery_mill_minibar():
         id_value)
 
     try:
-        df = pd.read_sql(query, con=con)
+        df = pd.read_sql(query, con=current_app.config['CON'])
         df.columns = df.columns.str.replace(' ', '_')
         df.rename(columns={"Market_-_Country": "Market_Country", "Market_-_Customer_Group":
                   "Market_Customer_Group", "Market_-_Customer": "Market_Customer"}, inplace=True)
@@ -2438,7 +2451,7 @@ def upload_delivery_mill_minibar():
 
         df_main = pd.read_sql('''select "id","Market - Country",
        "Market - Customer Group","Market - Customer", "Delivering Mill",
-       "Product Division", "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Delivery Mill - MiniBar" where "active"='1' order by sequence_id ''', con=con)
+       "Product Division", "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Delivery Mill - MiniBar" where "active"='1' order by sequence_id ''', con=current_app.config['CON'])
 
         df['Currency'] = df['Currency'].str.replace("'", "")
 
@@ -2508,7 +2521,7 @@ def download_delivery_mill_minibar():
     try:
         df = pd.read_sql('''select "id",sequence_id,"Market - Country",
        "Market - Customer Group","Market - Customer",  "Delivering Mill",
-       "Product Division", "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Delivery Mill - MiniBar" where "active"='1' order by sequence_id ''', con=con)
+       "Product Division", "Document Item Currency", "Amount", "Currency" from "SMB"."SMB - Extra - Delivery Mill - MiniBar" where "active"='1' order by sequence_id ''', con=current_app.config['CON'])
 
         t = now.strftime("%d-%m-%Y-%H-%M-%S")
         file = download_path+t+'delivery_mill_minibar.xlsx'
