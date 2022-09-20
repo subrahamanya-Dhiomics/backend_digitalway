@@ -17,15 +17,9 @@ import json
 from flask import Flask, request, send_file, render_template, make_response,current_app
 from flask import jsonify
 from flask_cors import CORS
-from json import JSONEncoder
-from collections import OrderedDict
-from flask import Blueprint
+
 import psycopg2
-import shutil
-from pathlib import Path
-import os
-from sqlalchemy import create_engine
-import getpass
+
 from datetime import datetime,date
 
 
@@ -38,8 +32,6 @@ smb_history = Blueprint('smb_history', __name__)
 CORS(smb_history)
 
 db=Database()
-
-input_directory="C:/Users/Administrator/Documents/SMB_INPUT/"
 
 
 # db connection opening and closing before and after the every api calls 

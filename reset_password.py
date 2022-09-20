@@ -14,7 +14,7 @@ from smb_phase1 import Database
 app= Flask(__name__)
 reset_password = Blueprint('reset_password', __name__)
 CORS(reset_password)
-engine = create_engine('postgresql://postgres:ocpphase01@ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com:5432/offertool')
+# engine = create_engine('postgresql://postgres:ocpphase01@ocpphase1.cjmfkeqxhmga.eu-central-1.rds.amazonaws.com:5432/offertool')
 
 db=Database()
 reset_password = Blueprint('reset_password', __name__)
